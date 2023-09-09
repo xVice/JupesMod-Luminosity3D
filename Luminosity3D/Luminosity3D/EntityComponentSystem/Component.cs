@@ -1,0 +1,36 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Luminosity3D.EntityComponentSystem
+{
+    public abstract class Component
+    {
+        public Entity Entity { get; set; }
+        public Engine Engine { get => Entity.Engine; }
+
+        private double deltaTime { get => Engine.deltaTime; }
+
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public Component() { }
+        public Component(Entity entity,string name, string description)
+        {
+            Entity = entity;
+            Name = name;
+            Description = description;
+        }
+
+        public abstract void Awake();
+        public abstract void Start();
+        public abstract void EarlyUpdate();
+        public abstract void Update();
+        public abstract void LateUpdate();
+        public abstract void OnEnable();
+        public abstract void OnDisable();
+        public abstract void OnDestroy();
+        
+    }
+}
