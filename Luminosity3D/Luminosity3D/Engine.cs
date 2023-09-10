@@ -52,36 +52,55 @@ namespace Luminosity3D
 
         public void StartEngine()
         {
+          
             Logger.ClearLogFile();
+
+
             using (Renderer renderer = new Renderer(800, 600, "Jupe's Mod v1.0.0"))
             {
                 this.Renderer = renderer;
                 renderer.Run();
             
-            }   
+            }
+            
         }
 
         public void Start()
         {
-            foreach (var ent in SceneManager.ActiveScene.Entities.GetContent())
+            foreach (var ent in SceneManager.ActiveScene.Entities)
             {
-                ent.Start();
+                lock (ent)
+                {
+                    ent.Start();
+                }
+
             }
         }
 
         public void Awake()
         {
-            foreach (var ent in SceneManager.ActiveScene.Entities.GetContent())
+            foreach (var ent in SceneManager.ActiveScene.Entities)
             {
-                ent.Awake();
+                lock (ent)
+                {
+                    ent.Awake();
+                }
+
             }
         }
 
         public void Update()
         {
-            foreach(var ent in SceneManager.ActiveScene.Entities.GetContent())
+            
+            foreach(var ent in SceneManager.ActiveScene.Entities)
             {
-                ent.Update();
+                lock (ent)
+                {
+                    ent.EarlyUpdate();
+                    ent.Update();
+                    ent.LateUpdate();
+                }          
+
             }
         }
 

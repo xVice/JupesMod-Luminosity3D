@@ -35,13 +35,13 @@ namespace Luminosity3DRendering
 
         public ImGuiController? IMGUIController = null;
 
-        public Pool<IRenderLayer> renderLayers = new Pool<IRenderLayer>();
+        public List<IRenderLayer> renderLayers = new List<IRenderLayer>();
         public Engine Engine { get => Engine.Instance; }
         public DebugConsole Console;
 
         public void AddLayer(IRenderLayer layer)
         {
-            renderLayers.Enqueue(layer);
+            renderLayers.Add(layer);
         }
 
         protected override void OnRenderThreadStarted()
@@ -73,10 +73,10 @@ namespace Luminosity3DRendering
             var comp = ent.AddComponent<MeshBatchComponent>(MeshBatchComponent.LoadFromFile("./teapot.obj"));
             Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent);
             */
-
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
 
             Engine.Start();
+      
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -96,16 +96,20 @@ namespace Luminosity3DRendering
             GL.ClearColor(new Color4(0, 32, 48, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-
-        
-            foreach (var renderLayer in renderLayers.GetContent())
+            lock (renderLayers)
             {
-                renderLayer.Render();
+                foreach (var renderLayer in renderLayers)
+                {
+                    renderLayer.Render();
+                }
+
             }
+
+
+
             IMGUIController.Render();
 
             SwapBuffers();
-            Pools.MergeAllPools();
         }
 
 
@@ -120,13 +124,12 @@ namespace Luminosity3DRendering
                 Environment.Exit(0);
             }
 
-
-
+            Engine.Update();
 
 
             IMGUIController.Update(this, (float)e.Time);
-            Engine.Update();
-      
+
+  
         }
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)

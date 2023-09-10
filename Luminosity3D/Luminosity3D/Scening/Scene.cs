@@ -12,7 +12,7 @@ namespace Luminosity3DScening
     public class Scene
     {
         public string Name { get; set; } = "New Scene";
-        public Pool<Entity> Entities = new Pool<Entity>();
+        public List<Entity> Entities = new List<Entity>();
 
         public Scene()
         {
@@ -35,7 +35,7 @@ namespace Luminosity3DScening
         {
             List<Entity> result = new List<Entity>();
 
-            foreach (Entity entity in Entities.GetContent())
+            foreach (Entity entity in Entities)
             {
                 // Check if the entity has a component of type T attached
                 if (entity.GetComponent<T>() != null)
@@ -54,7 +54,7 @@ namespace Luminosity3DScening
 
         public Entity InstantiateEntity(Entity entity)
         {
-            Entities.Enqueue(entity);
+            Entities.Add(entity);
             entity.Awake();
             return entity;
         }
@@ -66,12 +66,12 @@ namespace Luminosity3DScening
 
         public Entity FindEntity(string name)
         {
-            return Entities.GetContent().FirstOrDefault(x => x.Name == name);
+            return Entities.FirstOrDefault(x => x.Name == name);
         }
 
         public void Update()
         {
-            foreach (var entity in Entities.GetContent())
+            foreach (var entity in Entities)
             {
                 entity.Update();
             }

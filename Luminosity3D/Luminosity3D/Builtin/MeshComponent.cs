@@ -15,26 +15,26 @@ namespace Luminosity3D.Builtin
 {
     public class ShaderCache<T>
     {
-        public Pool<IShader<T>> Shaders { get; set; }
+        public List<IShader<T>> Shaders { get; set; }
 
         public Dictionary<T, int> ShaderIndexer;  
 
         public ShaderCache()
         {
-            Shaders = new Pool<IShader<T>>();
+            Shaders = new List<IShader<T>>();
             ShaderIndexer = new Dictionary<T, int>();
         }
 
         public void AddShader(IShader<T> shader)
         {
-            Shaders.Enqueue(shader);
+            Shaders.Add(shader);
         }
 
         
 
         public void CompileShaders()
         {
-            foreach (var shader in Shaders.GetContent())
+            foreach (var shader in Shaders)
             {
                 if (!shader.ShaderBuild)
                 {
@@ -51,7 +51,7 @@ namespace Luminosity3D.Builtin
 
         public void UnloadShaders()
         {
-            foreach(var shader in Shaders.GetContent())
+            foreach(var shader in Shaders)
             {
                 if (shader.ShaderBuild)
                 {

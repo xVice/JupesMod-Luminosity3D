@@ -27,7 +27,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
     public class CommandManager
     {
-        public Pool<DebugCommand> Commands = new Pool<DebugCommand>();
+        public List<DebugCommand> Commands = new List<DebugCommand>();
 
         public CommandManager() { }
 
@@ -36,7 +36,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (!commandLine.Contains(' '))
             {
                 // Handle commands with no arguments here.
-                DebugCommand Command = Commands.GetContent().FirstOrDefault(x => x.Command == commandLine);
+                DebugCommand Command = Commands.FirstOrDefault(x => x.Command == commandLine);
 
                 if (Command != null)
                 {
@@ -55,7 +55,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 if (commandParts.Length > 0)
                 {
-                    Command = Commands.GetContent().FirstOrDefault(x => x.Command == commandParts[0]);
+                    Command = Commands.FirstOrDefault(x => x.Command == commandParts[0]);
                 }
 
                 if (Command != null)
@@ -76,7 +76,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         public void RegisterCommand(DebugCommand command) 
         {
-            Commands.Enqueue(command); 
+            Commands.Add(command); 
         }
     }
 
@@ -157,14 +157,14 @@ namespace Luminosity3D.Builtin.RenderLayers
         public override void Execute(string[] args)
         {
             Logger.Log("Enumerating registered commands..");
-            foreach(var command in Engine.Instance.Console.CommandManager.Commands.GetContent())
+            foreach(var command in Engine.Instance.Console.CommandManager.Commands)
             {
                 Logger.Log("-------------------------------------------------------------------------------------");
                 Logger.Log("Commmand: " + command.Command);
                 Logger.Log("Description: " + command.Description);   
             }
             Logger.Log("-------------------------------------------------------------------------------------");
-            Logger.Log($"Jupe mods help, enumerated: {Engine.Instance.Console.CommandManager.Commands.GetContent().Count()} commands!");
+            Logger.Log($"Jupe mods help, enumerated: {Engine.Instance.Console.CommandManager.Commands.Count()} commands!");
         }
     }
 
@@ -266,7 +266,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             CommandManager.RegisterCommand(new ExecCommand());
             CommandManager.RegisterCommand(new LoadLUPKCommand());
             CommandManager.RegisterCommand(new GetActiveDirectory());
-            Logger.Log($"Loaded {CommandManager.Commands.GetContent().Count()} commands into the manager!");
+            Logger.Log($"Loaded {CommandManager.Commands.Count()} commands into the manager!");
         }
 
         bool showThemeing = false;
@@ -326,6 +326,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                         if (ImGui.BeginMenu("Demos"))
                         {
+                          
                             if (ImGui.MenuItem("IMGUI Demo", showDemos))
                             {
                                 ImGui.ShowDemoWindow();
@@ -368,11 +369,11 @@ namespace Luminosity3D.Builtin.RenderLayers
                     // Group to contain the tree view and input box/buttons
                     ImGui.BeginGroup();
 
-                    foreach (var entity in Engine.Instance.SceneManager.ActiveScene.Entities.GetContent())
+                    foreach (var entity in Engine.Instance.SceneManager.ActiveScene.Entities)
                     {
                         if (ImGui.TreeNode(entity.Name))
                         {
-                            foreach (var component in entity.Components.GetContent())
+                            foreach (var component in entity.Components)
                             {
                                 if (ImGui.TreeNode(component.Name))
                                 {
@@ -399,7 +400,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                                     ImGui.TreePop(); // Close component node
                                 }
-                                ImGui.TreePop(); // Close component node
+                                //ImGui.TreePop(); // Close component node
                             }
                             ImGui.TreePop(); // Close entity node
                         }

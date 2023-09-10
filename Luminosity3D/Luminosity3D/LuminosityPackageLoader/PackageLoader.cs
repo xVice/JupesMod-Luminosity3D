@@ -15,7 +15,7 @@ namespace Luminosity3D.PKGLoader
         private static Engine Engine { get => Engine.Instance; }
         public static PackageLoader Instance { get => Engine.PackageLoader; }
 
-        private Pool<LUPKMod> LoadedMods = new Pool<LUPKMod>();
+        private List<LUPKMod> LoadedMods = new List<LUPKMod>();
 
         public const string LUPKDir = "./lupk";
         public const string LUPKAutoLoadDir = "/autoload";
@@ -88,7 +88,7 @@ namespace Luminosity3D.PKGLoader
             {
                 var mod = new LUPKMod(lupkg.PakName, compiledAssembly, lupkg);
                 mod.InvokeOnLoadMethod();
-                LoadedMods.Enqueue(mod);
+                LoadedMods.Add(mod);
                 Logger.Log($"OnLoad called for {name}!");
                 return mod;
             }
@@ -118,7 +118,7 @@ namespace Luminosity3D.PKGLoader
             {
                 var mod = new LUPKMod(lupkg.PakName, compiledAssembly, lupkg);
                 mod.InvokeOnLoadMethod();
-                LoadedMods.Enqueue(mod);
+                LoadedMods.Add(mod);
                 Logger.Log($"OnLoad called for {name}!");
                 return mod;
             }

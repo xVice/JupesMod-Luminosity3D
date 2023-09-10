@@ -11,7 +11,7 @@ namespace Luminosity3D.Utils
     {
         public static Engine Engine { get => Engine.Instance; }
 
-        public static Pool<Engine> EnginePool = new Pool<Engine>();
+        public static List<Engine> EnginePool = new List<Engine>();
 
         public static Engine StartEngine()
         {
@@ -23,13 +23,13 @@ namespace Luminosity3D.Utils
 
             engine.StartEngine();
 
-            EnginePool.Enqueue(engine);
+            EnginePool.Add(engine);
             return engine;
         }
 
         public static Engine FindEngine(string engineName)
         {
-            return EnginePool.GetContent().Where(x => x.EngineName == engineName).First();
+            return EnginePool.Where(x => x.EngineName == engineName).First();
         }
 
 

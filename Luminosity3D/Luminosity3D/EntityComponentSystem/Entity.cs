@@ -29,7 +29,7 @@ namespace Luminosity3D.EntityComponentSystem
         public Engine Engine;
 
         public Entity Parent = null;
-        public Pool<Component> Components { get; set; } = new Pool<Component>();
+        public List<Component> Components { get; set; } = new List<Component>();
 
         public Entity(string name)
         {
@@ -49,17 +49,17 @@ namespace Luminosity3D.EntityComponentSystem
 
         public List<Component> GetComponents<T>() where T : Component
         {
-            return Components.GetContent().Where(x => x.GetType() == typeof(T)).ToList();
+            return Components.Where(x => x.GetType() == typeof(T)).ToList();
         }
 
         public Component GetComponent<T>() where T : Component
         {
-            return Components.GetContent().Where(x => x.GetType() == typeof(T)).ToList().First();
+            return Components.Where(x => x.GetType() == typeof(T)).ToList().First();
         }
 
         public Component AddComponent<T>(T component) where T : Component
         {
-            Components.Enqueue(component);
+            Components.Add(component);
             component.Entity = this;
             return component;
         }
@@ -68,7 +68,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void Start()
         {
-            foreach(var comp in Components.GetContent())
+            foreach(var comp in Components)
             {
                 comp.Start();
             }
@@ -78,7 +78,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void Awake()
         {
-            foreach (var comp in Components.GetContent())
+            foreach (var comp in Components)
             {
                 comp.Awake();
             }
@@ -88,10 +88,30 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void Update()
         {
-            foreach (var comp in Components.GetContent())
+
+            foreach (var comp in Components)
+            {
+
+                comp.Update();
+
+            }
+        }
+
+        public void EarlyUpdate()
+        {
+
+            foreach (var comp in Components)
             {
                 comp.EarlyUpdate();
-                comp.Update();
+
+            }
+        }
+
+        public void LateUpdate()
+        {
+
+            foreach (var comp in Components)
+            {
                 comp.LateUpdate();
             }
         }
@@ -103,7 +123,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 Name = this.Name,
                 Parent = this.Parent?.ToSerializedEntity(),
-                Components = this.Components.GetContent().ToList()
+                Components = this.Components.ToList()
             };
 
             return serializedEntity;
@@ -121,7 +141,7 @@ namespace Luminosity3D.EntityComponentSystem
 
             foreach (var component in serializedEntity.Components)
             {
-                entity.Components.Enqueue(component);
+                entity.Components.Add(component);
             }
 
             return entity;

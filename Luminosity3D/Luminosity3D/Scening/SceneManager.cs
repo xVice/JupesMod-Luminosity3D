@@ -10,44 +10,44 @@ namespace Luminosity3DScening
 {
     public class SceneManager
     {
-        public Pool<Scene> Scenes = new Pool<Scene>();
+        public List<Scene> Scenes = new List<Scene>();
         public Scene ActiveScene = new Scene();
 
         public Scene Next()
         {
             var nextScene = new Scene();
-            var nextIndex = Scenes.GetContent().IndexOf(ActiveScene) + 1;
-            if (nextIndex >= Scenes.GetContent().Count())
+            var nextIndex = Scenes.IndexOf(ActiveScene) + 1;
+            if (nextIndex >= Scenes.Count())
             {
-                nextScene = Scenes.GetContent()[nextIndex];
+                nextScene = Scenes[nextIndex];
             }
             return nextScene;
         }
 
         public List<Scene> GetScenes()
         {
-            return Scenes.GetContent();
+            return Scenes;
         }
 
         public Scene ActivateNext()
         {
-            var nextIndex = Scenes.GetContent().IndexOf(ActiveScene) + 1;
-            if (nextIndex >= Scenes.GetContent().Count())
+            var nextIndex = Scenes.IndexOf(ActiveScene) + 1;
+            if (nextIndex >= Scenes.Count())
             {
-                ActiveScene = Scenes.GetContent()[nextIndex];
+                ActiveScene = Scenes[nextIndex];
             }
             return ActiveScene;
         }
 
         public Scene AddScene(Scene scene)
         {
-            Scenes.Enqueue(scene);
+            Scenes.Add(scene);
             return scene;
         }
 
         public Scene GetScene(string name)
         {
-            return (Scene)Scenes.GetContent().Where(x => x.Name == name);
+            return (Scene)Scenes.Where(x => x.Name == name);
         }
     }
 }
