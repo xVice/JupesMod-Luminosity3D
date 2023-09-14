@@ -174,29 +174,8 @@ namespace Luminosity3DPAK
                 throw new InvalidOperationException("Storage provider not initialized.");
             }
 
-            Directory.CreateDirectory(dest);
-            using (ZipArchive archive = ZipFile.Open(FilePath, ZipArchiveMode.Read))
-            {
-                foreach (var entry in archive.Entries)
-                {
-                    string entryPath = Path.Combine(dest, entry.FullName);
+            ZipFile.ExtractToDirectory(FilePath, dest);
 
-                    if (entryPath.EndsWith("/"))
-                    {
-                        // If it's a directory, create it
-                        Directory.CreateDirectory(entryPath);
-                    }
-                    else
-                    {
-                        // If it's a file, extract it
-                        using (Stream entryStream = storageProvider.OpenRead(entry.FullName))
-                        using (FileStream fileStream = File.Create(entryPath))
-                        {
-                            entryStream.CopyTo(fileStream);
-                        }
-                    }
-                }
-            }
             UnpackedPath = dest;
         }
 
@@ -238,21 +217,8 @@ namespace Luminosity3DPAK
                 throw new DirectoryNotFoundException($"The source directory '{FilePath}' does not exist.");
             }
 
-            // Create a new PAK file or overwrite an existing one
-            using (ZipArchive archive = ZipFile.Open(destinationFileName, ZipArchiveMode.Create))
-            {
-                foreach (string file in Directory.GetFiles(FilePath))
-                {
-                    string entryName = Path.GetFileName(file);
+            ZipFile.CreateFromDirectory(FilePath, destinationFileName);
 
-                    // Add each file from the source directory to the PAK archive
-                    using (Stream fileStream = File.OpenRead(file))
-                    using (Stream entryStream = archive.CreateEntry(entryName).Open())
-                    {
-                        fileStream.CopyTo(entryStream);
-                    }
-                }
-            }
         }
 
         public void PackDirectory(string sourceDirectory)
@@ -266,6 +232,8 @@ namespace Luminosity3DPAK
             {
                 throw new DirectoryNotFoundException($"The source directory '{sourceDirectory}' does not exist.");
             }
+
+
 
             foreach (string file in Directory.GetFiles(sourceDirectory))
             {

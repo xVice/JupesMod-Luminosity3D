@@ -15,12 +15,15 @@ namespace Luminosity3D.Builtin
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Vector3 Rotation { get; set; } = Vector3.Zero;
         public Vector3 Scale { get; set; } = Vector3.One;
+        
 
         public TransformComponent(Vector3 Position, Vector3 Rotation, Vector3 Scale)
         {
             this.Rotation = Rotation;
             this.Position = Position;
+            
             this.Scale = Scale;
+            base.ExecutionOrder = 1;
         }
 
         public Matrix4x4 GetTransformMatrix()
@@ -74,6 +77,11 @@ namespace Luminosity3D.Builtin
     public class TestingComponent : Component
     {
         public string Test = "Sau Gut";
+
+        public TestingComponent()
+        {
+            base.ExecutionOrder = 1;
+        }
 
         public void TestLog()
         {

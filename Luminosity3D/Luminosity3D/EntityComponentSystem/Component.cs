@@ -13,14 +13,17 @@ namespace Luminosity3D.EntityComponentSystem
 
         private double deltaTime { get => Engine.deltaTime; }
 
+        public int ExecutionOrder { get; set; } = int.MaxValue;
         public string Name { get; set; }
         public string Description { get; set; }
         public Component() { }
-        public Component(Entity entity,string name, string description)
+        public Component(Entity entity,string name, string description, int executionOrder)
         {
             Entity = entity;
             Name = name;
             Description = description;
+            ExecutionOrder = executionOrder;
+ 
         }
 
         public abstract void Awake();

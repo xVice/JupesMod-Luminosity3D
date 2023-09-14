@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using Luminosity3D.Builtin.RenderLayers;
 using Luminosity3D.Builtin;
+using Luminosity3DScening;
 
 namespace Luminosity3DRendering
 {
@@ -67,14 +68,14 @@ namespace Luminosity3DRendering
             Engine.PackageLoader.LoadPaks();
             timer.Stop();
 
-
             /*
             var ent = new Luminosity3D.EntityComponentSystem.Entity("Test3dobj");
-            var comp = ent.AddComponent<MeshBatchComponent>(MeshBatchComponent.LoadFromFile("./teapot.obj"));
+            var comp = ent.AddComponent<MeshBatchComponent>(MeshBatchComponent.LoadFromFile(ent,"./Fish.obj"));
             Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent);
             */
-            Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
 
+            Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
+            Engine.Awake();
             Engine.Start();
       
         }
@@ -96,14 +97,31 @@ namespace Luminosity3DRendering
             GL.ClearColor(new Color4(0, 32, 48, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            lock (renderLayers)
+
+            var meshBatches = Engine.FindComponents<MeshBatchComponent>();
+
+            if (meshBatches != null || meshBatches.Count != 0)
             {
-                foreach (var renderLayer in renderLayers)
+                foreach (var meshBatch in meshBatches)
                 {
+                    var renderCache = meshBatch.RenderCache;
+                    foreach (var render in renderCache.Caches)
+                    {
+                        render.MeshData.Render();
+                    }
+                }
+            }
+
+            if (renderLayers.Count != 0)
+            {
+                for (int i = renderLayers.Count() - 1; i >= 0; i--)
+
+                {
+                    var renderLayer = renderLayers[i];
                     renderLayer.Render();
                 }
-
             }
+
 
 
 

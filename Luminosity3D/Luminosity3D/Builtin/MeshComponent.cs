@@ -13,28 +13,31 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.Builtin
 {
-    public class ShaderCache<T>
+    //This is insanity, straight insanity.
+
+    //Its wrong and bad but just might work.
+    public class RenderCache<T>
     {
-        public List<IShader<T>> Shaders { get; set; }
+        public List<IShader<T>> Caches { get; set; }
 
         public Dictionary<T, int> ShaderIndexer;  
 
-        public ShaderCache()
+        public RenderCache()
         {
-            Shaders = new List<IShader<T>>();
+            Caches = new List<IShader<T>>();
             ShaderIndexer = new Dictionary<T, int>();
         }
 
         public void AddShader(IShader<T> shader)
         {
-            Shaders.Add(shader);
+            Caches.Add(shader);
         }
 
         
 
         public void CompileShaders()
         {
-            foreach (var shader in Shaders)
+            foreach (var shader in Caches)
             {
                 if (!shader.ShaderBuild)
                 {
@@ -51,12 +54,20 @@ namespace Luminosity3D.Builtin
 
         public void UnloadShaders()
         {
-            foreach(var shader in Shaders)
+            foreach(var shader in Caches)
             {
                 if (shader.ShaderBuild)
                 {
                     shader.Unload();
                 }
+            }
+        }
+
+        public void DisposeMeshes()
+        {
+            foreach(var cache in Caches)
+            {
+                //Dispose meshes, make baseclass or interface for meshes to unload if the want to (they should)
             }
         }
 
@@ -88,19 +99,20 @@ namespace Luminosity3D.Builtin
         public bool ShaderBuild { get => _shaderBuild; set => throw new NotImplementedException(); }
         public Mesh MeshData { get => _mesh; set => _mesh = value; }
 
-        
+        private TransformComponent transform;
 
 
         private Mesh _mesh;
         private bool _shaderBuild = false;
         private int _shaderInt;
 
-        public PBRShader(Mesh mesh)
+        public PBRShader(Mesh mesh, TransformComponent transform)
         {
             _mesh = mesh;
+            this.transform = transform;
         }
 
-       //finally, use any datatype in any mesh with any shader.... if you really want too
+        //finally, use any datatype in any mesh with any shader.... if you really want too
         public void Compile()
         {
             // Load and compile vertex and fragment shaders
@@ -164,6 +176,8 @@ namespace Luminosity3D.Builtin
         public Vector2[] TexCoords { get; private set; }
         public int[] Indices { get; private set; }
 
+        public MeshBatchComponent meshBatch; //???????????????
+
         // OpenGL handles
         private int vao;
         private int vboVertices;
@@ -171,8 +185,9 @@ namespace Luminosity3D.Builtin
         private int vboTexCoords;
         private int ebo;
 
-        public Mesh(Vector3[] vertices, Vector3[] normals, Vector2[] texCoords, int[] indices)
+        public Mesh(Vector3[] vertices, Vector3[] normals, Vector2[] texCoords, int[] indices, MeshBatchComponent meshBatch)
         {
+            this.meshBatch = meshBatch;
             Vertices = vertices ?? throw new ArgumentNullException(nameof(vertices));
             Normals = normals ?? throw new ArgumentNullException(nameof(normals));
             TexCoords = texCoords ?? throw new ArgumentNullException(nameof(texCoords));
@@ -226,6 +241,9 @@ namespace Luminosity3D.Builtin
 
         public void Render()
         {
+            GL.UseProgram(meshBatch.RenderCache.Caches.Where(x => x.MeshData == this).FirstOrDefault().ShaderIndex);
+
+            //Uniforms gebimsel und gebambsel, mit matrix und etc;
             GL.BindVertexArray(vao);
             GL.DrawElements(PrimitiveType.Triangles, Indices.Length, DrawElementsType.UnsignedInt, 0);
             GL.BindVertexArray(0);
@@ -243,20 +261,24 @@ namespace Luminosity3D.Builtin
 
     //Eventually reworkt to be easiyl extendable by doing the funny code c:
     /// <summary>
-    /// Represents a .gltf/glb file
-    /// Includes a shader cached for each mesh and a list of Meshes that hold the shader, the shadercache is essentially a wrapper for the list.
+    /// Loads a file supported by assimp into the Mesh class and creates a PBRShader class and wraps it into a rendercache of type mesh, allows to render most 3d file formats.
     /// </summary>
     public class MeshBatchComponent : Component
     {
-        public ShaderCache<Mesh> ShaderCache { get; set; }
-        public List<Mesh> Meshes { get; set; }
+        public RenderCache<Mesh> RenderCache { get; set; } = new RenderCache<Mesh>();
 
-
+        public TransformComponent Transform;
         public Assimp.Scene? scene { get; set; }
 
-        public static MeshBatchComponent LoadFromFile(string path)
+        public static MeshBatchComponent LoadFromFile(Entity ent,string path)
         {
+            if(ent.GetComponent<TransformComponent>() == null)
+            {
+                ent.AddComponent<TransformComponent>(new TransformComponent(new System.Numerics.Vector3(0,0,0), new System.Numerics.Vector3(0, 0, 0), new System.Numerics.Vector3(0, 0, 0)));
+            }
+
             var meshBatch = new MeshBatchComponent();
+            meshBatch.Transform = ent.GetComponent<TransformComponent>();
 
             if (File.Exists(path))
             {
@@ -317,17 +339,15 @@ namespace Luminosity3D.Builtin
                             }
                         }
 
-                        var internalMesh = new Mesh(vertices.ToArray(), normals.ToArray(), texCoords.ToArray(), indices.ToArray());
+                        var internalMesh = new Mesh(vertices.ToArray(), normals.ToArray(), texCoords.ToArray(), indices.ToArray(), this);
 
-                        PBRShader pbrShader = new PBRShader(internalMesh);
-                        ShaderCache.AddShader(pbrShader);
+                        PBRShader pbrShader = new PBRShader(internalMesh, Entity.GetComponent<TransformComponent>());
+                        RenderCache.AddShader(pbrShader);
 
-
-                        Meshes.Add(internalMesh);
                     }
                 }
             }
-            ShaderCache.CompileShaders();
+            RenderCache.CompileShaders();
 
         }
 
@@ -340,12 +360,12 @@ namespace Luminosity3D.Builtin
 
         public override void OnDisable()
         {
-            ShaderCache.UnloadShaders();
+            RenderCache.UnloadShaders();
         }
 
         public override void OnEnable()
         {
-            ShaderCache.CompileShaders();
+            RenderCache.CompileShaders();
         }
 
         public override void EarlyUpdate()
@@ -376,3 +396,4 @@ namespace Luminosity3D.Builtin
         }
     }
 }
+

@@ -13,76 +13,51 @@ namespace Luminosity3D.Utils
 {
     public class RoslynCodeLoader
     {
-        private Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
 
         public RoslynCodeLoader()
         {
         }
 
-        public Assembly LoadAndCompileCSharpFiles(string assemblyName, string[] filePaths)
+        //use config from individual mod later.
+        public Assembly LoadAndCompileDlls(string mainAssemblyName,string[] dllPaths)
         {
+
             try
             {
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                
+                Assembly targetAssembly = null;
+                var assemblies = AssemblyLoadContext.Default.Assemblies
                     .Where(a => !a.IsDynamic)
                     .Select(a => a.Location);
 
-                Logger.Log($"Referenced {assemblies.Count()} dlls for {assemblyName}");
+                Logger.Log($"Found {assemblies.Count()} loaded assemblies.");
 
-                var compilation = CSharpCompilation.Create(assemblyName)
-                    .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                    .AddReferences(AppDomain.CurrentDomain.GetAssemblies()
-                        .Where(a => !a.IsDynamic)
-                        .Select(a =>
-                        {
-                            if (!string.IsNullOrEmpty(a.Location))
-                            {
-                                return MetadataReference.CreateFromFile(a.Location);
-                            }
-                            else
-                            {
-                                Logger.Log($"Skipping empty location for assembly: {a.FullName}");
-                                return null;
-                            }
-                        })
-                        .Where(reference => reference != null))
-
-                    .AddSyntaxTrees(filePaths.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path))));
-
-                using (var ms = new MemoryStream())
+                foreach (var dllPath in dllPaths)
                 {
-                    var result = compilation.Emit(ms);
-                    if (!result.Success)
+                    var dll = Path.GetFullPath(dllPath);
+                    try
                     {
-                        foreach (var diagnostic in result.Diagnostics)
+                        Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
+                        if (Path.GetFileNameWithoutExtension(dll) == mainAssemblyName || Path.GetFileName(dll) == mainAssemblyName)
                         {
-                            Logger.Log(diagnostic.ToString());
+                            targetAssembly = assembly;
+                            Logger.Log($"Found host assembly: {dll}..");
                         }
-                        return null;
                     }
-
-                    ms.Seek(0, SeekOrigin.Begin);
-                    Assembly assembly = Assembly.Load(ms.ToArray());
-
-                    // Store the loaded assembly in the dictionary for later access
-                    loadedAssemblies[assemblyName] = assembly;
-
-                    return assembly;
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Error loading {dll}: {ex.Message}");
+                        // Handle the error, e.g., decide whether to continue or abort loading.
+                    }
                 }
+                return targetAssembly;
             }
             catch (Exception ex)
             {
-                Logger.Log($"An exception occurred: {ex}");
-                return null;
+                Logger.Log($"Error while loading assemblies: {ex.Message}");
+                // Handle the error at a higher level, e.g., application-level exception handling.
             }
-        }
 
-        public Assembly GetLoadedAssembly(string assemblyName)
-        {
-            if (loadedAssemblies.ContainsKey(assemblyName))
-            {
-                return loadedAssemblies[assemblyName];
-            }
             return null;
         }
     }

@@ -77,19 +77,20 @@ namespace Luminosity3D.PKGLoader
 
             var lupkg = UnpackPKG(name);
 
-            var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.cs", SearchOption.AllDirectories);
-            Logger.Log($"Found {csFiles.Count()} csharp files in {name}, building and linking assembly..");
+            var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
+            Logger.Log($"Found {csFiles.Count()} dll files in {name}, loading assemblys..");
 
             // Use the RoslynCodeLoader to load and compile C# files
             var codeLoader = new RoslynCodeLoader();
-            var compiledAssembly = codeLoader.LoadAndCompileCSharpFiles(lupkg.PakName, csFiles);
+            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.PakName, csFiles);
 
             if (compiledAssembly != null)
             {
                 var mod = new LUPKMod(lupkg.PakName, compiledAssembly, lupkg);
                 mod.InvokeOnLoadMethod();
                 LoadedMods.Add(mod);
-                Logger.Log($"OnLoad called for {name}!");
+                timer.Stop();
+                Logger.Log($"Successfully loaded {name} in {timer.ElapsedMilliseconds}ms!");
                 return mod;
             }
 
@@ -107,12 +108,12 @@ namespace Luminosity3D.PKGLoader
 
             var lupkg = UnpackPKGFromAutoLoad(name);
             
-            var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.cs", SearchOption.AllDirectories);
-            Logger.Log($"Found {csFiles.Count()} csharp files in {name}, building and linking assembly..");
+            var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
+            Logger.Log($"Found {csFiles.Count()} dll files in {name}, loading assemblys..");
 
             // Use the RoslynCodeLoader to load and compile C# files
             var codeLoader = new RoslynCodeLoader();
-            var compiledAssembly = codeLoader.LoadAndCompileCSharpFiles(lupkg.PakName, csFiles);
+            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.PakName,csFiles);
 
             if (compiledAssembly != null)
             {

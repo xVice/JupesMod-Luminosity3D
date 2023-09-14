@@ -14,6 +14,8 @@ namespace Luminosity3D
         public PackageLoader PackageLoader { get; set; } = new PackageLoader();
         public Renderer Renderer { get; set; } = null;
 
+ 
+
         public DebugConsole? Console { get => GetConsole(); }
 
         public KeyboardState KeyboardState { get => Renderer.KeyboardState; }
@@ -67,40 +69,55 @@ namespace Luminosity3D
 
         public void Start()
         {
-            foreach (var ent in SceneManager.ActiveScene.Entities)
+            var scene = SceneManager.ActiveScene;
+
+            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
+
+            if (sortedList.Count() != 0)
             {
-                lock (ent)
-                {
+                for (int i = sortedList.Count() - 1; i >= 0; i--)
+                { 
+                    var ent = sortedList.ElementAt(i);
                     ent.Start();
                 }
-
             }
+
+   
         }
 
         public void Awake()
         {
-            foreach (var ent in SceneManager.ActiveScene.Entities)
+            var scene = SceneManager.ActiveScene;
+
+            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
+
+
+            if (sortedList.Count() != 0)
             {
-                lock (ent)
+                for (int i = sortedList.Count() - 1; i >= 0; i--)
                 {
+                    var ent = sortedList.ElementAt(i);
                     ent.Awake();
                 }
-
             }
         }
 
         public void Update()
         {
-            
-            foreach(var ent in SceneManager.ActiveScene.Entities)
+            var scene = SceneManager.ActiveScene;
+
+            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
+
+
+            if (sortedList.Count() != 0)
             {
-                lock (ent)
+                for (int i = sortedList.Count() - 1; i >= 0; i--)
                 {
+                    var ent = sortedList.ElementAt(i);
                     ent.EarlyUpdate();
                     ent.Update();
                     ent.LateUpdate();
-                }          
-
+                }
             }
         }
 
@@ -120,12 +137,18 @@ namespace Luminosity3D
         }
 
 
-        public List<Entity> FindObjectsOfType<T>() where T : Component
+        public List<Entity> FindEntitysWithObjectsOfType<T>() where T : Component
+        {
+            return SceneManager.ActiveScene.FindEntitysWithObjectsOfType<T>();
+        }
+
+        public List<T> FindComponents<T>() where T : Component
         {
             return SceneManager.ActiveScene.FindObjectsOfType<T>();
         }
 
-        public List<Component> GetComponents<T>(Entity ent) where T : Component
+
+        public List<T> GetComponents<T>(Entity ent) where T : Component
         {
             return ent.GetComponents<T>();
         }

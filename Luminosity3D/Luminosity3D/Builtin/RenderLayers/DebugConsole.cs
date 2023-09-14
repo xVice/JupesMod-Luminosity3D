@@ -6,6 +6,7 @@ using Luminosity3DRendering;
 using OpenTK.ImGui;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -369,22 +370,31 @@ namespace Luminosity3D.Builtin.RenderLayers
                     // Group to contain the tree view and input box/buttons
                     ImGui.BeginGroup();
 
-                    foreach (var entity in Engine.Instance.SceneManager.ActiveScene.Entities)
+                    var ents = Engine.Instance.SceneManager.ActiveScene.Entities.OrderBy(x => x.ExecutionOrder).Reverse().ToList();
+
+                    for (int i = ents.Count() - 1; i >= 0; i--)
                     {
+                        var entity = ents[i];
                         if (ImGui.TreeNode(entity.Name))
                         {
-                            foreach (var component in entity.Components)
+                            var components = entity.Components.OrderBy(x => x.ExecutionOrder).ToList();
+                            for (int j  = components.Count() - 1; j >= 0; j--)
                             {
-                                if (ImGui.TreeNode(component.Name))
+                                var component = components[j];
+                                if (ImGui.TreeNode(component.GetType().ToString()))
                                 {
                                     // Display fields of the component using reflection
+                                    ImGui.Text("Fields");
+                                    ImGui.BeginGroup();
                                     var fields = component.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
                                     foreach (var field in fields)
                                     {
                                         var fieldValue = field.GetValue(component);
                                         ImGui.Text($"{field.Name}: {fieldValue}");
                                     }
-
+                                    ImGui.EndGroup();
+                                    ImGui.Text("Methods");
+                                    ImGui.BeginGroup();
                                     // Enumerate methods and add buttons to invoke them
                                     var methods = component.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                                     foreach (var method in methods)
@@ -397,7 +407,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                                             }
                                         }
                                     }
-
+                                    ImGui.EndGroup();
                                     ImGui.TreePop(); // Close component node
                                 }
                                 //ImGui.TreePop(); // Close component node
@@ -405,8 +415,6 @@ namespace Luminosity3D.Builtin.RenderLayers
                             ImGui.TreePop(); // Close entity node
                         }
                     }
-
-
 
                     ImGui.EndGroup(); // End the group containing tree view and input box/buttons
 

@@ -31,7 +31,7 @@ namespace Luminosity3DScening
             return JsonConvert.SerializeObject(this, Formatting.Indented);
         }
 
-        public List<Entity> FindObjectsOfType<T>() where T : Component
+        public List<Entity> FindEntitysWithObjectsOfType<T>() where T : Component
         {
             List<Entity> result = new List<Entity>();
 
@@ -41,6 +41,22 @@ namespace Luminosity3DScening
                 if (entity.GetComponent<T>() != null)
                 {
                     result.Add(entity);
+                }
+            }
+
+            return result;
+        }
+
+        public List<T> FindObjectsOfType<T>() where T : Component
+        {
+            List<T> result = new List<T>();
+
+            foreach (Entity entity in Entities)
+            {
+                // Check if the entity has a component of type T attached
+                if (entity.GetComponent<T>() != null)
+                {
+                    result.AddRange(entity.GetComponents<T>());
                 }
             }
 
