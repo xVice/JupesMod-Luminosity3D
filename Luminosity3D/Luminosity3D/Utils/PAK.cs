@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Luminosity3D.Utils;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -84,10 +86,23 @@ namespace Luminosity3DPAK
         }
     }
 
+    public class PAKMetaData
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+
+        public string Namespace { get; set; }
+        public string Class { get; set; }
+        
+
+
+    }
+
     public class PAK
     {
         public string FilePath = string.Empty;
         public string UnpackedPath = string.Empty;
+        public PAKMetaData metadata = null;
         public string CheckSum { get => ComputePackedCheckSum(); }
 
         private readonly IStorageProvider storageProvider;
@@ -140,6 +155,11 @@ namespace Luminosity3DPAK
             }
         }
 
+        public byte[] GetIcon()
+        {
+            return GetEntryBytes("./icon.png");
+        }
+
         public PAK(string path)
         {
             this.FilePath = path;
@@ -173,10 +193,25 @@ namespace Luminosity3DPAK
             {
                 throw new InvalidOperationException("Storage provider not initialized.");
             }
-
+            
             ZipFile.ExtractToDirectory(FilePath, dest);
 
             UnpackedPath = dest;
+
+            if (File.Exists(UnpackedPath + "/metadata.json"))
+            {
+                metadata = JsonConvert.DeserializeObject<PAKMetaData>(File.ReadAllText(UnpackedPath + "/metadata.json"));
+            }
+        }
+
+        public PAKMetaData ExtractMetadata()
+        {
+            if (storageProvider == null)
+            {
+                throw new InvalidOperationException("Storage provider not initialized.");
+            }
+
+            return JsonConvert.DeserializeObject<PAKMetaData>(GetEntry("metadata.json"));
         }
 
         public void Pack(IEnumerable<string> sourceFiles)

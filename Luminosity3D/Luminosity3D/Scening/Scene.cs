@@ -71,7 +71,9 @@ namespace Luminosity3DScening
         public Entity InstantiateEntity(Entity entity)
         {
             Entities.Add(entity);
+            
             entity.Awake();
+            
             return entity;
         }
 

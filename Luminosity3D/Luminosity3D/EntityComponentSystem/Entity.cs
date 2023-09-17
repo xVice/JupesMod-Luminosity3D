@@ -95,7 +95,7 @@ namespace Luminosity3D.EntityComponentSystem
         {
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list
+            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list we made once (excludes old components but isnt that bad for now)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.Start();

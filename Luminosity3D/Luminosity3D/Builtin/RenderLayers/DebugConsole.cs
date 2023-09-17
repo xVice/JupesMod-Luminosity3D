@@ -4,6 +4,7 @@ using Luminosity3D.PKGLoader;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
 using OpenTK.ImGui;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections;
@@ -328,17 +329,26 @@ namespace Luminosity3D.Builtin.RenderLayers
                         if (ImGui.BeginMenu("Demos"))
                         {
                           
-                            if (ImGui.MenuItem("IMGUI Demo", showDemos))
+                            if (ImGui.MenuItem("IMGUI Demo"))
                             {
-                                ImGui.ShowDemoWindow();
+                                showDemos = !showDemos;
                             }
 
-                            if (ImGui.MenuItem("Summon Demo Entity for explorer"))
+                            if (ImGui.MenuItem("Summon Demo Entitys for explorer/testing"))
                             {
                                 var ent = new Entity("Test Entity");
                                 var comp = ent.AddComponent<TestingComponent>(new TestingComponent());
 
                                 Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent);
+
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("Test3d", "./Fish.obj"));
+
+
+                                var ent3 = new Entity("Test Cam");
+                                ent3.AddComponent<Camera>(new Camera(ent3, 65, 1920 / 1080 , 0.001f, 1000f));
+                                var comp3 = ent3.AddComponent<CameraController>(new CameraController(ent3));
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent3);
+
                             }
                             ImGui.EndMenu();
                         }
@@ -386,7 +396,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                                     // Display fields of the component using reflection
                                     ImGui.Text("Fields");
                                     ImGui.BeginGroup();
-                                    var fields = component.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+                                    var fields = component.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
                                     foreach (var field in fields)
                                     {
                                         var fieldValue = field.GetValue(component);
@@ -396,7 +406,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                                     ImGui.Text("Methods");
                                     ImGui.BeginGroup();
                                     // Enumerate methods and add buttons to invoke them
-                                    var methods = component.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                                    var methods = component.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
                                     foreach (var method in methods)
                                     {
                                         if (method.GetParameters().Length == 0) // Check if the method has no parameters
@@ -445,6 +455,11 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
 
                 ImGui.End();
+            }
+
+            if (showDemos)
+            {
+                ImGui.ShowDemoWindow();
             }
         }
 

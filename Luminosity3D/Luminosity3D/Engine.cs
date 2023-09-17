@@ -19,13 +19,21 @@ namespace Luminosity3D
         public DebugConsole? Console { get => GetConsole(); }
 
         public KeyboardState KeyboardState { get => Renderer.KeyboardState; }
+        public MouseState MouseState { get => Renderer.MouseState; }
 
-        public double deltaTime { get; set; }
+        public double DeltaTime
+        {
+            get => _deltaTime;
+            set => _deltaTime = value;
+        }
+
+        private double _deltaTime = 0;
         public double time { get; set; }
         public double timeScale { get; set; }
         public string EngineName { get; private set; }
         public static Engine Instance { get; private set; }
         public bool isRunning = false;
+
 
         public Engine(string EngineName)
         {
@@ -66,6 +74,7 @@ namespace Luminosity3D
             }
             
         }
+
 
         public void Start()
         {

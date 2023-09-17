@@ -11,7 +11,7 @@ namespace Luminosity3D.EntityComponentSystem
         public Entity Entity { get; set; }
         public Engine Engine { get => Entity.Engine; }
 
-        private double deltaTime { get => Engine.deltaTime; }
+        private double deltaTime { get => Engine.DeltaTime; }
 
         public int ExecutionOrder { get; set; } = int.MaxValue;
         public string Name { get; set; }
@@ -24,6 +24,11 @@ namespace Luminosity3D.EntityComponentSystem
             Description = description;
             ExecutionOrder = executionOrder;
  
+        }
+
+        protected Component(Entity entity)
+        {
+            Entity = entity;
         }
 
         public abstract void Awake();

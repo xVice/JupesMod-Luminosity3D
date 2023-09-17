@@ -15,6 +15,10 @@ using OpenTK.Graphics.OpenGL4;
 using Luminosity3D.Builtin.RenderLayers;
 using Luminosity3D.Builtin;
 using Luminosity3DScening;
+using System.Drawing;
+using System.Drawing.Imaging;
+using Luminosity3D.EntityComponentSystem;
+using System.Reflection;
 
 namespace Luminosity3DRendering
 {
@@ -50,7 +54,32 @@ namespace Luminosity3DRendering
             base.OnRenderThreadStarted();
 
         }
+        
+        public int LoadTexture(string path)
+        {
+            Bitmap bitmap = new Bitmap(path);
 
+            // Generate a texture ID
+            int textureId;
+            GL.GenTextures(1, out textureId);
+            GL.BindTexture(TextureTarget.Texture2D, textureId);
+
+            // Prepare the image data and upload it to the GPU
+            BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                                              ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+                          OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+            bitmap.UnlockBits(data);
+
+            // Set texture parameters (optional)
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+            return textureId;
+        }
+        
         protected override void OnLoad()
         {
             base.OnLoad();
@@ -68,11 +97,8 @@ namespace Luminosity3DRendering
             Engine.PackageLoader.LoadPaks();
             timer.Stop();
 
-            /*
-            var ent = new Luminosity3D.EntityComponentSystem.Entity("Test3dobj");
-            var comp = ent.AddComponent<MeshBatchComponent>(MeshBatchComponent.LoadFromFile(ent,"./Fish.obj"));
-            Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent);
-            */
+            
+            
 
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
             Engine.Awake();
@@ -93,24 +119,58 @@ namespace Luminosity3DRendering
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
-
+          
             GL.ClearColor(new Color4(0, 32, 48, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-
-            var meshBatches = Engine.FindComponents<MeshBatchComponent>();
-
-            if (meshBatches != null || meshBatches.Count != 0)
+            List<MeshBatch> meshBatches = null;
+            if(Engine.FindComponents<MeshBatch>().Count != 0)
             {
+                meshBatches = Engine.FindComponents<MeshBatch>();
+            }
+
+            if(meshBatches != null)
+            {
+                //use active cam instead here.
+                Entity cam = null;
+                if (Engine.FindComponents<CameraController>().FirstOrDefault() != null)
+                {
+                    cam = Engine.FindComponents<CameraController>().First().Entity;
+                }
+
+
+                Matrix4 viewMatrix = cam.GetComponent<Camera>().ViewMatrix;
+                Matrix4 projectionMatrix = cam.GetComponent<Camera>().ProjectionMatrix;
+
                 foreach (var meshBatch in meshBatches)
                 {
-                    var renderCache = meshBatch.RenderCache;
-                    foreach (var render in renderCache.Caches)
+                    var transformComponent = meshBatch.Entity.GetComponent<TransformComponent>();
+
+                    if (transformComponent != null)
                     {
-                        render.MeshData.Render();
+                        // Calculate the model matrix
+                        Matrix4 modelMatrix = transformComponent.GetTransformMatrix() * Matrix4.Identity;
+
+                        // Calculate the Model-View-Projection (MVP) matrix
+                        Matrix4 MVP = modelMatrix * viewMatrix * projectionMatrix;
+
+                        foreach (var mesh in meshBatch.meshes)
+                        {
+                            var shader = mesh.shader;
+                            shader.SetUniform("mvpMatrix", MVP);
+                            shader.SetUniform("modelMatrix", modelMatrix);
+                        }
+
+
+                        meshBatch.OnRender();
                     }
+
+               
                 }
             }
+            
+
+
 
             if (renderLayers.Count != 0)
             {
@@ -135,7 +195,9 @@ namespace Luminosity3DRendering
         {
             base.OnUpdateFrame(e);
 
-         
+            // Calculate delta time and assign it to Engine.DeltaTime
+            Engine.DeltaTime = (float)e.Time;
+
             if (KeyboardState.IsKeyDown(Keys.Escape))
             {
                 Close();
@@ -144,11 +206,9 @@ namespace Luminosity3DRendering
 
             Engine.Update();
 
-
             IMGUIController.Update(this, (float)e.Time);
-
-  
         }
+
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {

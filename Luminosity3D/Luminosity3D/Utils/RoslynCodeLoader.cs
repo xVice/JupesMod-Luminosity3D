@@ -1,30 +1,25 @@
-﻿using Luminosity3DPAK;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+using Luminosity3DPAK;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Runtime.Loader;
 using Luminosity3D.LuminosityPackageLoader;
+using System.Reflection.Emit;
 
 namespace Luminosity3D.Utils
 {
     public class RoslynCodeLoader
     {
 
-        public RoslynCodeLoader()
-        {
-        }
 
-        //use config from individual mod later.
-        public Assembly LoadAndCompileDlls(string mainAssemblyName,string[] dllPaths)
+        public Assembly LoadAndCompileDlls(string mainAssemblyName, string[] dllPaths)
         {
 
             try
             {
-                
+
                 Assembly targetAssembly = null;
                 var assemblies = AssemblyLoadContext.Default.Assemblies
                     .Where(a => !a.IsDynamic)
@@ -37,7 +32,7 @@ namespace Luminosity3D.Utils
                     var dll = Path.GetFullPath(dllPath);
                     try
                     {
-                        Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
+                        Assembly assembly = Assembly.LoadFile(dll);
                         if (Path.GetFileNameWithoutExtension(dll) == mainAssemblyName || Path.GetFileName(dll) == mainAssemblyName)
                         {
                             targetAssembly = assembly;
@@ -60,5 +55,7 @@ namespace Luminosity3D.Utils
 
             return null;
         }
+
     }
 }
+

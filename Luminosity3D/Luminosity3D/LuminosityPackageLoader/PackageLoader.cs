@@ -36,6 +36,11 @@ namespace Luminosity3D.PKGLoader
        
         }
 
+        public bool IsModLoaded(string name)
+        {
+            return LoadedMods.Where(x => x.PAK.metadata.Name == name).Any();
+        }
+
         public void LoadPaks()
         {
             if (Directory.Exists(LUPKDir))
@@ -82,11 +87,11 @@ namespace Luminosity3D.PKGLoader
 
             // Use the RoslynCodeLoader to load and compile C# files
             var codeLoader = new RoslynCodeLoader();
-            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.PakName, csFiles);
+            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, csFiles);
 
             if (compiledAssembly != null)
             {
-                var mod = new LUPKMod(lupkg.PakName, compiledAssembly, lupkg);
+                var mod = new LUPKMod(compiledAssembly, lupkg);
                 mod.InvokeOnLoadMethod();
                 LoadedMods.Add(mod);
                 timer.Stop();
@@ -113,11 +118,11 @@ namespace Luminosity3D.PKGLoader
 
             // Use the RoslynCodeLoader to load and compile C# files
             var codeLoader = new RoslynCodeLoader();
-            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.PakName,csFiles);
+            var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, csFiles);
 
             if (compiledAssembly != null)
             {
-                var mod = new LUPKMod(lupkg.PakName, compiledAssembly, lupkg);
+                var mod = new LUPKMod(compiledAssembly, lupkg);
                 mod.InvokeOnLoadMethod();
                 LoadedMods.Add(mod);
                 Logger.Log($"OnLoad called for {name}!");

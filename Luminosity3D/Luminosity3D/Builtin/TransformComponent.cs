@@ -1,10 +1,10 @@
 ﻿using glTFLoader;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,11 +26,11 @@ namespace Luminosity3D.Builtin
             base.ExecutionOrder = 1;
         }
 
-        public Matrix4x4 GetTransformMatrix()
+        public Matrix4 GetTransformMatrix()
         {
-            var translationMatrix = Matrix4x4.CreateTranslation(Position);
-            var rotationMatrix = Matrix4x4.CreateRotationX(Rotation.X) * Matrix4x4.CreateRotationY(Rotation.Y) * Matrix4x4.CreateRotationZ(Rotation.Z);
-            var scaleMatrix = Matrix4x4.CreateScale(Scale);
+            var translationMatrix = Matrix4.CreateTranslation(Position);
+            var rotationMatrix = Matrix4.CreateRotationX(Rotation.X) * Matrix4.CreateRotationY(Rotation.Y) * Matrix4.CreateRotationZ(Rotation.Z);
+            var scaleMatrix = Matrix4.CreateScale(Scale);
             return scaleMatrix * rotationMatrix * translationMatrix;
         }
         public override void Awake()
