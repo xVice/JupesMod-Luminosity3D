@@ -91,6 +91,8 @@ namespace Luminosity3DPAK
         public string Name { get; set; }
         public string Description { get; set; }
 
+        public string[] Dependencies { get; set; }
+
         public string Namespace { get; set; }
         public string Class { get; set; }
         

@@ -170,6 +170,17 @@ namespace Luminosity3D.Builtin.RenderLayers
         }
     }
 
+    public class MeisterCommand : DebugCommand
+    {
+        public override string Command { get => "meister"; }
+        public override string Description { get => "RandomMobamba"; }
+
+        public override void Execute(string[] args)
+        {
+            Random rand = new Random(); for (int i = 0; i < 10; i++) { Logger.Log(rand.Next(0, 10).ToString()); } //One-Line Wow
+        }
+    }
+
     public class SummonCommand : DebugCommand
     {
         public override string Command { get => "summon"; }
@@ -268,6 +279,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             CommandManager.RegisterCommand(new ExecCommand());
             CommandManager.RegisterCommand(new LoadLUPKCommand());
             CommandManager.RegisterCommand(new GetActiveDirectory());
+            CommandManager.RegisterCommand(new MeisterCommand());
             Logger.Log($"Loaded {CommandManager.Commands.Count()} commands into the manager!");
         }
 
@@ -311,7 +323,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                             if(ImGui.MenuItem("Load Internal Profiler"))
                             {
                                 Logger.Log("Loading Internal Profiler from lupk..");
-                                Engine.Instance.PackageLoader.LoadPackage("Profiler");
+                                Engine.Instance.PackageLoader.LoadPackage("Profilingmod");
                             }
                             ImGui.EndMenu();
                         }
@@ -336,18 +348,28 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                             if (ImGui.MenuItem("Summon Demo Entitys for explorer/testing"))
                             {
+                                var ent3 = new Entity("Test Cam");
+                                var camcomp = ent3.AddComponent<Camera>(new Camera(ent3, 65, 1920 / 1080, 0.001f, 1000f));
+                                //camcomp.Position = new Vector3(-15, -15, -15);
+                                var comp3 = ent3.AddComponent<CameraController>(new CameraController(ent3));
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent3);
+
                                 var ent = new Entity("Test Entity");
                                 var comp = ent.AddComponent<TestingComponent>(new TestingComponent());
 
                                 Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent);
 
-                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("Test3d", "./Fish.obj"));
+                                var ent2 = new Entity("Test Entity 2 (For Bus testing, hit the SendBusCommand button in the console!)");
+                                var comp2 = ent2.AddComponent<TestingComponent>(new TestingComponent());
+
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent2);
 
 
-                                var ent3 = new Entity("Test Cam");
-                                ent3.AddComponent<Camera>(new Camera(ent3, 65, 1920 / 1080 , 0.001f, 1000f));
-                                var comp3 = ent3.AddComponent<CameraController>(new CameraController(ent3));
-                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(ent3);
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("Test3d", "./Fish.obj", new Vector3(0,0,0)));
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("Test3d2", "./Fish.obj", new Vector3(15, 15, 15)));
+                                Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("Test3d3", "./Fish.obj", new Vector3(150, 150, 150)));
+
+
 
                             }
                             ImGui.EndMenu();

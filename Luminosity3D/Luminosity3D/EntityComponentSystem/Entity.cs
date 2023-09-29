@@ -81,7 +81,7 @@ namespace Luminosity3D.EntityComponentSystem
         }
 
 
-        public Component AddComponent<T>(T component) where T : Component
+        public T AddComponent<T>(T component) where T : Component
         {
             Components.Add(component);
             component.Entity = this;
@@ -95,7 +95,7 @@ namespace Luminosity3D.EntityComponentSystem
         {
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list we made once (excludes old components but isnt that bad for now)
+            for (int i = sortedComps.Count() - 1; i >= 0; i--)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.Start();
@@ -108,7 +108,7 @@ namespace Luminosity3D.EntityComponentSystem
         {
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list
+            for (int i = sortedComps.Count() - 1; i >= 0; i--)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.Awake();
@@ -119,22 +119,21 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void Update()
         {
-
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list
+            for (int i = sortedComps.Count() - 1; i >= 0; i--)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.Update();
-
             }
         }
+
 
         public void EarlyUpdate()
         {
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list
+            for (int i = sortedComps.Count() - 1; i >= 0; i--)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.EarlyUpdate();
@@ -146,7 +145,7 @@ namespace Luminosity3D.EntityComponentSystem
         {
             var sortedComps = Components.OrderBy(x => x.ExecutionOrder).Reverse();
 
-            for (int i = sortedComps.Count(); i < 0; i--)//Use for loop to avoid IEnumerable exception by just looping backwards and getting a refrence to it from the list
+            for (int i = sortedComps.Count() - 1; i >= 0; i--)
             {
                 var comp = sortedComps.ElementAt(i);
                 comp.LateUpdate();

@@ -1,4 +1,5 @@
 ﻿using Luminosity3D.EntityComponentSystem;
+using Luminosity3D.Utils;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
@@ -13,76 +14,23 @@ namespace Luminosity3D.Builtin
     {
         private Camera camera;
         private float moveSpeed = 5.0f;
+        private float strafeSpeed = 3.0f; // Adjust the strafe speed as needed
         private float sensitivity = 0.2f;
+        private KeyboardState keyboardState;
 
         public CameraController(Entity entity) : base(entity)
         {
             camera = entity.GetComponent<Camera>();
         }
 
-        public override void Update()
-        {
-            // Get the current keyboard state
-            KeyboardState keyboardState = Engine.Instance.KeyboardState;
-
-            // Move the camera based on input
-            Vector3 moveDirection = Vector3.Zero;
-
-            if (keyboardState.IsKeyDown(Keys.W))
-                moveDirection += camera.Forward;
-            if (keyboardState.IsKeyDown(Keys.S))
-                moveDirection -= camera.Forward;
-            if (keyboardState.IsKeyDown(Keys.Space))
-                moveDirection += Vector3.UnitY;
-            if (keyboardState.IsKeyDown(Keys.LeftShift))
-                moveDirection -= Vector3.UnitY;
-
-            // Normalize the movement vector to prevent faster diagonal movement
-            if (moveDirection.LengthSquared > 0)
-                moveDirection.Normalize();
-
-            // Move the camera
-            camera.Position += moveDirection * moveSpeed * (float)Engine.Instance.DeltaTime;
-
-            // Rotate the camera based on mouse input
-            var mouseDelta = Engine.Instance.MouseState.Delta;
-            camera.Yaw += mouseDelta.X * sensitivity;
-            camera.Pitch -= mouseDelta.Y * sensitivity;
-
-            // Clamp the camera's pitch to avoid flipping
-            camera.Pitch = MathHelper.Clamp(camera.Pitch, -MathHelper.PiOver2 + 0.01f, MathHelper.PiOver2 - 0.01f);
-        }
-
-        public override void Start()
-        {
-            // Set the initial camera position and orientation if needed
-            camera.Position = new Vector3(0, 1, 3);
-            camera.Yaw = 0;
-            camera.Pitch = 0;
-        }
-
-        public override void OnEnable()
-        {
-            // Lock and hide the mouse cursor when the camera controller is enabled
-            Engine.Instance.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Grabbed;
-
-        }
-
-        public override void OnDisable()
-        {
-            // Unlock and show the mouse cursor when the camera controller is disabled
-            Engine.Instance.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Normal;
-
-        }
-
         public override void Awake()
         {
-           
+          
         }
 
         public override void EarlyUpdate()
         {
-          
+         
         }
 
         public override void LateUpdate()
@@ -95,7 +43,94 @@ namespace Luminosity3D.Builtin
           
         }
 
-        // Implement other abstract methods as needed
-        // ...
+        public override void OnDisable()
+        {
+           
+        }
+
+        public override void OnEnable()
+        {
+          
+        }
+
+        public override void Start()
+        {
+           
+            keyboardState = Engine.KeyboardState;
+        }
+
+        public override void Update()
+        {
+            // Ensure that deltaTime is non-zero to prevent division by zero
+            float deltaTime = (float)Math.Max(Engine.DeltaTime, float.Epsilon);
+
+            if (keyboardState != null)
+            {
+                // Handle mouse input
+                var mouseState = Engine.MouseState;
+                
+                // Calculate the change in mouse position
+                float mouseXDelta = mouseState.Delta.X;
+                float mouseYDelta = mouseState.Delta.Y;
+
+                // Adjust the camera's yaw and pitch based on mouse movement
+                float sensitivity = 0.1f; // Adjust the sensitivity to your preference
+                camera.Yaw += mouseXDelta * sensitivity * deltaTime;
+                camera.Pitch += mouseYDelta * sensitivity * deltaTime;
+
+                // Limit the pitch angle to prevent camera flipping
+                float maxPitch = MathHelper.DegreesToRadians(89.0f);
+                camera.Pitch = MathHelper.Clamp(camera.Pitch, -maxPitch, maxPitch);
+
+                // Calculate the new direction the camera is looking
+                Quaternion rotation = Quaternion.FromAxisAngle(Vector3.UnitY, camera.Yaw) *
+                                     Quaternion.FromAxisAngle(Vector3.UnitX, camera.Pitch);
+                camera.Target = Vector3.Transform(-Vector3.UnitZ, rotation);
+                camera.Target.Normalize();
+
+                // Update the view matrix with the new position, target, and up vectors
+                camera.UpdateViewMatrix(camera.Position, camera.Position + camera.Target, camera.Up);
+
+                // Handle movement based on keyboard input
+                Vector3 moveDirection = Vector3.Zero;
+
+                if (keyboardState.IsKeyDown(Keys.W))
+                {
+                    camera.Position += camera.Target * moveSpeed * deltaTime;
+                }
+
+                if (keyboardState.IsKeyDown(Keys.S))
+                {
+                    camera.Position -= camera.Target * moveSpeed * deltaTime;
+                }
+
+                if (keyboardState.IsKeyDown(Keys.A))
+                {
+                    // Strafe left
+                    camera.Strafe(-strafeSpeed * deltaTime); // Adjust for deltaTime
+                }
+
+                if (keyboardState.IsKeyDown(Keys.D))
+                {
+                    // Strafe right
+                    camera.Strafe(strafeSpeed * deltaTime); // Adjust for deltaTime
+                }
+
+                // Normalize the movement vector to prevent faster diagonal movement
+                if (moveDirection.LengthSquared > 0)
+                    moveDirection.Normalize();
+
+                // Update the projection matrix (it doesn't change based on input)
+                camera.UpdateProjectionMatrix();
+            }
+            else
+            {
+                keyboardState = Engine.KeyboardState;
+            }
+        }
+
+
+
+        // Other methods and properties as needed...
     }
 }

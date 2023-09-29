@@ -13,13 +13,15 @@ namespace Luminosity3D
         public SceneManager SceneManager { get; private set; } = new SceneManager();
         public PackageLoader PackageLoader { get; set; } = new PackageLoader();
         public Renderer Renderer { get; set; } = null;
-
- 
-
         public DebugConsole? Console { get => GetConsole(); }
-
         public KeyboardState KeyboardState { get => Renderer.KeyboardState; }
         public MouseState MouseState { get => Renderer.MouseState; }
+        private double _deltaTime = 0;
+        public double time { get; set; }
+        public double timeScale { get; set; }
+        public string EngineName { get; private set; }
+        public static Engine Instance { get; private set; }
+        public bool isRunning = false;
 
         public double DeltaTime
         {
@@ -27,12 +29,7 @@ namespace Luminosity3D
             set => _deltaTime = value;
         }
 
-        private double _deltaTime = 0;
-        public double time { get; set; }
-        public double timeScale { get; set; }
-        public string EngineName { get; private set; }
-        public static Engine Instance { get; private set; }
-        public bool isRunning = false;
+
 
 
         public Engine(string EngineName)
@@ -107,6 +104,28 @@ namespace Luminosity3D
                 {
                     var ent = sortedList.ElementAt(i);
                     ent.Awake();
+                }
+            }
+        }
+
+        public void InvokeFunction<T>(Action<T> function) where T : Component
+        {
+            var scene = SceneManager.ActiveScene;
+
+            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
+
+            if (sortedList.Count() != 0)
+            {
+                for (int i = sortedList.Count() - 1; i >= 0; i--)
+                {
+                    var ent = sortedList.ElementAt(i);
+                    foreach(var comp in ent.Components)
+                    {
+                        if (comp is T typedComponent)
+                        {
+                            function(typedComponent);
+                        }
+                    }
                 }
             }
         }

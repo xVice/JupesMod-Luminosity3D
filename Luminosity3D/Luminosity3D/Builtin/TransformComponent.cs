@@ -85,7 +85,13 @@ namespace Luminosity3D.Builtin
 
         public void TestLog()
         {
+            
             Logger.Log("Ohio");
+        }
+
+        public void SendBusCommand()
+        {
+            Bus.Send<TestingComponent>(x => x.TestLog());
         }
 
         public override void Awake()

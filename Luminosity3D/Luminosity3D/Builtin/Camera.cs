@@ -38,7 +38,7 @@ namespace Luminosity3D.Builtin
             Pitch = 0.0f;
 
             UpdateProjectionMatrix();
-            UpdateViewMatrix();
+            UpdateViewMatrix(Position, Target, Up);
         }
 
         public void UpdateProjectionMatrix()
@@ -51,9 +51,9 @@ namespace Luminosity3D.Builtin
             );
         }
 
-        public void UpdateViewMatrix()
+        public void UpdateViewMatrix(Vector3 position, Vector3 target, Vector3 up)
         {
-            ViewMatrix = Matrix4.LookAt(Position, Position + Target, Up);
+            ViewMatrix = Matrix4.LookAt(position, position + target, up);
         }
 
         public override void Update()
@@ -65,17 +65,29 @@ namespace Luminosity3D.Builtin
             Target = Vector3.Transform(-Vector3.UnitZ, rotation);
             Target.Normalize();
             Up = Vector3.Transform(Vector3.UnitY, rotation);
-            UpdateViewMatrix();
+
+            // Update the view matrix with the new position, target, and up vectors
+            UpdateViewMatrix(Position, Target, Up);
             UpdateProjectionMatrix();
         }
 
 
 
+        public void Strafe(float distance)
+        {
+            // Calculate the strafe direction perpendicular to the camera's forward vector
+            Vector3 strafeDirection = Vector3.Cross(Target, Up);
+            strafeDirection.Normalize();
+
+            // Move the camera position along the strafe direction
+            Position += strafeDirection * distance;
+        }
+
         public override void Start()
         {
             // Initialize the projection matrix when the camera component starts
             UpdateProjectionMatrix();
-            UpdateViewMatrix();
+            UpdateViewMatrix(Position, Target, Up);
         }
 
         public override void Awake()

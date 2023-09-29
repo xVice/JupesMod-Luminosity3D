@@ -19,21 +19,17 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using Luminosity3D.EntityComponentSystem;
 using System.Reflection;
+using Assimp;
+using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
+using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Luminosity3DRendering
 {
     public class Renderer : GameWindow
     {
-        
-        public enum RenderLayerType
+        public Renderer(int width, int height, string title) : base(GameWindowSettings.Default, new NativeWindowSettings() { Size = (width, height), Title = title })
         {
-            ImGui,
-            GLRender,
-            Entity,
-            HTML // Add more types as needed
-        }
-
-        public Renderer(int width, int height, string title) : base(GameWindowSettings.Default, new NativeWindowSettings() { Size = (width, height), Title = title }) {
             IMGUIController = new ImGuiController(this);
             CenterWindow(new Vector2i(1280, 720));
         }
@@ -44,41 +40,16 @@ namespace Luminosity3DRendering
         public Engine Engine { get => Engine.Instance; }
         public DebugConsole Console;
 
-        public void AddLayer(IRenderLayer layer)
+        public enum RenderLayerType
         {
-            renderLayers.Add(layer);
+            ImGui,
+            GLRender,
+            Entity,
+            HTML // Add more types as needed
         }
 
-        protected override void OnRenderThreadStarted()
-        {
-            base.OnRenderThreadStarted();
 
-        }
-        
-        public int LoadTexture(string path)
-        {
-            Bitmap bitmap = new Bitmap(path);
 
-            // Generate a texture ID
-            int textureId;
-            GL.GenTextures(1, out textureId);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-
-            // Prepare the image data and upload it to the GPU
-            BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
-                                              ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                          OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-            bitmap.UnlockBits(data);
-
-            // Set texture parameters (optional)
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-
-            return textureId;
-        }
         
         protected override void OnLoad()
         {
@@ -90,20 +61,19 @@ namespace Luminosity3DRendering
             AddLayer(Console);
 
             Logger.Log("Starting Jupe's Mod..");
+            Logger.Log("Deleting loaded lupk files..");
             Engine.PackageLoader.UnloadPaks();
 
-            Logger.Log("Loading lupks");
+            Logger.Log("Loading lupks..");
 
             Engine.PackageLoader.LoadPaks();
             timer.Stop();
 
-            
-            
-
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
             Engine.Awake();
             Engine.Start();
-      
+
+            
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -116,80 +86,48 @@ namespace Luminosity3DRendering
             IMGUIController.WindowResized(ClientSize.X, ClientSize.Y);
         }
 
+        bool isgrabbed = false;
+
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
-          
+
             GL.ClearColor(new Color4(0, 32, 48, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            List<MeshBatch> meshBatches = null;
-            if(Engine.FindComponents<MeshBatch>().Count != 0)
-            {
-                meshBatches = Engine.FindComponents<MeshBatch>();
-            }
+            //Put all this into render layers, or a single renderlayer, so its easier to layer stuff below certain objects.
+            var meshBatches = Engine.FindComponents<MeshBatch>();
 
-            if(meshBatches != null)
-            {
-                //use active cam instead here.
-                Entity cam = null;
-                if (Engine.FindComponents<CameraController>().FirstOrDefault() != null)
-                {
-                    cam = Engine.FindComponents<CameraController>().First().Entity;
-                }
-
-
-                Matrix4 viewMatrix = cam.GetComponent<Camera>().ViewMatrix;
-                Matrix4 projectionMatrix = cam.GetComponent<Camera>().ProjectionMatrix;
-
-                foreach (var meshBatch in meshBatches)
-                {
-                    var transformComponent = meshBatch.Entity.GetComponent<TransformComponent>();
-
-                    if (transformComponent != null)
-                    {
-                        // Calculate the model matrix
-                        Matrix4 modelMatrix = transformComponent.GetTransformMatrix() * Matrix4.Identity;
-
-                        // Calculate the Model-View-Projection (MVP) matrix
-                        Matrix4 MVP = modelMatrix * viewMatrix * projectionMatrix;
-
-                        foreach (var mesh in meshBatch.meshes)
-                        {
-                            var shader = mesh.shader;
-                            shader.SetUniform("mvpMatrix", MVP);
-                            shader.SetUniform("modelMatrix", modelMatrix);
-                        }
-
-
-                        meshBatch.OnRender();
-                    }
-
-               
-                }
-            }
-            
-
-
+            Bus.Send<MeshBatch>(x => x.OnRender());
+            //Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
 
             if (renderLayers.Count != 0)
             {
                 for (int i = renderLayers.Count() - 1; i >= 0; i--)
-
                 {
                     var renderLayer = renderLayers[i];
                     renderLayer.Render();
                 }
             }
 
-
-
+            if(KeyboardState.IsKeyPressed(Keys.F5))
+            {
+                isgrabbed = !isgrabbed;
+                if (isgrabbed)
+                {
+                    CursorState = CursorState.Grabbed;
+                }
+                else
+                {
+                    CursorState = CursorState.Normal;
+                }
+            }
 
             IMGUIController.Render();
 
             SwapBuffers();
-        }
 
+        }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
@@ -198,11 +136,6 @@ namespace Luminosity3DRendering
             // Calculate delta time and assign it to Engine.DeltaTime
             Engine.DeltaTime = (float)e.Time;
 
-            if (KeyboardState.IsKeyDown(Keys.Escape))
-            {
-                Close();
-                Environment.Exit(0);
-            }
 
             Engine.Update();
 
@@ -221,7 +154,19 @@ namespace Luminosity3DRendering
         protected override void OnTextInput(TextInputEventArgs e)
         {
             base.OnTextInput(e);
-            //IMGUIController.PressChar((char)e.Unicode);
+
+            
+        }
+
+
+        public void AddLayer(IRenderLayer layer)
+        {
+            renderLayers.Add(layer);
+        }
+
+        protected override void OnRenderThreadStarted()
+        {
+            base.OnRenderThreadStarted();
 
         }
 

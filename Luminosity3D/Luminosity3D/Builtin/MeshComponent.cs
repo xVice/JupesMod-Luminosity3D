@@ -1,129 +1,300 @@
 ﻿using Assimp;
-using glTFLoader;
-using glTFLoader.Schema;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
-using OpenTK.Graphics.Egl;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 
 namespace Luminosity3D.Builtin
 {
-    public interface IRenderable
-    {
-        public void OnRender();
-    }
+
 
     //This is insanity, straight insanity, thats why i am rewriting it now.
     //
     //right now its looking way better, i didnt do any shading though c:
+    //
+    //its shit, need to rewrite :c
+    //
+    //kinda better still 50% shit, only 35% nowit j
+    public class MeshModel
+    {
+        public string FilePath { get; set; }
+        public Scene Scene { get; set; }
+        private int vboVertices;
+        private int vboNormals;
+        private int vboTexCoords;
+        private int ebo;
+        private int VAO;
+        public float[] Vertices { get; private set; }
+        public float[] Normals { get; private set; }
+        public float[] TexCoords { get; private set; }
+
+        public MeshModel(string filePath, Scene scene = null)
+        {
+            FilePath = filePath;
+            if (scene != null)
+            {
+                Scene = scene;
+            }
+            else
+            {
+                LoadScene();
+            }
+        }
+
+        public Vector4 AssimpToVec(Color4D Color)
+        {
+            return new Vector4(Color.R, Color.G, Color.B, Color.A);
+        }
+
+        public void Bind()
+        {
+            GL.BindVertexArray(VAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboVertices);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+        }
+
+        public void Unbind()
+        {
+            GL.BindVertexArray(0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+        }
+
+        public void Render(Shader shader, Matrix4 viewMatrix, Matrix4 projectionMatrix, Matrix4 modelMatrix, Vector3 viewPos)
+        {
+            try
+            {
+                Bind();
+                CheckGLError("Binding");
+
+                // Set up shader uniforms
+                shader.Use();
+                shader.SetUniform("modelMatrix", modelMatrix);
+                shader.SetUniform("viewMatrix", viewMatrix);
+                shader.SetUniform("projectionMatrix", projectionMatrix);
+                shader.SetUniform("viewPos", viewPos);
+                shader.SetUniform("lightColor", new Vector3(1.0f, 1.0f, 1.0f));
+                shader.SetUniform("objectColor", new Vector3(1.0f, 0.6f, 0.22f));
+                shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
+
+
+                foreach (Assimp.Mesh mesh in Scene.Meshes)
+                {
+                    Material mat = Scene.Materials[mesh.MaterialIndex];
+                    // Set up material properties in your shader
+                    /*
+                    shader.SetUniform("mat.ambient", AssimpToVec(mat.ColorAmbient));
+                    shader.SetUniform("mat.diffuse", AssimpToVec(mat.ColorDiffuse));
+                    shader.SetUniform("mat.specular", AssimpToVec(mat.ColorSpecular));
+                    shader.SetUniform("mat.emissive", AssimpToVec(mat.ColorEmissive));
+                    shader.SetUniform("mat.reflective", AssimpToVec(mat.ColorReflective));
+                    shader.SetUniform("mat.transparent", AssimpToVec(mat.ColorTransparent));
+                    shader.SetUniform("mat.bumpscaling", mat.BumpScaling);
+                    shader.SetUniform("mat.shininess", mat.Shininess);
+                    */
+                    CheckGLError("Mat uniforms");
+                    GL.DrawElements(PrimitiveType.Triangles, mesh.FaceCount * 3, DrawElementsType.UnsignedInt, 0);
+                    CheckGLError("Drawing a mesh");
+                }
+                Unbind();
+                GL.UseProgram(0);
+                CheckGLError("Unbinding");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in Render: " + ex.Message);
+            }
+        }
+
+        private void LoadScene()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(FilePath))
+                {
+                    throw new ArgumentException("File path cannot be empty.");
+                }
+
+                AssimpContext assimpContext = new AssimpContext();
+                Scene = assimpContext.ImportFile(FilePath, PostProcessSteps.Triangulate | PostProcessSteps.GenerateNormals);
+
+                if (Scene == null || Scene.RootNode == null)
+                {
+                    throw new InvalidOperationException("Failed to load the scene.");
+                }
+
+                List<Vector3D> vertices = new List<Vector3D>();
+                List<Vector3D> normals = new List<Vector3D>();
+                List<Vector3D> texCoords = new List<Vector3D>();
+                List<uint> indices = new List<uint>(); // New list for indices
+
+                foreach (Assimp.Mesh mesh in Scene.Meshes)
+                {
+                    foreach (Vector3D vertex in mesh.Vertices)
+                    {
+                        vertices.Add(vertex);
+                    }
+
+                    foreach (Vector3D normal in mesh.Normals)
+                    {
+                        normals.Add(normal);
+                    }
+
+                    foreach (Vector3D texCoord in mesh.TextureCoordinateChannels[0])
+                    {
+                        texCoords.Add(texCoord);
+                    }
+
+                    // Process indices
+                    foreach (Face face in mesh.Faces)
+                    {
+                        if (face.IndexCount != 3) // Assuming triangles
+                        {
+                            throw new NotSupportedException("Only triangles are supported.");
+                        }
+
+                        indices.AddRange(face.Indices.Select(index => (uint)index));
+                    }
+                }
+
+                // Convert the lists to arrays and set the properties
+                Vertices = vertices.SelectMany(v => new float[] { (float)v.X, (float)v.Y, (float)v.Z }).ToArray();
+                Normals = normals.SelectMany(n => new float[] { (float)n.X, (float)n.Y, (float)n.Z }).ToArray();
+                TexCoords = texCoords.SelectMany(t => new float[] { (float)t.X, (float)t.Y }).ToArray();
+                uint[] indicesArray = indices.ToArray(); // Convert the indices list to an array
+
+                SetupVAO(Vertices, Normals, TexCoords, indicesArray); // Pass indices to SetupVAO
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in LoadScene: " + ex.Message);
+            }
+        }
+
+        private void SetupVAO(float[] vertices, float[] normals, float[] texCoords, uint[] indices)
+        {
+            try
+            {
+                // Create a VAO and bind it
+                GL.GenVertexArrays(1, out VAO);
+                GL.BindVertexArray(VAO);
+                CheckGLError("VAO creation");
+
+                // Create and bind a VBO for vertex positions
+                GL.GenBuffers(1, out vboVertices);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboVertices);
+                GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(0);
+                GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
+                CheckGLError("VBO for vertices");
+
+                // Create and bind a VBO for normals if needed
+                GL.GenBuffers(1, out vboNormals);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+                GL.BufferData(BufferTarget.ArrayBuffer, normals.Length * sizeof(float), normals, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(1);
+                GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 0, 0);
+                CheckGLError("VBO for normals");
+
+                // Create and bind a VBO for texture coordinates if needed
+                GL.GenBuffers(1, out vboTexCoords);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+                GL.BufferData(BufferTarget.ArrayBuffer, texCoords.Length * sizeof(float), texCoords, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(2);
+                GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, 0, 0);
+                CheckGLError("VBO for texCoords");
+
+                // Create and bind an EBO for indices
+                GL.GenBuffers(1, out ebo);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+                GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
+                CheckGLError("EBO for indices");
+
+                // Unbind the VAO (not the VBOs or EBO)
+                GL.BindVertexArray(0);
+                CheckGLError("VAO unbinding");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in SetupVAO: " + ex.Message);
+            }
+        }
+
+        private void CheckGLError(string location)
+        {
+            ErrorCode errorCode = GL.GetError();
+            if (errorCode != ErrorCode.NoError)
+            {
+                throw new Exception($"OpenGL Error at {location}: {errorCode}");
+            }
+        }
+
+        public void Cleanup()
+        {
+            GL.DeleteVertexArray(VAO);
+            GL.DeleteBuffer(vboVertices);
+            GL.DeleteBuffer(vboNormals);
+            GL.DeleteBuffer(vboTexCoords);
+            GL.DeleteBuffer(ebo);
+        }
+    }
+
+
+
+
     public class MeshBatch : Component, IRenderable
     {
-        public List<Mesh> meshes;
+        public string filePath = string.Empty;
+        public MeshModel model = null;
+        public Shader shader;
 
         public MeshBatch(string filePath)
         {
-            meshes = LoadMeshes(filePath);
+            var meshBatch = Compute(filePath);
+            model = meshBatch;
+            shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
+        }
+
+        public MeshBatch(string filePath, string vert, string frag)
+        {
+            var meshBatch = Compute(filePath);
+            model = meshBatch;
+            shader = new Shader(vert, frag);
+        }
+
+        public MeshModel Compute(string filePath)
+        {
+            var cachedMesh = MeshCache.Get(filePath);
+            if (cachedMesh != null)
+            {
+                Logger.Log("Using a cached mesh..");
+                return cachedMesh;
+            }
+
+            Logger.Log("Loading a mesh from its file..");
+            var meshModel = new MeshModel(filePath);
+            MeshCache.Cache(meshModel);
+            return meshModel;
         }
 
         public override void Start()
         {
-            foreach (var mesh in meshes)
-            {
-                mesh.InitializeBuffers();
-            }
+
         }
 
         public override void Update()
         {
-            // Render all loaded meshes
 
         }
 
         public override void OnDestroy()
         {
-            // Dispose of all loaded meshes
-            foreach (var mesh in meshes)
-            {
-                mesh.Dispose();
-            }
+
+
         }
-
-
-        private List<Mesh> LoadMeshes(string filePath)
-        {
-            var meshes = new List<Mesh>();
-
-            using (var importer = new AssimpContext())
-            {
-                var scene = importer.ImportFile(filePath, PostProcessSteps.Triangulate | PostProcessSteps.FlipUVs);
-
-                if (scene == null || scene.Meshes.Count == 0)
-                {
-                    Logger.Log($"Failed to load mesh from file: {filePath}");
-                    return meshes;
-                }
-
-                foreach (var assimpMesh in scene.Meshes)
-                {
-                    var vertices = new List<Vector3>();
-                    var normals = new List<Vector3>();
-                    var texCoords = new List<Vector2[]>();
-                    var tangents = new List<Vector3>();
-                    var bitangents = new List<Vector3>();
-                    var indices = new List<int>();
-
-                    foreach (var vector in assimpMesh.Vertices)
-                    {
-                        vertices.Add(new Vector3(vector.X, vector.Y, vector.Z));
-                    }
-
-                    foreach (var vector in assimpMesh.Normals)
-                    {
-                        normals.Add(new Vector3(vector.X, vector.Y, vector.Z));
-                    }
-
-                    // Support multiple sets of texture coordinates
-                    for (int i = 0; i < assimpMesh.TextureCoordinateChannelCount; i++)
-                    {
-                        var texCoordsSet = new List<Vector2>();
-                        foreach (var vector in assimpMesh.TextureCoordinateChannels[i])
-                        {
-                            texCoordsSet.Add(new Vector2(vector.X, vector.Y));
-                        }
-                        texCoords.Add(texCoordsSet.ToArray());
-                    }
-
-
-                    foreach (var vector in assimpMesh.Tangents)
-                    {
-                        tangents.Add(new Vector3(vector.X, vector.Y, vector.Z));
-                    }
-
-                    foreach (var vector in assimpMesh.BiTangents)
-                    {
-                        bitangents.Add(new Vector3(vector.X, vector.Y, vector.Z));
-                    }
-
-                    foreach (var face in assimpMesh.Faces)
-                    {
-                        indices.AddRange(face.Indices);
-                    }
-
-                    meshes.Add(new Mesh(vertices.ToArray(), normals.ToArray(), texCoords.ToArray(), tangents.ToArray(), bitangents.ToArray(), indices.ToArray(), new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag")));
-                }
-            }
-
-            return meshes;
-        }
-
 
         public override void Awake()
         {
@@ -152,134 +323,46 @@ namespace Luminosity3D.Builtin
 
         public void OnRender() // called by OnRenderFrame function from opentk rather then the OnUpdateFrame function. useful for .... rendering
         {
-            foreach (var mesh in meshes)
+            var cam = Engine.FindComponents<Camera>().FirstOrDefault();
+            if(cam != null)
             {
-                mesh.Render();
+                var transform = GetComponent<TransformComponent>();
+                if(transform != null)
+                {
+                    model.Render(shader, cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix() , cam.Position);
+                }
             }
         }
     }
 
-
-
-    public class Mesh
+    public interface IRenderable
     {
-        public Shader shader; // Add a private field for the Shader
+        public void OnRender();
+    }
 
-        // Vertex data
-        public Vector3[] Vertices { get; private set; }
-        public Vector3[] Normals { get; private set; }
-        public Vector2[][] TexCoords { get; private set; } // Support for multiple sets of texture coordinates
-        public Vector3[] Tangents { get; private set; } // Tangents for normal mapping
-        public Vector3[] Bitangents { get; private set; } // Bitangents for normal mapping
-        public int[] Indices { get; private set; }
+    public static class MeshCache
+    {
+        public static HashSet<MeshModel> MeshCacheSet = new HashSet<MeshModel>();
 
-        // OpenGL handles
-        private int vao;
-        private int vboVertices;
-        private int vboNormals;
-        private int[] vboTexCoords; // Array of VBOs for multiple sets of texture coordinates
-        private int vboTangents;
-        private int vboBitangents;
-        private int ebo;
-
-        public Mesh(Vector3[] vertices, Vector3[] normals, Vector2[][] texCoords, Vector3[] tangents, Vector3[] bitangents, int[] indices, Shader shader)
+        public static MeshModel Get(string filePath)
         {
-            Vertices = vertices ?? throw new ArgumentNullException(nameof(vertices));
-            Normals = normals ?? throw new ArgumentNullException(nameof(normals));
-            TexCoords = texCoords ?? throw new ArgumentNullException(nameof(texCoords));
-            Tangents = tangents ?? throw new ArgumentNullException(nameof(tangents));
-            Bitangents = bitangents ?? throw new ArgumentNullException(nameof(bitangents));
-            Indices = indices ?? throw new ArgumentNullException(nameof(indices));
-
-            this.shader = shader; // Store the Shader instance
+            return MeshCacheSet.Where(x => x.FilePath == filePath).FirstOrDefault();
         }
 
-        public void InitializeBuffers()
+        public static HashSet<MeshModel> GetAllCaches()
         {
-            // Create and bind Vertex Array Object (VAO)
-            GL.GenVertexArrays(1, out vao);
-            GL.BindVertexArray(vao);
+            return MeshCacheSet;
+        }
 
-            // Create and bind Vertex Buffer Object (VBO) for vertices
-            GL.GenBuffers(1, out vboVertices);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboVertices);
-            GL.BufferData(BufferTarget.ArrayBuffer, Vertices.Length * Vector3.SizeInBytes, Vertices, BufferUsageHint.StaticDraw);
-
-            // Specify vertex attribute pointers for vertices
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            // Create and bind Vertex Buffer Object (VBO) for normals
-            GL.GenBuffers(1, out vboNormals);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
-            GL.BufferData(BufferTarget.ArrayBuffer, Normals.Length * Vector3.SizeInBytes, Normals, BufferUsageHint.StaticDraw);
-
-            shader.Use();
-
-            // Specify vertex attribute pointers for normals
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            // Create and bind Vertex Buffer Objects (VBOs) for multiple sets of texture coordinates
-            vboTexCoords = new int[TexCoords.Length];
-            for (int i = 0; i < TexCoords.Length; i++)
+        public static MeshModel Cache(MeshModel batch)
+        {
+            var cachedMesh = Get(batch.FilePath);
+            if (cachedMesh != null)
             {
-                GL.GenBuffers(1, out vboTexCoords[i]);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords[i]);
-                GL.BufferData(BufferTarget.ArrayBuffer, TexCoords[i].Length * Vector2.SizeInBytes, TexCoords[i], BufferUsageHint.StaticDraw);
-
-                // Specify vertex attribute pointers for texture coordinates
-                GL.EnableVertexAttribArray(2 + i);
-                GL.VertexAttribPointer(2 + i, 2, VertexAttribPointerType.Float, false, 0, 0);
+                return cachedMesh;
             }
-
-            // Create and bind Vertex Buffer Object (VBO) for tangents
-            GL.GenBuffers(1, out vboTangents);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTangents);
-            GL.BufferData(BufferTarget.ArrayBuffer, Tangents.Length * Vector3.SizeInBytes, Tangents, BufferUsageHint.StaticDraw);
-
-            // Specify vertex attribute pointers for tangents
-            GL.EnableVertexAttribArray(2 + TexCoords.Length);
-            GL.VertexAttribPointer(2 + TexCoords.Length, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            // Create and bind Vertex Buffer Object (VBO) for bitangents
-            GL.GenBuffers(1, out vboBitangents);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboBitangents);
-            GL.BufferData(BufferTarget.ArrayBuffer, Bitangents.Length * Vector3.SizeInBytes, Bitangents, BufferUsageHint.StaticDraw);
-
-            // Specify vertex attribute pointers for bitangents
-            GL.EnableVertexAttribArray(3 + TexCoords.Length);
-            GL.VertexAttribPointer(3 + TexCoords.Length, 3, VertexAttribPointerType.Float, false, 0, 0);
-
-            // Create and bind Element Buffer Object (EBO)
-            GL.GenBuffers(1, out ebo);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, Indices.Length * sizeof(int), Indices, BufferUsageHint.StaticDraw);
-
-            // Unbind VAO
-            GL.BindVertexArray(0);
-            Logger.Log("Buffer initialized");
-        }
-
-        public void Render()
-        {
-            GL.BindVertexArray(vao);
-            GL.DrawElements(PrimitiveType.Triangles, Indices.Length, DrawElementsType.UnsignedInt, 0);
-            GL.BindVertexArray(0);
-        }
-
-        public void Dispose()
-        {
-            GL.DeleteBuffer(ebo);
-            GL.DeleteBuffer(vboBitangents);
-            GL.DeleteBuffer(vboTangents);
-            for (int i = 0; i < vboTexCoords.Length; i++)
-            {
-                GL.DeleteBuffer(vboTexCoords[i]);
-            }
-            GL.DeleteBuffer(vboNormals);
-            GL.DeleteBuffer(vboVertices);
-            GL.DeleteVertexArray(vao);
+            MeshCacheSet.Add(batch);
+            return batch;
         }
     }
 
@@ -335,6 +418,9 @@ namespace Luminosity3D.Builtin
                 if (success == 0)
                 {
                     GL.GetProgramInfoLog(shader, out infoLog);
+
+                    Logger.Log($"Shader program compilation failed:\n{infoLog}"); // Log the error
+
                     throw new Exception($"Shader program compilation failed:\n{infoLog}");
                 }
             }
@@ -344,6 +430,7 @@ namespace Luminosity3D.Builtin
                 if (success == 0)
                 {
                     GL.GetShaderInfoLog(shader, out infoLog);
+                    Logger.Log($"Shader ({type}) compilation failed:\n{infoLog}"); // Log the error
                     throw new Exception($"Shader ({type}) compilation failed:\n{infoLog}");
                 }
             }
@@ -386,6 +473,19 @@ namespace Luminosity3D.Builtin
             if (location != -1)
             {
                 GL.Uniform3(location, value);
+            }
+            else
+            {
+                // Handle uniform not found error
+            }
+        }
+
+        public void SetUniform(string name, Vector4 value)
+        {
+            int location = GL.GetUniformLocation(ProgramId, name);
+            if (location != -1)
+            {
+                GL.Uniform4(location, value);
             }
             else
             {

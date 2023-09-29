@@ -31,6 +31,11 @@ namespace Luminosity3D.EntityComponentSystem
             Entity = entity;
         }
 
+        public T GetComponent<T>() where T : Component
+        {
+            return Entity.GetComponent<T>();
+        }
+
         public abstract void Awake();
         public abstract void Start();
         public abstract void EarlyUpdate();

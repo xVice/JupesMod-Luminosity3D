@@ -59,7 +59,28 @@ namespace Luminosity3D.PKGLoader
                 }
             }
         }
-
+    
+        public void LoadPaks(string[] pakNames)
+        {
+            foreach(var pakname in pakNames)
+            {
+                if (PakExist(pakname))
+                {
+                    if (!IsModLoaded(pakname))
+                    {
+                        LoadPackage(pakname);
+                    }
+                    else
+                    {
+                        Logger.Log($"{pakname} is allready loaded..");
+                    }
+                }
+                else
+                {
+                    Logger.Log($"{pakname} is was not found it the lupk folder..");
+                }
+            }
+        }
 
         public bool PakExist(string name)
         {
@@ -79,11 +100,12 @@ namespace Luminosity3D.PKGLoader
             var timer = new Stopwatch();
             timer.Start();
             Logger.Log($"Loading: {name}..");
-
+            //LoadDependencies(name);
             var lupkg = UnpackPKG(name);
 
             var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
             Logger.Log($"Found {csFiles.Count()} dll files in {name}, loading assemblys..");
+
 
             // Use the RoslynCodeLoader to load and compile C# files
             var codeLoader = new RoslynCodeLoader();
@@ -105,14 +127,24 @@ namespace Luminosity3D.PKGLoader
             return null;
         }
 
+        private void LoadDependencies(string name)
+        {
+            var lupk = new PAK($"{LUPKDir}/{name}.lupk");
+            var meta = lupk.ExtractMetadata();
+
+            LoadPaks(meta.Dependencies);
+        }
+
         public LUPKMod LoadPackageFromAutoLoad(string name)
         {
             var timer = new Stopwatch();
             timer.Start();
             Logger.Log($"Loading: {name}..");
 
+            //LoadDependencies(name);
+
             var lupkg = UnpackPKGFromAutoLoad(name);
-            
+
             var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
             Logger.Log($"Found {csFiles.Count()} dll files in {name}, loading assemblys..");
 
