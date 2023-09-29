@@ -16,6 +16,33 @@ namespace Luminosity3D.Builtin
     //its shit, need to rewrite :c
     //
     //kinda better still 50% shit, only 35% nowit j
+    //hoiy fuckinton it workie now  tho c: c: c: c: c: c:  C:.C . C:.C .C 
+    //now makie shadercache for cahce shader becuase big program many times big slow and bad :c
+
+    public class ShaderCache
+    {
+        public Dictionary<Mesh, Shader> Cache;
+
+        public ShaderCache()
+        {
+            Cache = new Dictionary<Mesh, Shader>();
+        }
+
+        public void CacheShader(Mesh mesh, Shader shader)
+        {
+            Cache.Add(mesh, shader);
+        }
+
+        public Shader Get(Mesh mesh)
+        {
+            if (Cache.ContainsKey(mesh))
+            {
+                return Cache[mesh];
+            }
+            return null;
+        }
+    }
+
     public class MeshModel
     {
         public string FilePath { get; set; }
@@ -28,6 +55,8 @@ namespace Luminosity3D.Builtin
         public float[] Vertices { get; private set; }
         public float[] Normals { get; private set; }
         public float[] TexCoords { get; private set; }
+
+        public ShaderCache shaders = new ShaderCache();
 
         public MeshModel(string filePath, Scene scene = null)
         {
@@ -63,29 +92,16 @@ namespace Luminosity3D.Builtin
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
         }
 
-        public void Render(Shader shader, Matrix4 viewMatrix, Matrix4 projectionMatrix, Matrix4 modelMatrix, Vector3 viewPos)
+        public void BuildCache()
         {
-            try
+
+            foreach (var mesh in Scene.Meshes)
             {
-                Bind();
-                CheckGLError("Binding");
-
-                // Set up shader uniforms
-                shader.Use();
-                shader.SetUniform("modelMatrix", modelMatrix);
-                shader.SetUniform("viewMatrix", viewMatrix);
-                shader.SetUniform("projectionMatrix", projectionMatrix);
-                shader.SetUniform("viewPos", viewPos);
-                shader.SetUniform("lightColor", new Vector3(1.0f, 1.0f, 1.0f));
-                shader.SetUniform("objectColor", new Vector3(1.0f, 0.6f, 0.22f));
-                shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
-
-
-                foreach (Assimp.Mesh mesh in Scene.Meshes)
+                if(shaders.Get(mesh) == null)
                 {
                     Material mat = Scene.Materials[mesh.MaterialIndex];
-                    // Set up material properties in your shader
-                    /*
+                    var shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
+                    shader.Use();
                     shader.SetUniform("mat.ambient", AssimpToVec(mat.ColorAmbient));
                     shader.SetUniform("mat.diffuse", AssimpToVec(mat.ColorDiffuse));
                     shader.SetUniform("mat.specular", AssimpToVec(mat.ColorSpecular));
@@ -94,8 +110,34 @@ namespace Luminosity3D.Builtin
                     shader.SetUniform("mat.transparent", AssimpToVec(mat.ColorTransparent));
                     shader.SetUniform("mat.bumpscaling", mat.BumpScaling);
                     shader.SetUniform("mat.shininess", mat.Shininess);
-                    */
                     CheckGLError("Mat uniforms");
+                    GL.UseProgram(0);
+                    shaders.CacheShader(mesh,shader);
+                }
+                
+            }
+        }
+
+        public void Render(Matrix4 viewMatrix, Matrix4 projectionMatrix, Matrix4 modelMatrix, Vector3 viewPos)
+        {
+            try
+            {
+                Bind();
+                CheckGLError("Binding");
+
+                foreach (Assimp.Mesh mesh in Scene.Meshes)
+                {
+                    var shader = shaders.Get(mesh);
+                    shader.Use();
+                    shader.SetUniform("modelMatrix", modelMatrix);
+                    shader.SetUniform("viewMatrix", viewMatrix);
+                    shader.SetUniform("projectionMatrix", projectionMatrix);
+                    shader.SetUniform("viewPos", viewPos);
+                    shader.SetUniform("lightColor", new Vector3(1.0f, 1.0f, 1.0f));
+                    shader.SetUniform("objectColor", new Vector3(1.0f, 0.6f, 0.22f));
+                    shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
+
+                    CheckGLError("Using cached shader and setting uniform uniforms?");
                     GL.DrawElements(PrimitiveType.Triangles, mesh.FaceCount * 3, DrawElementsType.UnsignedInt, 0);
                     CheckGLError("Drawing a mesh");
                 }
@@ -166,6 +208,7 @@ namespace Luminosity3D.Builtin
                 TexCoords = texCoords.SelectMany(t => new float[] { (float)t.X, (float)t.Y }).ToArray();
                 uint[] indicesArray = indices.ToArray(); // Convert the indices list to an array
 
+                BuildCache();
                 SetupVAO(Vertices, Normals, TexCoords, indicesArray); // Pass indices to SetupVAO
             }
             catch (Exception ex)
@@ -329,7 +372,7 @@ namespace Luminosity3D.Builtin
                 var transform = GetComponent<TransformComponent>();
                 if(transform != null)
                 {
-                    model.Render(shader, cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix() , cam.Position);
+                    model.Render(cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix() , cam.Position);
                 }
             }
         }
