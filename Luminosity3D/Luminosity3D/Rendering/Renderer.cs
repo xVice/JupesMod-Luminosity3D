@@ -23,6 +23,7 @@ using Assimp;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 using static System.Net.Mime.MediaTypeNames;
+using ImGuiNET;
 
 namespace Luminosity3DRendering
 {
@@ -31,6 +32,8 @@ namespace Luminosity3DRendering
         public Renderer(int width, int height, string title) : base(GameWindowSettings.Default, new NativeWindowSettings() { Size = (width, height), Title = title })
         {
             IMGUIController = new ImGuiController(this);
+            ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+
             CenterWindow(new Vector2i(1280, 720));
         }
 
@@ -92,7 +95,7 @@ namespace Luminosity3DRendering
         {
             base.OnRenderFrame(e);
 
-            GL.ClearColor(new Color4(0, 32, 48, 255));
+            GL.ClearColor(new Color4(0, 0, 0, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             GL.Enable(EnableCap.CullFace);
@@ -101,6 +104,8 @@ namespace Luminosity3DRendering
 
             Bus.Send<MeshBatch>(x => x.OnRender());
             //Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
+
+            ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
             if (renderLayers.Count != 0)
             {
