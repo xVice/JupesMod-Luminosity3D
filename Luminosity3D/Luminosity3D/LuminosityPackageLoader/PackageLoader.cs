@@ -172,6 +172,7 @@ namespace Luminosity3D.PKGLoader
             if (Directory.Exists(LUPKLoadedDir))
             {
                 Directory.Delete(LUPKLoadedDir, true);
+                
                 Directory.CreateDirectory(LUPKLoadedDir);
             }
         }

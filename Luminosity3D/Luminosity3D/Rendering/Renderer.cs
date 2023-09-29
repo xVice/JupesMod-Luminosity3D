@@ -95,8 +95,9 @@ namespace Luminosity3DRendering
             GL.ClearColor(new Color4(0, 32, 48, 255));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            //Put all this into render layers, or a single renderlayer, so its easier to layer stuff below certain objects.
-            var meshBatches = Engine.FindComponents<MeshBatch>();
+            GL.Enable(EnableCap.CullFace);
+            GL.CullFace(CullFaceMode.Back);
+
 
             Bus.Send<MeshBatch>(x => x.OnRender());
             //Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case

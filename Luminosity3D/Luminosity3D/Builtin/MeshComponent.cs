@@ -117,7 +117,6 @@ namespace Luminosity3D.Builtin
                 
             }
         }
-
         public void Render(Matrix4 viewMatrix, Matrix4 projectionMatrix, Matrix4 modelMatrix, Vector3 viewPos)
         {
             try
@@ -133,14 +132,39 @@ namespace Luminosity3D.Builtin
                     shader.SetUniform("viewMatrix", viewMatrix);
                     shader.SetUniform("projectionMatrix", projectionMatrix);
                     shader.SetUniform("viewPos", viewPos);
-                    shader.SetUniform("lightColor", new Vector3(1.0f, 1.0f, 1.0f));
-                    shader.SetUniform("objectColor", new Vector3(1.0f, 0.6f, 0.22f));
+                    shader.SetUniform("lightColor", new Vector3(0.0f, 0.5f, 1.0f));
+                    shader.SetUniform("objectColor", new Vector3(1.0f, 1f, 1f));
                     shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
 
-                    CheckGLError("Using cached shader and setting uniform uniforms?");
+                    // Create and begin an occlusion query
+                    int queryID;
+                    GL.GenQueries(1, out queryID);
+                    GL.BeginQuery(QueryTarget.SamplesPassed, queryID);
+
+                    CheckGLError("Begin occlusion query");
+
+                    // Render the object conditionally based on occlusion query
                     GL.DrawElements(PrimitiveType.Triangles, mesh.FaceCount * 3, DrawElementsType.UnsignedInt, 0);
-                    CheckGLError("Drawing a mesh");
+
+                    // End the occlusion query
+                    GL.EndQuery(QueryTarget.SamplesPassed);
+
+                    CheckGLError("End occlusion query");
+
+                    int queryResult;
+                    GL.GetQueryObject(queryID, GetQueryObjectParam.QueryResult, out queryResult);
+
+                    // Delete the query object
+                    GL.DeleteQueries(1, ref queryID);
+
+                    // If the query result is greater than zero, the object is visible
+                    if (queryResult > 0)
+                    {
+                        // Object is visible, continue with rendering
+                        CheckGLError("Drawing a mesh");
+                    }
                 }
+
                 Unbind();
                 GL.UseProgram(0);
                 CheckGLError("Unbinding");
@@ -150,6 +174,7 @@ namespace Luminosity3D.Builtin
                 Console.WriteLine("Error in Render: " + ex.Message);
             }
         }
+
 
         private void LoadScene()
         {

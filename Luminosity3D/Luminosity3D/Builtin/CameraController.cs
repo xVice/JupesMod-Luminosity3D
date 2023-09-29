@@ -14,9 +14,10 @@ namespace Luminosity3D.Builtin
     {
         private Camera camera;
         private float moveSpeed = 5.0f;
-        private float strafeSpeed = 3.0f; // Adjust the strafe speed as needed
-        private float sensitivity = 0.2f;
+        private float sensitivity = 200f;
+        private bool lockMovement = false;
         private KeyboardState keyboardState;
+        
 
         public CameraController(Entity entity) : base(entity)
         {
@@ -61,61 +62,68 @@ namespace Luminosity3D.Builtin
 
         public override void Update()
         {
-            // Ensure that deltaTime is non-zero to prevent division by zero
-            float deltaTime = (float)Math.Max(Engine.DeltaTime, float.Epsilon);
-
-            // Handle mouse input
-            var mouseState = Engine.MouseState;
-
-            // Calculate the change in mouse position
-            float mouseXDelta = mouseState.Delta.X;
-            float mouseYDelta = mouseState.Delta.Y;
-
-            // Adjust the camera's yaw and pitch based on mouse movement
-            float sensitivity = 200f; // Adjust the sensitivity to your preference
-            camera.ProcessMouseMovement(mouseXDelta * sensitivity * deltaTime, mouseYDelta * sensitivity * deltaTime);
-
-            // Handle movement based on keyboard input
-            Vector3 moveDirection = Vector3.Zero;
-
-            if (keyboardState == null)
+            if (lockMovement == false)
             {
-                keyboardState = Engine.KeyboardState;
-                return;
+                // Ensure that deltaTime is non-zero to prevent division by zero
+                float deltaTime = (float)Math.Max(Engine.DeltaTime, float.Epsilon);
+
+                // Handle mouse input
+                var mouseState = Engine.MouseState;
+
+                // Calculate the change in mouse position
+                float mouseXDelta = mouseState.Delta.X;
+                float mouseYDelta = mouseState.Delta.Y;
+
+                // Adjust the camera's yaw and pitch based on mouse movement
+
+                camera.ProcessMouseMovement(mouseXDelta * sensitivity * deltaTime, mouseYDelta * sensitivity * deltaTime);
+
+                // Handle movement based on keyboard input
+                Vector3 moveDirection = Vector3.Zero;
+
+                if (keyboardState == null)
+                {
+                    keyboardState = Engine.KeyboardState;
+                    return;
+                }
+
+                if (keyboardState.IsKeyDown(Keys.W))
+                {
+                    moveDirection += camera.Front;
+                }
+
+                if (keyboardState.IsKeyDown(Keys.S))
+                {
+                    moveDirection -= camera.Front;
+                }
+
+                if (keyboardState.IsKeyDown(Keys.A))
+                {
+                    // Strafe left
+                    moveDirection -= Vector3.Cross(camera.Front, camera.Up);
+                }
+
+                if (keyboardState.IsKeyDown(Keys.D))
+                {
+                    // Strafe right
+                    moveDirection += Vector3.Cross(camera.Front, camera.Up);
+                }
+
+                // Normalize the movement vector to prevent faster diagonal movement
+                if (moveDirection.LengthSquared > 0)
+                    moveDirection.Normalize();
+
+                // Update the camera's position based on movement input
+
+
+                camera.Move(moveDirection, moveSpeed * deltaTime);
+
+
+
+                // Update the projection matrix (it doesn't change based on input)
+                camera.UpdateProjectionMatrix();
             }
-
-            if (keyboardState.IsKeyDown(Keys.W))
-            {
-                moveDirection += camera.Front;
-            }
-
-            if (keyboardState.IsKeyDown(Keys.S))
-            {
-                moveDirection -= camera.Front;
-            }
-
-            if (keyboardState.IsKeyDown(Keys.A))
-            {
-                // Strafe left
-                moveDirection -= Vector3.Cross(camera.Front, camera.Up);
-            }
-
-            if (keyboardState.IsKeyDown(Keys.D))
-            {
-                // Strafe right
-                moveDirection += Vector3.Cross(camera.Front, camera.Up);
-            }
-
-            // Normalize the movement vector to prevent faster diagonal movement
-            if (moveDirection.LengthSquared > 0)
-                moveDirection.Normalize();
-
-            // Update the camera's position based on movement input
-            float moveSpeed = 2.5f; // Adjust the speed to your preference
-            camera.Move(moveDirection, moveSpeed * deltaTime);
-
-            // Update the projection matrix (it doesn't change based on input)
-            camera.UpdateProjectionMatrix();
+            
         }
     }
 
