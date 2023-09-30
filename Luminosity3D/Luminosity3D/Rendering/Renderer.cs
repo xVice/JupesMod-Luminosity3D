@@ -102,9 +102,9 @@ namespace Luminosity3DRendering
             GL.CullFace(CullFaceMode.Back);
 
 
+
             Bus.Send<MeshBatch>(x => x.OnRender());
             //Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
-
             ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
             if (renderLayers.Count != 0)
@@ -116,22 +116,34 @@ namespace Luminosity3DRendering
                 }
             }
 
-            if(KeyboardState.IsKeyPressed(Keys.F5))
-            {
-                isgrabbed = !isgrabbed;
-                if (isgrabbed)
-                {
-                    CursorState = CursorState.Grabbed;
-                }
-                else
-                {
-                    CursorState = CursorState.Normal;
-                }
-            }
-
             IMGUIController.Render();
 
+
+            if (KeyboardState.IsKeyPressed(Keys.F5))
+            {
+                var cam = Engine.FindComponents<Luminosity3D.Builtin.CameraController>().FirstOrDefault();
+
+                if(cam != null)
+                {
+                    isgrabbed = !isgrabbed;
+                    if (isgrabbed)
+                    {
+                        cam.lockMovement = false;
+                        CursorState = CursorState.Grabbed;
+                    }
+                    else
+                    {
+                        cam.lockMovement = true;
+                        CursorState = CursorState.Normal;
+                    }
+                }
+
+            }
+
+     
+
             SwapBuffers();
+            Engine.DeltaTime = (float)e.Time;
 
         }
 
@@ -140,7 +152,7 @@ namespace Luminosity3DRendering
             base.OnUpdateFrame(e);
 
             // Calculate delta time and assign it to Engine.DeltaTime
-            Engine.DeltaTime = (float)e.Time;
+
 
 
             Engine.Update();

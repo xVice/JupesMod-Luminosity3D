@@ -23,18 +23,21 @@ namespace Luminosity3D.Builtin
         public Camera(Entity entity, float fieldOfView, float aspectRatio, float nearClip, float farClip)
             : base(entity)
         {
-            Position = Vector3.Zero;
+            Position = new Vector3(0, 0, 3); // Adjust the initial camera position as needed.
             Up = Vector3.UnitY;
             FieldOfView = fieldOfView;
             AspectRatio = aspectRatio;
             NearClip = nearClip;
             FarClip = farClip;
-            Yaw = -90.0f; // Initialize with a facing direction
+            Yaw = -90.0f;
             Pitch = 0.0f;
 
+            Front = Vector3.Zero; // Initialize Front to zero initially.
+
             UpdateProjectionMatrix();
-            UpdateViewMatrix();
+            UpdateViewMatrix(); // Calculate Front and ViewMatrix.
         }
+
 
         public void UpdateProjectionMatrix()
         {
@@ -92,6 +95,22 @@ namespace Luminosity3D.Builtin
             UpdateProjectionMatrix();
             UpdateViewMatrix();
         }
+
+        public void LookAt(Vector3 target)
+        {
+            Front = Vector3.Normalize(target - Position);
+
+            // Calculate the new yaw and pitch angles
+            Yaw = MathHelper.RadiansToDegrees(MathF.Atan2(Front.X, Front.Z));
+            Pitch = MathHelper.RadiansToDegrees(MathF.Asin(-Front.Y));
+
+            // Update the view matrix with the new orientation
+            UpdateViewMatrix();
+        }
+
+
+
+
 
         public override void Awake()
         {

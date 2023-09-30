@@ -15,7 +15,7 @@ namespace Luminosity3D.Builtin
         private Camera camera;
         private float moveSpeed = 5.0f;
         private float sensitivity = 200f;
-        private bool lockMovement = false;
+        public bool lockMovement = false;
         private KeyboardState keyboardState;
         
 

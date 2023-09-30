@@ -43,6 +43,65 @@ namespace Luminosity3D.Builtin
         }
     }
 
+    public class Material
+    {
+        private Shader shader;
+
+        // Material properties
+        public Vector3 AmbientColor { get; set; }
+        public Vector3 DiffuseColor { get; set; }
+        public Vector3 SpecularColor { get; set; }
+        public Vector3 EmissiveColor { get; set; }
+        public Vector3 ReflectiveColor { get; set; }
+
+        // Other material properties
+        public float BumpScaling { get; set; }
+        public float Shininess { get; set; }
+        public float ShininessStrength { get; set; }
+        public int BlendMode { get; set; }
+        public float Opacity { get; set; }
+        public float Reflectivity { get; set; }
+
+        public Material(Shader shader)
+        {
+            this.shader = shader;
+
+            // Initialize material properties with fallback values or defaults
+            AmbientColor = Vector3.One;
+            DiffuseColor = Vector3.One;
+            SpecularColor = Vector3.One;
+            EmissiveColor = Vector3.Zero;
+            ReflectiveColor = Vector3.Zero;
+
+            // Initialize other material properties
+            BumpScaling = 1.0f;
+            Shininess = 32.0f;
+            ShininessStrength = 1.0f;
+            BlendMode = 0;
+            Opacity = 1.0f;
+            Reflectivity = 0.0f;
+        }
+
+        public void Apply()
+        {
+            shader.Use();
+            shader.SetUniform("mat.ambient", AmbientColor);
+            shader.SetUniform("mat.diffuse", DiffuseColor);
+            shader.SetUniform("mat.specular", SpecularColor);
+            shader.SetUniform("mat.emissive", EmissiveColor);
+            shader.SetUniform("mat.reflective", ReflectiveColor);
+
+            shader.SetUniform("mat.bumpscaling", BumpScaling);
+            shader.SetUniform("mat.shininess", Shininess);
+            shader.SetUniform("mat.shininessstrength", ShininessStrength);
+            shader.SetUniform("mat.blendmode", BlendMode);
+            shader.SetUniform("mat.opacity", Opacity);
+            shader.SetUniform("mat.reflectivity", Reflectivity);
+            GL.UseProgram(0);
+        }
+    }
+
+
     public class MeshModel
     {
         public string FilePath { get; set; }
@@ -99,17 +158,13 @@ namespace Luminosity3D.Builtin
             {
                 if(shaders.Get(mesh) == null)
                 {
-                    Material mat = Scene.Materials[mesh.MaterialIndex];
                     var shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
                     shader.Use();
-                    shader.SetUniform("mat.ambient", AssimpToVec(mat.ColorAmbient));
-                    shader.SetUniform("mat.diffuse", AssimpToVec(mat.ColorDiffuse));
-                    shader.SetUniform("mat.specular", AssimpToVec(mat.ColorSpecular));
-                    shader.SetUniform("mat.emissive", AssimpToVec(mat.ColorEmissive));
-                    shader.SetUniform("mat.reflective", AssimpToVec(mat.ColorReflective));
-                    shader.SetUniform("mat.transparent", AssimpToVec(mat.ColorTransparent));
-                    shader.SetUniform("mat.bumpscaling", mat.BumpScaling);
-                    shader.SetUniform("mat.shininess", mat.Shininess);
+
+                    var material = new Material(shader);
+
+                    material.Apply();
+
                     CheckGLError("Mat uniforms");
                     GL.UseProgram(0);
                     shaders.CacheShader(mesh,shader);

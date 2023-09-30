@@ -393,10 +393,27 @@ namespace Luminosity3D.Builtin.RenderLayers
                             ImGui.ShowStyleEditor();
 
                         }
-                        if (ImGui.MenuItem("Builtin Theme"))
+                        if (ImGui.MenuItem("Standart Theme"))
                         {
                             IMGUIStyles.SetupImGuiStyle();
                         }
+                        if (ImGui.MenuItem("Visual Studio Theme"))
+                        {
+                            IMGUIStyles.SetupVisualStudioImGuiStyle();
+                        }
+                        if (ImGui.MenuItem("OG Steam Theme"))
+                        {
+                            IMGUIStyles.SetupSteamImGuiStyle();
+                        }
+                        if (ImGui.MenuItem("Comfy Theme"))
+                        {
+                            IMGUIStyles.SetupComfyImGuiStyle();
+                        }
+                        if (ImGui.MenuItem("Dark Theme"))
+                        {
+                            IMGUIStyles.SetupDarkStyle();
+                        }
+
                         ImGui.EndMenu();
                     }
 
@@ -509,6 +526,18 @@ namespace Luminosity3D.Builtin.RenderLayers
                                     Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("3DObj", objFilePath, new Vector3(0, 0, 0)));
                                 }
                             }
+
+                            if (ImGui.Button("Load .obj File With Sine Mover"))
+                            {
+                                // Handle loading .obj file using objFilePath
+                                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                                {
+                                    // You can use objFilePath to load the .obj file here
+                                    // Example: LoadObjFile(objFilePath);
+                                    var ent = Engine.Instance.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("3DObj", objFilePath, new Vector3(0, 0, 0)));
+                                    ent.AddComponent(new SineMovement());
+                                }
+                            }
                         }
 
 
@@ -555,53 +584,68 @@ namespace Luminosity3D.Builtin.RenderLayers
                                 {
                                     if (member is FieldInfo fieldInfo)
                                     {
-                                        if (fieldInfo.FieldType == typeof(bool))
+                                        object fieldValueObj = fieldInfo.GetValue(component);
+                                        if (fieldValueObj != null && fieldValueObj.GetType().IsClass)
                                         {
-                                            bool fieldValue = (bool)fieldInfo.GetValue(component);
-                                            if (ImGui.Checkbox($"{fieldInfo.Name}", ref fieldValue))
-                                            {
-                                                fieldInfo.SetValue(component, fieldValue);
-                                            }
-                                        }
-                                        else if (fieldInfo.FieldType == typeof(int))
-                                        {
-                                            int fieldValue = (int)fieldInfo.GetValue(component);
-                                            if (ImGui.InputInt($"{fieldInfo.Name}", ref fieldValue))
-                                            {
-                                                fieldInfo.SetValue(component, fieldValue);
-                                            }
-                                        }
-                                        else if (fieldInfo.FieldType == typeof(float))
-                                        {
-                                            float fieldValue = (float)fieldInfo.GetValue(component);
-                                            if (ImGui.InputFloat($"{fieldInfo.Name}", ref fieldValue))
-                                            {
-                                                fieldInfo.SetValue(component, fieldValue);
-                                            }
-                                        }
-                                        else if (fieldInfo.FieldType == typeof(string))
-                                        {
-                                            string fieldValue = (string)fieldInfo.GetValue(component);
-                                            ImGui.Text($"{fieldInfo.Name}");
+                                            // Display the class name and its properties
+                                            ImGui.Text($"Instance Name: {fieldInfo.Name}, Type: {fieldInfo.GetType()}");
                                             ImGui.SameLine();
-                                            if (ImGui.InputText($"{fieldInfo.Name}##Input", ref fieldValue, 256)) // Adjust the buffer size as needed
+                                            if (ImGui.TreeNode($"##{fieldInfo.Name}Node"))
                                             {
-                                                fieldInfo.SetValue(component, fieldValue);
+                                                DisplayClassFieldsAndProperties(fieldValueObj);
+                                                ImGui.TreePop();
                                             }
                                         }
-                                        else if (fieldInfo.FieldType == typeof(Vector3)) // Handle Vector3 fields
+                                        else
                                         {
-                                            Vector3 vectorValue = (Vector3)fieldInfo.GetValue(component);
-                                            var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
-                                            ImGui.Text($"{fieldInfo.Name}");
-                                            ImGui.SameLine();
-                                            if (ImGui.InputFloat3($"{fieldInfo.Name}##Input", ref rawVec)) ;
+                                            if (fieldInfo.FieldType == typeof(bool))
                                             {
-                                                vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
-                                                fieldInfo.SetValue(component, vectorValue);
+                                                bool fieldValue = (bool)fieldInfo.GetValue(component);
+                                                if (ImGui.Checkbox($"{fieldInfo.Name}", ref fieldValue))
+                                                {
+                                                    fieldInfo.SetValue(component, fieldValue);
+                                                }
                                             }
+                                            else if (fieldInfo.FieldType == typeof(int))
+                                            {
+                                                int fieldValue = (int)fieldInfo.GetValue(component);
+                                                if (ImGui.InputInt($"{fieldInfo.Name}", ref fieldValue))
+                                                {
+                                                    fieldInfo.SetValue(component, fieldValue);
+                                                }
+                                            }
+                                            else if (fieldInfo.FieldType == typeof(float))
+                                            {
+                                                float fieldValue = (float)fieldInfo.GetValue(component);
+                                                if (ImGui.InputFloat($"{fieldInfo.Name}", ref fieldValue))
+                                                {
+                                                    fieldInfo.SetValue(component, fieldValue);
+                                                }
+                                            }
+                                            else if (fieldInfo.FieldType == typeof(string))
+                                            {
+                                                string fieldValue = (string)fieldInfo.GetValue(component);
+                                                ImGui.Text($"{fieldInfo.Name}");
+                                                ImGui.SameLine();
+                                                if (ImGui.InputText($"{fieldInfo.Name}##Input", ref fieldValue, 256)) // Adjust the buffer size as needed
+                                                {
+                                                    fieldInfo.SetValue(component, fieldValue);
+                                                }
+                                            }
+                                            else if (fieldInfo.FieldType == typeof(Vector3)) // Handle Vector3 fields
+                                            {
+                                                Vector3 vectorValue = (Vector3)fieldInfo.GetValue(component);
+                                                var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
+                                                ImGui.Text($"{fieldInfo.Name}");
+                                                ImGui.SameLine();
+                                                if (ImGui.InputFloat3($"{fieldInfo.Name}##Input", ref rawVec)) ;
+                                                {
+                                                    vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
+                                                    fieldInfo.SetValue(component, vectorValue);
+                                                }
+                                            }
+                                            // Add more type checks for other data types as needed
                                         }
-                                        // Add more type checks for other data types as needed
                                     }
                                     else if (member is PropertyInfo propertyInfo)
                                     {
@@ -690,6 +734,130 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 ImGui.EndGroup(); // End the group containing tree view and input box/buttons
             }
+
+            void DisplayClassFieldsAndProperties(object classObject)
+            {
+                var classMembers = classObject.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static)
+                    .Where(member => member.MemberType == MemberTypes.Field || member.MemberType == MemberTypes.Property);
+
+                foreach (var classMember in classMembers)
+                {
+                    if (classMember is FieldInfo classFieldInfo)
+                    {
+                        if (classFieldInfo.FieldType == typeof(bool))
+                        {
+                            bool fieldValue = (bool)classFieldInfo.GetValue(classObject);
+                            if (ImGui.Checkbox($"{classFieldInfo.Name}", ref fieldValue))
+                            {
+                                classFieldInfo.SetValue(classObject, fieldValue);
+                            }
+                        }
+                        else if (classFieldInfo.FieldType == typeof(int))
+                        {
+                            int fieldValue = (int)classFieldInfo.GetValue(classObject);
+                            if (ImGui.InputInt($"{classFieldInfo.Name}", ref fieldValue))
+                            {
+                                classFieldInfo.SetValue(classObject, fieldValue);
+                            }
+                        }
+                        else if (classFieldInfo.FieldType == typeof(float))
+                        {
+                            float fieldValue = (float)classFieldInfo.GetValue(classObject);
+                            if (ImGui.InputFloat($"{classFieldInfo.Name}", ref fieldValue))
+                            {
+                                classFieldInfo.SetValue(classObject, fieldValue);
+                            }
+                        }
+                        else if (classFieldInfo.FieldType == typeof(string))
+                        {
+                            string fieldValue = (string)classFieldInfo.GetValue(classObject);
+                            ImGui.Text($"{classFieldInfo.Name}");
+                            ImGui.SameLine();
+
+                            if (fieldValue == null)
+                            {
+                                fieldValue = string.Empty;
+                            }
+
+                            if (ImGui.InputText($"{classFieldInfo.Name}##Input", ref fieldValue, 256))
+                            {
+                                classFieldInfo.SetValue(classObject, fieldValue);
+                            }
+                        }
+                        else if (classFieldInfo.FieldType == typeof(Vector3)) // Handle Vector3 fields
+                        {
+                            Vector3 vectorValue = (Vector3)classFieldInfo.GetValue(classObject);
+                            var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
+                            ImGui.Text($"{classFieldInfo.Name}");
+                            ImGui.SameLine();
+                            if (ImGui.InputFloat3($"{classFieldInfo.Name}##Input", ref rawVec))
+                            {
+                                vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
+                                classFieldInfo.SetValue(classObject, vectorValue);
+                            }
+                        }
+                        // Add more type checks for other data types as needed
+                    }
+                    else if (classMember is PropertyInfo classPropertyInfo)
+                    {
+                        if (classPropertyInfo.PropertyType == typeof(bool))
+                        {
+                            bool propertyValue = (bool)classPropertyInfo.GetValue(classObject);
+                            if (ImGui.Checkbox($"{classPropertyInfo.Name}", ref propertyValue))
+                            {
+                                classPropertyInfo.SetValue(classObject, propertyValue);
+                            }
+                        }
+                        else if (classPropertyInfo.PropertyType == typeof(int))
+                        {
+                            int propertyValue = (int)classPropertyInfo.GetValue(classObject);
+                            if (ImGui.InputInt($"{classPropertyInfo.Name}", ref propertyValue))
+                            {
+                                classPropertyInfo.SetValue(classObject, propertyValue);
+                            }
+                        }
+                        else if (classPropertyInfo.PropertyType == typeof(float))
+                        {
+                            float propertyValue = (float)classPropertyInfo.GetValue(classObject);
+                            if (ImGui.InputFloat($"{classPropertyInfo.Name}", ref propertyValue))
+                            {
+                                classPropertyInfo.SetValue(classObject, propertyValue);
+                            }
+                        }
+                        else if (classPropertyInfo.PropertyType == typeof(string))
+                        {
+                            string propertyValue = (string)classPropertyInfo.GetValue(classObject);
+                            ImGui.Text($"{classPropertyInfo.Name}");
+                            ImGui.SameLine();
+
+                            if (propertyValue == null)
+                            {
+                                propertyValue = string.Empty;
+                            }
+
+                            if (ImGui.InputText($"{classPropertyInfo.Name}##Input", ref propertyValue, 256))
+                            {
+                                classPropertyInfo.SetValue(classObject, propertyValue);
+                            }
+                        }
+                        else if (classPropertyInfo.PropertyType == typeof(Vector3)) // Handle Vector3 properties
+                        {
+                            Vector3 vectorValue = (Vector3)classPropertyInfo.GetValue(classObject);
+                            var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
+                            ImGui.Text($"{classPropertyInfo.Name}");
+                            ImGui.SameLine();
+                            if (ImGui.InputFloat3($"{classPropertyInfo.Name}##Input", ref rawVec))
+                            {
+                                vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
+                                classPropertyInfo.SetValue(classObject, vectorValue);
+                            }
+                        }
+                        // Add more type checks for other data types as needed
+                    }
+                }
+            }
+
+
         }
 
         public void LoadBuiltinCommands()

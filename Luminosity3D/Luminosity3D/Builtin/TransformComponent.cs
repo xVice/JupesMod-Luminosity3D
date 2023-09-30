@@ -17,6 +17,16 @@ namespace Luminosity3D.Builtin
         public Vector3 Scale { get; set; } = Vector3.One;
         
 
+        public void LookAt()
+        {
+            var cam = Engine.FindComponents<Camera>().FirstOrDefault();
+
+            if(cam != null)
+            {
+                cam.LookAt(Position);
+            }
+        }
+
         public TransformComponent(Vector3 Position, Vector3 Rotation, Vector3 Scale)
         {
             this.Rotation = Rotation;
@@ -71,67 +81,6 @@ namespace Luminosity3D.Builtin
         public override void Update()
         {
           
-        }
-    }
-
-    public class TestingComponent : Component
-    {
-        public string Test = "Sau Gut";
-
-        public TestingComponent()
-        {
-            base.ExecutionOrder = 1;
-        }
-
-        public void TestLog()
-        {
-            
-            Logger.Log("Ohio");
-        }
-
-        public void SendBusCommand()
-        {
-            Bus.Send<TestingComponent>(x => x.TestLog());
-        }
-
-        public override void Awake()
-        {
-
-        }
-
-        public override void EarlyUpdate()
-        {
-        
-        }
-
-        public override void LateUpdate()
-        {
-       
-        }
-
-        public override void OnDestroy()
-        {
-
-        }
-
-        public override void OnDisable()
-        {
-
-        }
-
-        public override void OnEnable()
-        {
-
-        }
-
-        public override void Start()
-        {
-            Logger.Log("Testing component Started");
-        }
-
-        public override void Update()
-        {
-
         }
     }
 }
