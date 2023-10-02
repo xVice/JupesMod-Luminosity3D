@@ -8,8 +8,8 @@ namespace Luminosity3D.Builtin
     public class CameraController : Component
     {
         private Camera camera;
-        private float moveSpeed = 5.0f;
-        private float sensitivity = 1.5f;
+        private float moveSpeed = 15.0f;
+        private float sensitivity = 0.005f;
         public bool lockMovement = true;
 
       
@@ -26,12 +26,10 @@ namespace Luminosity3D.Builtin
 
                 float deltaTime = (float)Time.deltaTime;
 
-                // Calculate the change in mouse position
                 float mouseXDelta = InputManager.GetMouseDeltaX();
                 float mouseYDelta = InputManager.GetMouseDeltaY();
-                camera.RotateCamera(-Vector3.UnitY, mouseXDelta * sensitivity * deltaTime);
-                camera.RotateCamera(camera.Right, mouseYDelta * sensitivity * deltaTime); // Rotate around the camera's right vector
-
+                camera.RotateCamera(-Vector3.UnitY, mouseXDelta * sensitivity);
+                camera.RotateCamera(camera.Right, mouseYDelta * sensitivity);
 
                 // Handle movement based on keyboard input
                 Vector3 moveDirection = Vector3.Zero;
