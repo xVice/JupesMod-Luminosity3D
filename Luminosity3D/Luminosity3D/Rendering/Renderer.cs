@@ -5,30 +5,21 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using Luminosity3D.Builtin.RenderLayers;
 using Luminosity3D.Builtin;
-using Luminosity3DScening;
-using System.Drawing;
-using System.Drawing.Imaging;
-using Luminosity3D.EntityComponentSystem;
-using System.Reflection;
-using Assimp;
-using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
-using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
-using static System.Net.Mime.MediaTypeNames;
 using ImGuiNET;
+using OpenTK.Windowing.Common.Input;
+using BulletSharp;
 
 namespace Luminosity3DRendering
 {
     public class Renderer : GameWindow
     {
+        public DiscreteDynamicsWorld dynamicsWorld;
+
+
         public Renderer(int width, int height, string title) : base(GameWindowSettings.Default, new NativeWindowSettings() { Size = (width, height), Title = title })
         {
             IMGUIController = new ImGuiController(this);
@@ -40,7 +31,6 @@ namespace Luminosity3DRendering
         public ImGuiController? IMGUIController = null;
 
         public List<IRenderLayer> renderLayers = new List<IRenderLayer>();
-        public Engine Engine { get => Engine.Instance; }
         public DebugConsole Console;
 
         public enum RenderLayerType
@@ -51,14 +41,58 @@ namespace Luminosity3DRendering
             HTML // Add more types as needed
         }
 
+        //I really do be loading a texture now though!
+        public static WindowIcon CreateWindowIcon()
+        {
+            var imagePath = "./icons/jmodicon.png"; // Specify the correct image path
+
+            using (var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imagePath))
+            {
+                var imageBytes = new byte[image.Width * image.Height * 4];
+
+                for (int y = 0; y < image.Height; y++)
+                {
+                    for (int x = 0; x < image.Width; x++)
+                    {
+                        var pixel = image[x, y];
+                        var index = (y * image.Width + x) * 4;
+
+                        imageBytes[index] = pixel.R;
+                        imageBytes[index + 1] = pixel.G;
+                        imageBytes[index + 2] = pixel.B;
+                        imageBytes[index + 3] = pixel.A;
+                    }
+                }
+
+                var windowIcon = new WindowIcon(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, imageBytes));
+
+                return windowIcon;
+            }
+        }
 
 
-        
         protected override void OnLoad()
         {
             base.OnLoad();
+
+            Icon = CreateWindowIcon();
             var timer = new Stopwatch();
             timer.Start();
+
+            // Initialize BulletSharp components
+            CollisionConfiguration collisionConfig = new DefaultCollisionConfiguration();
+            CollisionDispatcher dispatcher = new CollisionDispatcher(collisionConfig);
+            BroadphaseInterface broadphase = new DbvtBroadphase();
+            ConstraintSolver solver = new SequentialImpulseConstraintSolver();
+
+            dynamicsWorld = new DiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfig);
+            dynamicsWorld.Gravity = new BulletSharp.Math.Vector3(0, -9.81f, 0); // Set the gravity
+            
+            // Create a large plane at -50
+            CollisionShape groundShape = new StaticPlaneShape(new BulletSharp.Math.Vector3(0, 1, 0), -50);
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0, new DefaultMotionState(), groundShape);
+            RigidBody groundBody = new RigidBody(rbInfo);
+            dynamicsWorld.AddRigidBody(groundBody);
 
             Console = new DebugConsole(this);
             AddLayer(Console);
@@ -73,10 +107,9 @@ namespace Luminosity3DRendering
             timer.Stop();
 
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
-            Engine.Awake();
-            Engine.Start();
 
-            
+
+
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -100,11 +133,14 @@ namespace Luminosity3DRendering
 
             GL.Enable(EnableCap.CullFace);
             GL.CullFace(CullFaceMode.Back);
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Lequal); // Adjust the depth function as needed
 
 
 
-            Bus.Send<MeshBatch>(x => x.OnRender());
-            //Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
+            //Bus.Send<MeshBatch>(x => x.OnRender());
+            Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
+
             ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
             if (renderLayers.Count != 0)
@@ -121,9 +157,9 @@ namespace Luminosity3DRendering
 
             if (KeyboardState.IsKeyPressed(Keys.F5))
             {
-                var cam = Engine.FindComponents<Luminosity3D.Builtin.CameraController>().FirstOrDefault();
+                var cam = Engine.SceneManager.ActiveScene.activeCam.GetEntity().GetComponent<CameraController>();
 
-                if(cam != null)
+                if (cam != null)
                 {
                     isgrabbed = !isgrabbed;
                     if (isgrabbed)
@@ -140,42 +176,29 @@ namespace Luminosity3DRendering
 
             }
 
-     
+
 
             SwapBuffers();
-            Engine.DeltaTime = (float)e.Time;
+
 
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+            // Calculate Delta Time (time between frames).
+            double deltaTime = e.Time;
+            // Update the Engine's DeltaTime value.
+            Time.deltaTime = deltaTime;
 
-            // Calculate delta time and assign it to Engine.DeltaTime
+            Time.time += deltaTime * Time.timeScale;
 
-
+            dynamicsWorld.StepSimulation((float)Time.deltaTime * (float)Time.timeScale);
 
             Engine.Update();
 
             IMGUIController.Update(this, (float)e.Time);
         }
-
-
-        protected override void OnMouseWheel(MouseWheelEventArgs e)
-        {
-            base.OnMouseWheel(e);
-            IMGUIController.MouseScroll(e.Offset);
-
-
-        }
-
-        protected override void OnTextInput(TextInputEventArgs e)
-        {
-            base.OnTextInput(e);
-
-            
-        }
-
 
         public void AddLayer(IRenderLayer layer)
         {
@@ -187,6 +210,5 @@ namespace Luminosity3DRendering
             base.OnRenderThreadStarted();
 
         }
-
     }
 }

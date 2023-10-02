@@ -25,14 +25,31 @@ namespace Luminosity3D.Utils
             string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
             string logMessage = $"[{timestamp}] [{callingClassName}.{callerMemberName}:{callerLineNumber}] : {message}";
 
+            if (Engine.Console != null)
+            {
+                Engine.Console.Log(logMessage);
+
+            }
+
+            Console.WriteLine(logMessage);
+        }
+
+        public static void LogToFile(string message, [CallerMemberName] string callerMemberName = "",
+                    [CallerFilePath] string callerFilePath = "",
+                    [CallerLineNumber] int callerLineNumber = 0)
+        {
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
+            string logMessage = $"[{timestamp}] [{callingClassName}.{callerMemberName}:{callerLineNumber}] : {message}";
+
             using (StreamWriter sw = File.AppendText("./log.txt"))
             {
                 sw.WriteLine(logMessage);
 
             }
-            if (Engine.Instance.Console != null)
+            if (Engine.Console != null)
             {
-                Engine.Instance.Console.Log(logMessage);
+                Engine.Console.Log(logMessage);
 
             }
 

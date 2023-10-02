@@ -6,6 +6,7 @@ using System.Linq;
 using Luminosity3D;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
+using Luminosity3D.Builtin;
 
 namespace Luminosity3DScening
 {
@@ -13,6 +14,8 @@ namespace Luminosity3DScening
     {
         public string Name { get; set; } = "New Scene";
         public List<Entity> Entities = new List<Entity>();
+
+        public Camera activeCam = null;
 
         public Scene()
         {
@@ -24,11 +27,38 @@ namespace Luminosity3DScening
             Name = name;
         }
 
-        public string SerializeToJson()
+        public Scene LoadSceneFromFile(string filePath)
         {
-  
+            if(File.Exists(filePath))
+            {
+                var scene = new Scene();
 
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
+                //unzip and read file data in reverse like below
+
+                return scene;
+            }
+            return null;
+        }
+
+        public void SerializeToFile(string filePath)
+        {
+            if(File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            var tempFolder = $"temp-scene-{Name}";
+
+            Temp.CreateFolder(tempFolder);
+            Temp.CreateFolder(tempFolder + "/ents/");
+
+            Temp.Write(tempFolder + "/metadata.json", Name);
+
+            foreach(var entity in Entities)
+            {
+                Temp.Write($"{tempFolder}/ents/{entity.GetHashCode()}.json", entity.ToSerializedEntity().Serialize());
+            }
+
         }
 
         public List<Entity> FindEntitysWithObjectsOfType<T>() where T : Component
@@ -63,23 +93,19 @@ namespace Luminosity3DScening
             return result;
         }
 
-        public void SaveToDisk()
-        {
-            File.WriteAllText($"./scenes/{Name}", SerializeToJson());
-        }
 
         public Entity InstantiateEntity(Entity entity)
         {
             Entities.Add(entity);
-            
-            entity.Awake();
+
+            entity.Start();
             
             return entity;
         }
 
         public void Load()
         {
-            Engine.Instance.SceneManager.ActiveScene = this;
+            Engine.SceneManager.ActiveScene = this;
         }
 
         public Entity FindEntity(string name)

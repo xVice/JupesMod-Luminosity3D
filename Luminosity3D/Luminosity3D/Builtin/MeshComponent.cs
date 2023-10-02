@@ -1,12 +1,25 @@
 ﻿using Assimp;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
+using Luminosity3DRendering;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using static Assimp.Metadata;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 
 namespace Luminosity3D.Builtin
 {
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public class RequireComponentAttribute : Attribute
+    {
+        public Type RequiredComponentType { get; }
+
+        public RequireComponentAttribute(Type requiredComponentType)
+        {
+            RequiredComponentType = requiredComponentType;
+        }
+    }
 
 
     //This is insanity, straight insanity, thats why i am rewriting it now.
@@ -18,6 +31,7 @@ namespace Luminosity3D.Builtin
     //kinda better still 50% shit, only 35% nowit j
     //hoiy fuckinton it workie now  tho c: c: c: c: c: c:  C:.C . C:.C .C 
     //now makie shadercache for cahce shader becuase big program many times big slow and bad :c
+    //good?
 
     public class ShaderCache
     {
@@ -81,6 +95,46 @@ namespace Luminosity3D.Builtin
             Opacity = 1.0f;
             Reflectivity = 0.0f;
         }
+
+        public static Material BasicMaterial(Shader shader)
+        {
+            return new Material(shader);
+        }
+
+        // Create a Lambertian material with a specified diffuse color
+        public static Material LambertianMaterial(Shader shader, Vector3 diffuseColor)
+        {
+            var material = new Material(shader);
+            material.DiffuseColor = diffuseColor;
+            return material;
+        }
+
+        // Create a Phong material with diffuse, specular, and shininess properties
+        public static Material PhongMaterial(Shader shader, Vector3 diffuseColor, Vector3 specularColor, float shininess)
+        {
+            var material = new Material(shader);
+            material.DiffuseColor = diffuseColor;
+            material.SpecularColor = specularColor;
+            material.Shininess = shininess;
+            return material;
+        }
+
+        // Create a Reflective material with a reflective color
+        public static Material ReflectiveMaterial(Shader shader, Vector3 reflectiveColor)
+        {
+            var material = new Material(shader);
+            material.ReflectiveColor = reflectiveColor;
+            return material;
+        }
+
+        // Create an Emissive material with an emissive color
+        public static Material EmissiveMaterial(Shader shader, Vector3 emissiveColor)
+        {
+            var material = new Material(shader);
+            material.EmissiveColor = emissiveColor;
+            return material;
+        }
+
 
         public void Apply()
         {
@@ -161,7 +215,7 @@ namespace Luminosity3D.Builtin
                     var shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
                     shader.Use();
 
-                    var material = new Material(shader);
+                    var material = Material.PhongMaterial(shader, new Vector3(100, 25, 14), new Vector3(255, 15, 25), 5f);
 
                     material.Apply();
 
@@ -187,8 +241,8 @@ namespace Luminosity3D.Builtin
                     shader.SetUniform("viewMatrix", viewMatrix);
                     shader.SetUniform("projectionMatrix", projectionMatrix);
                     shader.SetUniform("viewPos", viewPos);
-                    shader.SetUniform("lightColor", new Vector3(0.0f, 0.5f, 1.0f));
-                    shader.SetUniform("objectColor", new Vector3(1.0f, 1f, 1f));
+                    shader.SetUniform("lightColor", new Vector3(1f, 1f, 1f));
+                    shader.SetUniform("objectColor", new Vector3(0.25f, 0.1f, 0.5f));
                     shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
 
                     // Create and begin an occlusion query
@@ -255,6 +309,7 @@ namespace Luminosity3D.Builtin
 
                 foreach (Assimp.Mesh mesh in Scene.Meshes)
                 {
+                    
                     foreach (Vector3D vertex in mesh.Vertices)
                     {
                         vertices.Add(vertex);
@@ -367,8 +422,8 @@ namespace Luminosity3D.Builtin
 
 
 
-
-    public class MeshBatch : Component, IRenderable
+    [RequireComponent(typeof(TransformComponent))]
+    public class MeshBatch : Component, IRenderable, IImguiSerialize
     {
         public string filePath = string.Empty;
         public MeshModel model = null;
@@ -381,78 +436,48 @@ namespace Luminosity3D.Builtin
             shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
         }
 
-        public MeshBatch(string filePath, string vert, string frag)
+        public MeshBatch(string filePath, string vert, string frag) 
         {
             var meshBatch = Compute(filePath);
             model = meshBatch;
             shader = new Shader(vert, frag);
+
         }
+
 
         public MeshModel Compute(string filePath)
         {
             var cachedMesh = MeshCache.Get(filePath);
             if (cachedMesh != null)
             {
-                Logger.Log("Using a cached mesh..");
+ 
                 return cachedMesh;
             }
 
-            Logger.Log("Loading a mesh from its file..");
             var meshModel = new MeshModel(filePath);
             MeshCache.Cache(meshModel);
             return meshModel;
         }
 
-        public override void Start()
+        public void EditorUI()
         {
-
+            
         }
 
-        public override void Update()
+        public static Component OnEditorCreation(Entity ent)
         {
-
+            return new MeshBatch("./teapot.obj");
         }
 
-        public override void OnDestroy()
+        public void OnRender()
         {
-
-
-        }
-
-        public override void Awake()
-        {
-          
-        }
-
-        public override void EarlyUpdate()
-        {
-         
-        }
-
-        public override void LateUpdate()
-        {
-          
-        }
-
-        public override void OnEnable()
-        {
-          
-        }
-
-        public override void OnDisable()
-        {
-         
-        }
-
-        public void OnRender() // called by OnRenderFrame function from opentk rather then the OnUpdateFrame function. useful for .... rendering
-        {
-            var cam = Engine.FindComponents<Camera>().FirstOrDefault();
-            if(cam != null)
+            var cam = Engine.SceneManager.ActiveScene.activeCam;
+            if (cam != null)
             {
                 var transform = GetComponent<TransformComponent>();
-                if(transform != null)
+                if (transform != null)
                 {
-                    model.Render(cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix() , cam.Position);
+                    model.Render(cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix(), LMath.ToVecTk(cam.Position));
                 }
             }
         }

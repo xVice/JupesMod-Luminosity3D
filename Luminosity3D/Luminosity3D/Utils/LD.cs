@@ -9,27 +9,14 @@ namespace Luminosity3D.Utils
 {
     public static class LD
     {
-        public static Engine Engine { get => Engine.Instance; }
-
-        public static List<Engine> EnginePool = new List<Engine>();
-
-        public static Engine StartEngine()
+        public static void StartEngine()
         {
-            var engine = new Engine("Luminosity Launcher");
             var scene = new Scene("Demo Scene");
 
-            engine.SceneManager.AddScene(scene);
+            Engine.SceneManager.AddScene(scene);
             scene.Load();
 
-            engine.StartEngine();
-
-            EnginePool.Add(engine);
-            return engine;
-        }
-
-        public static Engine FindEngine(string engineName)
-        {
-            return EnginePool.Where(x => x.EngineName == engineName).First();
+            Engine.StartEngine();
         }
 
 

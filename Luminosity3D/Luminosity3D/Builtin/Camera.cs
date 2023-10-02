@@ -1,43 +1,60 @@
 ﻿using Luminosity3D.EntityComponentSystem;
-using OpenTK.Mathematics;
+using System.Numerics;
 using System;
+using OpenTK.Mathematics;
+using Vector3 = System.Numerics.Vector3;
+using Quaternion = System.Numerics.Quaternion;
+using Luminosity3D.Utils;
 
 namespace Luminosity3D.Builtin
 {
+    [RequireComponent(typeof(TransformComponent))]
     public class Camera : Component
     {
+        private TransformComponent transform = null;
+        private float MoveSpeed = 2.5f;
+        private float MouseSensitivity = 0.1f;
+
+        public Vector3 Position { get => transform.Position; set => transform.Position = value; }
         public Matrix4 ViewMatrix { get; private set; }
         public Matrix4 ProjectionMatrix { get; private set; }
-        public Vector3 Position { get; set; }
-        public Vector3 Front { get; private set; }
-        public Vector3 Up { get; private set; }
+        public Quaternion Orientation { get; set; }
         public float FieldOfView { get; set; }
         public float AspectRatio { get; set; }
         public float NearClip { get; set; }
         public float FarClip { get; set; }
-        public float Yaw { get; private set; }
-        public float Pitch { get; private set; }
-        private float MoveSpeed = 2.5f;
-        private float MouseSensitivity = 0.1f;
-
-        public Camera(Entity entity, float fieldOfView, float aspectRatio, float nearClip, float farClip)
-            : base(entity)
+        public Vector3 Forward
         {
-            Position = new Vector3(0, 0, 3); // Adjust the initial camera position as needed.
-            Up = Vector3.UnitY;
-            FieldOfView = fieldOfView;
-            AspectRatio = aspectRatio;
-            NearClip = nearClip;
-            FarClip = farClip;
-            Yaw = -90.0f;
-            Pitch = 0.0f;
-
-            Front = Vector3.Zero; // Initialize Front to zero initially.
-
-            UpdateProjectionMatrix();
-            UpdateViewMatrix(); // Calculate Front and ViewMatrix.
+            get
+            {
+                // Calculate the forward vector based on the camera's orientation
+                return -Vector3.Transform(Vector3.UnitZ, Orientation);
+            }
+        }
+        public Vector3 Right
+        {
+            get
+            {
+                Vector3 forward = -Vector3.Transform(Vector3.UnitZ, Orientation);
+                Vector3 up = Vector3.Transform(Vector3.UnitY, Orientation);
+                return Vector3.Cross(up, forward);
+            }
         }
 
+
+        public override void Awake()
+        {
+            transform = GetComponent<TransformComponent>();
+
+            FieldOfView = 90;
+            AspectRatio = 1920 / 1080;
+            NearClip = 0.1f;
+            FarClip = 1000f;
+            Orientation = Quaternion.Identity;
+
+            UpdateProjectionMatrix();
+            UpdateViewMatrix();
+        }
 
         public void UpdateProjectionMatrix()
         {
@@ -51,102 +68,44 @@ namespace Luminosity3D.Builtin
 
         public void UpdateViewMatrix()
         {
-            // Calculate the new Front vector based on the current yaw and pitch
-            Front = new Vector3(
-                MathF.Cos(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch)),
-                MathF.Sin(MathHelper.DegreesToRadians(Pitch)),
-                MathF.Sin(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch))
-            );
-            Front = Vector3.Normalize(Front);
+            ViewMatrix = Matrix4.LookAt(LMath.ToVecTk(Position), LMath.ToVecTk(Position) - LMath.ToVecTk(Vector3.Transform(Vector3.UnitZ, Orientation)), LMath.ToVecTk(Vector3.Transform(Vector3.UnitY, Orientation)));
+        }
 
-            // Update the view matrix with the new position, target, and up vectors
-            ViewMatrix = Matrix4.LookAt(Position, Position + Front, Up);
+        public void SetActive()
+        {
+            Engine.SceneManager.ActiveScene.activeCam = this;
         }
 
         public void Move(Vector3 direction, float deltaTime)
         {
-            // Move the camera based on the direction and speed
             Position += direction * MoveSpeed * deltaTime;
+            UpdateViewMatrix();
         }
 
-        public void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true)
+        public void RotateCamera(Vector3 orientation, float angle)
         {
-            xOffset *= MouseSensitivity;
-            yOffset *= MouseSensitivity;
+            // Create a quaternion to represent the rotation
+            Quaternion rotation = Quaternion.CreateFromAxisAngle(orientation, angle);
 
-            Yaw += xOffset;
-            Pitch += yOffset;
+            // Apply the rotation to the camera's orientation
+            Orientation = rotation * Orientation;
 
-            // Constrain the pitch to prevent camera flipping
-            if (constrainPitch)
-            {
-                if (Pitch > 89.0f)
-                    Pitch = 89.0f;
-                if (Pitch < -89.0f)
-                    Pitch = -89.0f;
-            }
+            // Normalize the camera's orientation to ensure it remains a unit quaternion
+            //Orientation.Normalize();
 
             UpdateViewMatrix();
         }
 
-        public override void Start()
+        public static float Clamp(float value, float min, float max)
         {
-            // Initialize the projection matrix when the camera component starts
-            UpdateProjectionMatrix();
-            UpdateViewMatrix();
+            return Math.Clamp(value, min, max);
         }
 
         public void LookAt(Vector3 target)
         {
-            Front = Vector3.Normalize(target - Position);
 
-            // Calculate the new yaw and pitch angles
-            Yaw = MathHelper.RadiansToDegrees(MathF.Atan2(Front.X, Front.Z));
-            Pitch = MathHelper.RadiansToDegrees(MathF.Asin(-Front.Y));
-
-            // Update the view matrix with the new orientation
-            UpdateViewMatrix();
+           
         }
 
-
-
-
-
-        public override void Awake()
-        {
-        
-        }
-
-        public override void EarlyUpdate()
-        {
-       
-        }
-
-        public override void Update()
-        {
-         
-        }
-
-        public override void LateUpdate()
-        {
-       
-        }
-
-        public override void OnEnable()
-        {
-         
-        }
-
-        public override void OnDisable()
-        {
-          
-        }
-
-        public override void OnDestroy()
-        {
-          
-        }
-
-        // Other ECS component lifecycle methods and properties...
     }
 }

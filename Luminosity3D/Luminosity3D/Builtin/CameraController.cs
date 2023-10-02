@@ -1,12 +1,7 @@
 ﻿using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
-using OpenTK.Mathematics;
+using System.Numerics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Luminosity3D.Builtin
 {
@@ -14,117 +9,63 @@ namespace Luminosity3D.Builtin
     {
         private Camera camera;
         private float moveSpeed = 5.0f;
-        private float sensitivity = 200f;
-        public bool lockMovement = false;
-        private KeyboardState keyboardState;
-        
+        private float sensitivity = 1.5f;
+        public bool lockMovement = true;
 
-        public CameraController(Entity entity) : base(entity)
-        {
-            camera = entity.GetComponent<Camera>();
-        }
-
+      
         public override void Awake()
         {
-          
-        }
-
-        public override void EarlyUpdate()
-        {
-         
-        }
-
-        public override void LateUpdate()
-        {
-         
-        }
-
-        public override void OnDestroy()
-        {
-          
-        }
-
-        public override void OnDisable()
-        {
-           
-        }
-
-        public override void OnEnable()
-        {
-          
-        }
-
-        public override void Start()
-        {
-           
-            keyboardState = Engine.KeyboardState;
+            camera = GetComponent<Camera>();
         }
 
         public override void Update()
         {
-            if (lockMovement == false)
+            if (lockMovement == false && camera == Engine.SceneManager.ActiveScene.activeCam) //long big query very slow big bad oh no
             {
-                // Ensure that deltaTime is non-zero to prevent division by zero
-                float deltaTime = (float)Math.Max(Engine.DeltaTime, float.Epsilon);
-
                 // Handle mouse input
-                var mouseState = Engine.MouseState;
+
+                float deltaTime = (float)Time.deltaTime;
 
                 // Calculate the change in mouse position
-                float mouseXDelta = mouseState.Delta.X;
-                float mouseYDelta = mouseState.Delta.Y;
+                float mouseXDelta = InputManager.GetMouseDeltaX();
+                float mouseYDelta = InputManager.GetMouseDeltaY();
+                camera.RotateCamera(-Vector3.UnitY, mouseXDelta * sensitivity * deltaTime);
+                camera.RotateCamera(camera.Right, mouseYDelta * sensitivity * deltaTime); // Rotate around the camera's right vector
 
-                // Adjust the camera's yaw and pitch based on mouse movement
-
-                camera.ProcessMouseMovement(mouseXDelta * sensitivity * deltaTime, mouseYDelta * sensitivity * deltaTime);
 
                 // Handle movement based on keyboard input
                 Vector3 moveDirection = Vector3.Zero;
 
-                if (keyboardState == null)
+
+                if (InputManager.GetKeyDown(Keys.W))
                 {
-                    keyboardState = Engine.KeyboardState;
-                    return;
+                    moveDirection += Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Orientation)); // Move forward
                 }
 
-                if (keyboardState.IsKeyDown(Keys.W))
+                if (InputManager.GetKeyDown(Keys.S))
                 {
-                    moveDirection += camera.Front;
+                    moveDirection -= Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Orientation)); // Move backward
                 }
 
-                if (keyboardState.IsKeyDown(Keys.S))
-                {
-                    moveDirection -= camera.Front;
-                }
-
-                if (keyboardState.IsKeyDown(Keys.A))
+                if (InputManager.GetKeyDown(Keys.A))
                 {
                     // Strafe left
-                    moveDirection -= Vector3.Cross(camera.Front, camera.Up);
+                    moveDirection -= Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Orientation)), Vector3.UnitY);
                 }
 
-                if (keyboardState.IsKeyDown(Keys.D))
+                if (InputManager.GetKeyDown(Keys.D))
                 {
                     // Strafe right
-                    moveDirection += Vector3.Cross(camera.Front, camera.Up);
+                    moveDirection += Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Orientation)), Vector3.UnitY);
                 }
 
-                // Normalize the movement vector to prevent faster diagonal movement
-                if (moveDirection.LengthSquared > 0)
-                    moveDirection.Normalize();
 
                 // Update the camera's position based on movement input
-
-
                 camera.Move(moveDirection, moveSpeed * deltaTime);
-
-
-
-                // Update the projection matrix (it doesn't change based on input)
-                camera.UpdateProjectionMatrix();
             }
-            
         }
+
+
     }
 
 

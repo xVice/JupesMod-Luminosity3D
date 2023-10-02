@@ -1,49 +1,89 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-    public abstract class Component
+    public abstract class Component : IEngineQueryable
     {
-        public Entity Entity { get; set; }
-        public Engine Engine { get => Entity.Engine; }
+        private Entity Entity { get; set; }
+        public int ExecutionOrder { get; set; } = 1;
+        public string Name { get; set; } = "Component";
+        public string Description { get; set; } = "A Components Description";
+        public bool Enabled { get; set; } = true;
 
-        private double deltaTime { get => Engine.DeltaTime; }
-
-        public int ExecutionOrder { get; set; } = int.MaxValue;
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public Component() { }
-        public Component(Entity entity,string name, string description, int executionOrder)
+        public Component()
         {
-            Entity = entity;
-            Name = name;
-            Description = description;
-            ExecutionOrder = executionOrder;
- 
-        }
 
-        protected Component(Entity entity)
-        {
-            Entity = entity;
         }
 
         public T GetComponent<T>() where T : Component
         {
-            return Entity.GetComponent<T>();
+            if (Entity.HasComponent(typeof(T)))
+            {
+                return Entity.GetComponent<T>();
+            }
+            return null;
         }
 
-        public abstract void Awake();
-        public abstract void Start();
-        public abstract void EarlyUpdate();
-        public abstract void Update();
-        public abstract void LateUpdate();
-        public abstract void OnEnable();
-        public abstract void OnDisable();
-        public abstract void OnDestroy();
+        public void SetEntity(Entity entity)
+        {
+            Entity = entity;
+        }
+
+        public Entity GetEntity()
+        {
+            return Entity;
+        }
+
+        public void Destroy()
+        {
+            OnDestroy();
+            Entity.Components.Remove(this);
+        }
+
+        public void Switch()
+        {
+            if (Enabled)
+            {
+                Disable();
+            }
+            else
+            {
+                Enable();
+            }
+        }
+
+        public void Enable()
+        {
+            if (!Enabled)
+            {
+                Enabled = true;
+                OnEnable();
+            }
+        }
+
+        public void Disable()
+        {
+            if (Enabled)
+            {
+                Enabled = false;
+                OnDisable();
+            }
+        }
+
         
+
+        public virtual void Awake() { }
+        public virtual void Start() { }
+        public virtual void EarlyUpdate() { }
+        public virtual void Update() { }
+        public virtual void LateUpdate() { }
+        public virtual void OnEnable() { }
+        public virtual void OnDisable() { }
+        public virtual void OnDestroy() { }
     }
 }

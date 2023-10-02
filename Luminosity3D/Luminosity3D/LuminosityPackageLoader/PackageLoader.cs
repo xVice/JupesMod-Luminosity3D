@@ -12,8 +12,6 @@ namespace Luminosity3D.PKGLoader
 {
     public class PackageLoader
     {
-        private static Engine Engine { get => Engine.Instance; }
-        public static PackageLoader Instance { get => Engine.PackageLoader; }
 
         private List<LUPKMod> LoadedMods = new List<LUPKMod>();
 

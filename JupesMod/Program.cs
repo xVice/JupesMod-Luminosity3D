@@ -9,14 +9,10 @@ namespace JupesMod
             // Attach the exception handler
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExceptionHandler);
 
-            var engine = LD.StartEngine();
+            Temp.ClearTemp();
+            Resources.CreateResourcesFolder();
 
-            Console.ReadKey();
-
-            Logger.Log("Closing..");
-
-            // Make sure to stop the engine and perform other cleanup if needed.
-            engine.StopEngine();
+            LD.StartEngine();           
         }
 
         private static void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
