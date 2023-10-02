@@ -5,7 +5,7 @@ using System.Numerics;
 namespace Luminosity3D.Builtin
 {
     [RequireComponent(typeof(TransformComponent))]
-    public class SineMovement : Component
+    public class SineMovement : LuminosityBehaviour
     {
         private TransformComponent transform = null;
         public float amplitude = 1f; // Height of the sine wave

@@ -8,39 +8,15 @@ using Quaternion = System.Numerics.Quaternion;
 
 namespace Luminosity3D.Builtin
 {
-    public class TransformComponent : Component, IImguiSerialize
+    public class TransformComponent : Component
     {
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
         public Vector3 Scale = Vector3.One;
 
-        public static Component OnEditorCreation(Entity ent)
-        {
-            /*
-            ImGui.InputFloat3("Position", ref Position);
-            
-            ImGui.InputFloat3("Scale", ref Scale);
-            */
-            return new TransformComponent(new Vector3(0,0,0));
-
-        }
-
-        public void EditorUI()
-        {
-            ImGui.InputFloat3("Position", ref Position);
-            // You can use quaternion input or Euler angles here as per your preference.
-            //ImGui.InputFloat4("Rotation", ref Rotation.X);
-            ImGui.InputFloat3("Scale", ref Scale);
-        }
-
         public void LookAt()
         {
-            var cam = Engine.FindComponents<Camera>().FirstOrDefault();
 
-            if (cam != null)
-            {
-                cam.LookAt(Position);
-            }
         }
 
         public void Translate(Vector3 translation)
@@ -59,11 +35,6 @@ namespace Luminosity3D.Builtin
             return transformedVertex;
         }
 
-        public TransformComponent(Vector3 Position) 
-        {
-            this.Position = Position;
-            base.ExecutionOrder = 1;
-        }
 
         public Matrix4 GetTransformMatrix()
         {

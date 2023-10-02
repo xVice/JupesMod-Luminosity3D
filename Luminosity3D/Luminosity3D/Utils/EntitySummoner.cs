@@ -10,20 +10,38 @@ namespace Luminosity3D.Utils
         {
             var ent = new Entity(entName);
 
-            ent.AddComponent(new TransformComponent(pos));
-            ent.AddComponent(new MeshBatch(filePath));
+            // Manually add the required TransformComponent
+            ent.AddComponent<TransformComponent>();
+
+            ent.AddComponent<MeshBatch>();
 
             return ent;
+        }
+
+        public static Entity CreateCamera(string entName, Vector3 pos, bool setActive)
+        {
+            var cament = new Entity(entName); // Create a new entity with the given name.
+            cament.AddComponent<TransformComponent>(); // Add a TransformComponent to the entity.
+            var cam = cament.AddComponent<Camera>(); // Attach a Camera script to the entity.
+            cament.AddComponent<CameraController>(); // Add a CameraController to the entity.
+            if (setActive)
+            {
+                cam.SetActive();
+            }
+
+            return cament; // Return the created entity.
         }
 
         public static Entity CreatePBREntityWithRb(string entName, string filePath, Vector3 pos)
         {
             var ent = new Entity(entName);
 
-            ent.AddComponent(new TransformComponent(pos));
-            var batch = ent.AddComponent(new MeshBatch(filePath));
-            var collider = ent.AddComponent(ColliderComponent.BuildFromMesh(batch));
-            ent.AddComponent(new RigidBodyComponent(collider));
+            // Manually add the required TransformComponent
+            ent.AddComponent<TransformComponent>();
+            var batch = ent.AddComponent<MeshBatch>();
+            ent.AddComponent(ColliderComponent.BuildFromMesh(batch));
+            ent.AddComponent<RigidBodyComponent>();
+
 
             return ent;
         }
@@ -31,11 +49,11 @@ namespace Luminosity3D.Utils
         public static Entity CreatePBREntityWithRbConvexHull(string entName, string filePath, Vector3 pos)
         {
             var ent = new Entity(entName);
+            ent.AddComponent<TransformComponent>();
+            ent.AddComponent<MeshBatch>();
+            ent.AddComponent<ColliderComponent>();
+            ent.AddComponent<RigidBodyComponent>();
 
-            ent.AddComponent(new TransformComponent(pos));
-            var batch = ent.AddComponent(new MeshBatch(filePath));
-            var collider = ent.AddComponent(ColliderComponent.BuildConvexHull(batch));
-            ent.AddComponent(new RigidBodyComponent(collider));
 
             return ent;
         }
@@ -44,13 +62,7 @@ namespace Luminosity3D.Utils
         {
             var ent = new Entity(entName);
 
-            ent.AddComponent(new TransformComponent(pos));
-            var collider = ent.AddComponent(ColliderComponent.BuildSphere(5f));
-            ent.AddComponent(new MeshBatch(filePath));
-            ent.AddComponent(new RigidBodyComponent(collider));
-            ent.AddComponent<Camera>();
-            ent.AddComponent(new FPSController());
-
+           
             return ent;
         }
 
@@ -58,28 +70,12 @@ namespace Luminosity3D.Utils
         {
             var ent = new Entity(entName);
 
-            ent.AddComponent(new TransformComponent(pos));
-            ent.AddComponent<SineMovement>(new SineMovement());
-            var batch = ent.AddComponent(new MeshBatch(filePath));
-            var collider = ent.AddComponent(ColliderComponent.BuildFromMesh(batch));
-            ent.AddComponent(new RigidBodyComponent(collider));
 
             return ent;
         }
 
-        public static Entity CreateCamera(string entName, Vector3 pos, bool setActive)
-        {
-            var cament = new Entity(entName);
-            cament.AddComponent<TransformComponent>(new TransformComponent(pos));
-            cament.AddComponent<Camera>();
-            cament.AddComponent<CameraController>();
-            if (setActive)
-            {
-                cament.GetComponent<Camera>().SetActive();
-            }
 
-            return cament;
-        }
+
 
 
     }

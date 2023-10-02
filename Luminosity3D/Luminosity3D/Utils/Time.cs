@@ -8,8 +8,8 @@ namespace Luminosity3D.Utils
 {
     public static class Time
     {
-        public static double deltaTime = 0;
-        public static double time = 0;
-        public static double timeScale = 1.0;
+        public static float deltaTime = 0;
+        public static float time = 0;
+        public static float timeScale = 1.0f;
     }
 }

@@ -12,6 +12,7 @@ using Luminosity3D.Builtin;
 using ImGuiNET;
 using OpenTK.Windowing.Common.Input;
 using BulletSharp;
+using Luminosity3D.EntityComponentSystem;
 
 namespace Luminosity3DRendering
 {
@@ -24,7 +25,7 @@ namespace Luminosity3DRendering
         {
             IMGUIController = new ImGuiController(this);
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-
+            
             CenterWindow(new Vector2i(1280, 720));
         }
 
@@ -136,10 +137,7 @@ namespace Luminosity3DRendering
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal); // Adjust the depth function as needed
 
-
-
-            //Bus.Send<MeshBatch>(x => x.OnRender());
-            Engine.InvokeFunction<MeshBatch>(x => x.OnRender()); // might work better for this case
+            Engine.SceneManager.ActiveScene.cache.RenderPass();
 
             ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
@@ -154,10 +152,11 @@ namespace Luminosity3DRendering
 
             IMGUIController.Render();
 
-
+            
+            //Will be removed soon
             if (KeyboardState.IsKeyPressed(Keys.F5))
             {
-                var cam = Engine.SceneManager.ActiveScene.activeCam.GetEntity().GetComponent<CameraController>();
+                var cam = Engine.SceneManager.ActiveScene.activeCam.Parent.GetComponent<CameraController>();
 
                 if (cam != null)
                 {
@@ -175,11 +174,8 @@ namespace Luminosity3DRendering
                 }
 
             }
-
-
-
+            
             SwapBuffers();
-
 
         }
 
@@ -187,15 +183,12 @@ namespace Luminosity3DRendering
         {
             base.OnUpdateFrame(e);
             // Calculate Delta Time (time between frames).
-            double deltaTime = e.Time;
-            // Update the Engine's DeltaTime value.
+            float deltaTime = (float)e.Time;
             Time.deltaTime = deltaTime;
-
             Time.time += deltaTime * Time.timeScale;
-
-            dynamicsWorld.StepSimulation((float)Time.deltaTime * (float)Time.timeScale);
-
-            Engine.Update();
+            Engine.SceneManager.ActiveScene.cache.UpdatePass();
+            dynamicsWorld.StepSimulation(Time.deltaTime * Time.timeScale);
+            Engine.SceneManager.ActiveScene.cache.PhysicsPass();
 
             IMGUIController.Update(this, (float)e.Time);
         }

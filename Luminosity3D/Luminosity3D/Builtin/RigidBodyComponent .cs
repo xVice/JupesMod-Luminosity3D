@@ -3,18 +3,34 @@ using BulletSharp.Math;
 using ImGuiNET;
 using Luminosity3D.Builtin;
 using Luminosity3D.Utils;
+using static BulletSharp.Dbvt;
 
 namespace Luminosity3D.EntityComponentSystem
 {
+    
     [RequireComponent(typeof(TransformComponent))]
-    public class ColliderComponent : Component
+    public class ColliderComponent : LuminosityBehaviour
     {
-        public CollisionShape CollisionShape { get; private set; }
-        public TransformComponent Transform { get; private set; }
+        public CollisionShape CollisionShape = null;
+        public TransformComponent Transform = null;
+
+        private MeshBatch batch = null;
 
         public override void Awake()
         {
             Transform = GetComponent<TransformComponent>(); // Assign the TransformComponent reference
+            
+            if (HasComponent<MeshBatch>())
+            {
+                batch = GetComponent<MeshBatch>();
+                CollisionShape = BuildConvexHull(batch).CollisionShape;
+            }
+            else
+            {
+                CollisionShape = BuildSphere(1f).CollisionShape;
+            }
+            
+
         }
 
         public static ColliderComponent BuildFromMesh(MeshBatch batch)
@@ -99,26 +115,17 @@ namespace Luminosity3D.EntityComponentSystem
     }
 
     [RequireComponent(typeof(TransformComponent))]
-    public class RigidBodyComponent : Component, IImguiSerialize
+    [RequireComponent(typeof(ColliderComponent))]
+    public class RigidBodyComponent : LuminosityBehaviour
     {
         public RigidBody RigidBody { get; private set; }
         public ColliderComponent Collider { get; private set; }
 
-        public RigidBodyComponent(ColliderComponent collider)
-        {
-            Collider = collider;
-            CreateRigidBody();
-        }
 
-        public static Component OnEditorCreation(Entity ent)
+        public override void Awake() 
         {
-            
-            if(ent.HasComponent(typeof(MeshBatch)))
-            {
-                var batch = ent.GetComponent<MeshBatch>();
-                return new RigidBodyComponent(ColliderComponent.BuildConvexHull(batch));
-            }
-            return null;
+            Collider = GetComponent<ColliderComponent>();
+            CreateRigidBody();
         }
 
         public override void LateUpdate()
@@ -271,7 +278,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         private void CreateRigidBody()
         {
-            float mass = 1.0f;
+            float mass = 25.0f;
 
             var shape = Collider.CollisionShape;
             var position = Collider.Transform.Position;

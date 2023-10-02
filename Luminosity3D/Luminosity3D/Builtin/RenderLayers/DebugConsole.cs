@@ -279,104 +279,93 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                     if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
                     {
-                        // Check for right-click on an entity and open a popup on item click
-                        if (ImGui.BeginPopupContextItem("EntityPopup" + entity.GetHashCode()))
+                        foreach (var comp in entity.components.Values)
                         {
-                            if (ImGui.BeginMenu("Attach Component"))
+                            if (ImGui.TreeNode("Component: " + comp.GetType().ToString()))
                             {
-                                var componentType = typeof(Component);
-                                var derivedTypes = AppDomain.CurrentDomain.GetAssemblies()
-                                    .SelectMany(s => s.GetTypes())
-                                    .Where(p => componentType.IsAssignableFrom(p) && p != componentType);
-
-                                // Populate the menu with derived types
-                                foreach (var derivedType in derivedTypes)
-                                {
-                                    if (ImGui.MenuItem(derivedType.Name))
-                                    {
-                                        if (typeof(IImguiSerialize).IsAssignableFrom(derivedType))
-                                        {
-                                            if (derivedType.GetInterface(nameof(IImguiSerialize)) != null)
-                                            {
-                                                // Use reflection to call the static method OnEditorCreation
-                                                var methodInfo = derivedType.GetMethod("OnEditorCreation", BindingFlags.Public | BindingFlags.Static);
-                                                if (methodInfo != null)
-                                                {
-                                                    entity.AddComponent((Component)methodInfo.Invoke(null, new object[] { entity }));
-                                                }
-                                                else
-                                                {
-                                                   
-                                                    Logger.Log($"Static method OnEditorCreation not found in {derivedType.Name}");
-                                                }
-                                            }
-               
-                                        }
-                                        else
-                                        {
-                                            var constructorInfo = derivedType.GetConstructor(new[] { typeof(Entity) });
-                                            if (constructorInfo != null)
-                                            {
-                                                var newComponent = (Component)constructorInfo.Invoke(new object[] { entity });
-                                                entity.AddComponent(newComponent);
-                                            }
-                                            else
-                                            {
-                                                Logger.Log($"Static method OnEditorCreation not found, and no suitable constructor found in {derivedType.Name}");
-                                            }
-                                        }
-                                    }
-                                }
-                                ImGui.EndMenu();
-                            }
-
-
-
-                            if (ImGui.MenuItem("Delete Entity"))
-                            {
-                                entity.Kill();
-                            }
-
-                            ImGui.EndPopup();
-                        }
-
-                        var components = entity.Components.OrderBy(x => x.ExecutionOrder).ToList();
-                        for (int j = components.Count() - 1; j >= 0; j--)
-                        {
-                            var component = components[j];
-
-                            // Check for right-click on a component and open a popup on item click
-
-
-                            // Show the component node
-                            if (ImGui.TreeNode(component.GetType().ToString()))
-                            {
-                                if (ImGui.BeginPopupContextItem("ComponentPopup" + component.GetHashCode()))
+                                if (ImGui.BeginPopupContextItem("ComponentPopup" + comp.GetHashCode()))
                                 {
                                     if (ImGui.MenuItem("Delete Component"))
                                     {
-                                        component.Destroy();
+                                        //component.Destroy();
                                     }
 
                                     ImGui.EndPopup();
                                 }
-                                DisplayReflectionBasedExplorerNodes(component);
-                                ImGui.TreePop(); // Close component node
+
+                                if (ImGui.TreeNode("Properties"))
+                                {
+                                    DisplayReflectionBasedExplorerNodes(comp);
+                                    ImGui.TreePop();
+                                }
+
+                                ImGui.TreePop();
                             }
+    
                         }
+
                         ImGui.TreePop();
                     }
                 }
 
-                ImGui.EndGroup();
                 // End the group containing tree view and input box/buttons
+                ImGui.EndGroup();
             }
         }
 
+        private static void ShowEntityPopup(Entity entity, LuminosityBehaviour behav)
+        {
+            if (ImGui.BeginMenu("Attach Component"))
+            {
+                var componentType = typeof(Component);
+                var derivedTypes = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(s => s.GetTypes())
+                    .Where(p => componentType.IsAssignableFrom(p) && p != componentType);
+                foreach (var derivedType in
+                // Populate the menu with derived types
+                from derivedType in derivedTypes
+                where ImGui.MenuItem(derivedType.Name)
+                select derivedType)
+                {
+                    if (typeof(IImguiSerialize).IsAssignableFrom(derivedType))
+                    {
+                        if (derivedType.GetInterface(nameof(IImguiSerialize)) != null)
+                        {
+                            // Use reflection to call the static method OnEditorCreation
+                            var methodInfo = derivedType.GetMethod("OnEditorCreation", BindingFlags.Public | BindingFlags.Static);
+                            if (methodInfo != null)
+                            {
+                                entity.AddComponent((LuminosityBehaviour)methodInfo.Invoke(null, new object[] { entity }));
+                            }
+                            else
+                            {
+
+                                Logger.Log($"Static method OnEditorCreation not found in {derivedType.Name}");
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        var newComp = Activator.CreateInstance(derivedType);
+                        var addComponentMethod = behav.GetType().GetMethod("AddComponent").MakeGenericMethod(derivedType);
+                        addComponentMethod.Invoke(behav, new object[] { newComp });
+
+                    }
+                }
+
+                ImGui.EndMenu();
+            }
 
 
 
+            if (ImGui.MenuItem("Delete Entity"))
+            {
+                //entity.Kill();
+            }
 
+            ImGui.EndPopup();
+        }
 
         void DisplayClassFieldsAndProperties(object classObject)
         {
@@ -504,163 +493,171 @@ namespace Luminosity3D.Builtin.RenderLayers
         {
             if(component is IImguiSerialize imguiSeri)
             {
+                ImGui.Text("Serialized UI:");
+                ImGui.Separator();
+
                 imguiSeri.EditorUI();
 
-                return;
+                ImGui.Separator();
+                //return;
             }
 
-            // Display fields and properties of the component using reflection
-            ImGui.Text("Fields/Properties");
-            ImGui.BeginGroup();
-
-            var fieldsAndProperties = component.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(member => member.MemberType == MemberTypes.Field || member.MemberType == MemberTypes.Property);
-
-            foreach (var member in fieldsAndProperties)
+            if (ImGui.TreeNode("Fields/Properties"))
             {
-                if (member is FieldInfo fieldInfo)
+
+                // Display fields and properties of the component using reflection
+
+                ImGui.BeginGroup();
+
+                var fieldsAndProperties = component.GetType().GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static)
+                  .Where(member => member.MemberType == MemberTypes.Field || member.MemberType == MemberTypes.Property);
+
+                foreach (var member in fieldsAndProperties)
                 {
-                    object fieldValueObj = fieldInfo.GetValue(component);
-                    if (fieldValueObj != null && fieldValueObj.GetType().IsClass)
+                    if (member is FieldInfo fieldInfo)
                     {
-                        // Display the class name and its properties
-                        ImGui.Text($"Instance Name: {fieldInfo.Name}, Type: {fieldInfo.GetType()}");
-                        ImGui.SameLine();
-                        if (ImGui.TreeNode($"##{fieldInfo.Name}Node"))
+                        object fieldValueObj = fieldInfo.GetValue(component);
+                        if (fieldValueObj != null && fieldValueObj.GetType().IsClass)
                         {
-                            DisplayClassFieldsAndProperties(fieldValueObj);
-                            ImGui.TreePop();
+                            // Display the class name and its properties
+                            ImGui.Text($"Instance Name: {fieldInfo.Name}, Type: {fieldInfo.GetType()}");
+                            ImGui.SameLine();
+                            if (ImGui.TreeNode($"##{fieldInfo.Name}Node"))
+                            {
+                                DisplayClassFieldsAndProperties(fieldValueObj);
+                                ImGui.TreePop();
+                            }
+                        }
+                        else
+                        {
+                            if (fieldInfo.FieldType == typeof(bool))
+                            {
+                                bool fieldValue = (bool)fieldInfo.GetValue(component);
+                                if (ImGui.Checkbox($"{fieldInfo.Name}", ref fieldValue))
+                                {
+                                    fieldInfo.SetValue(component, fieldValue);
+                                }
+                            }
+                            else if (fieldInfo.FieldType == typeof(int))
+                            {
+                                int fieldValue = (int)fieldInfo.GetValue(component);
+                                if (ImGui.InputInt($"{fieldInfo.Name}", ref fieldValue))
+                                {
+                                    fieldInfo.SetValue(component, fieldValue);
+                                }
+                            }
+                            else if (fieldInfo.FieldType == typeof(float))
+                            {
+                                float fieldValue = (float)fieldInfo.GetValue(component);
+                                if (ImGui.InputFloat($"{fieldInfo.Name}", ref fieldValue))
+                                {
+                                    fieldInfo.SetValue(component, fieldValue);
+                                }
+                            }
+                            else if (fieldInfo.FieldType == typeof(string))
+                            {
+                                string fieldValue = (string)fieldInfo.GetValue(component);
+                                ImGui.Text($"{fieldInfo.Name}");
+                                ImGui.SameLine();
+                                if (ImGui.InputText($"{fieldInfo.Name}##Input", ref fieldValue, 256)) // Adjust the buffer size as needed
+                                {
+                                    fieldInfo.SetValue(component, fieldValue);
+                                }
+                            }
+                            else if (fieldInfo.FieldType == typeof(Vector3)) // Handle Vector3 fields
+                            {
+                                Vector3 vectorValue = (Vector3)fieldInfo.GetValue(component);
+                                var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
+                                ImGui.Text($"{fieldInfo.Name}");
+                                ImGui.SameLine();
+                                if (ImGui.InputFloat3($"{fieldInfo.Name}##Input", ref rawVec)) ;
+                                {
+                                    vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
+                                    fieldInfo.SetValue(component, vectorValue);
+                                }
+                            }
+                            // Add more type checks for other data types as needed
                         }
                     }
-                    else
+                    else if (member is PropertyInfo propertyInfo)
                     {
-                        if (fieldInfo.FieldType == typeof(bool))
+                        if (propertyInfo.PropertyType == typeof(bool))
                         {
-                            bool fieldValue = (bool)fieldInfo.GetValue(component);
-                            if (ImGui.Checkbox($"{fieldInfo.Name}", ref fieldValue))
+                            bool propertyValue = (bool)propertyInfo.GetValue(component);
+                            if (ImGui.Checkbox($"{propertyInfo.Name}", ref propertyValue))
                             {
-                                fieldInfo.SetValue(component, fieldValue);
+                                propertyInfo.SetValue(component, propertyValue);
                             }
                         }
-                        else if (fieldInfo.FieldType == typeof(int))
+                        else if (propertyInfo.PropertyType == typeof(int))
                         {
-                            int fieldValue = (int)fieldInfo.GetValue(component);
-                            if (ImGui.InputInt($"{fieldInfo.Name}", ref fieldValue))
+                            int propertyValue = (int)propertyInfo.GetValue(component);
+                            if (ImGui.InputInt($"{propertyInfo.Name}", ref propertyValue))
                             {
-                                fieldInfo.SetValue(component, fieldValue);
+                                propertyInfo.SetValue(component, propertyValue);
                             }
                         }
-                        else if (fieldInfo.FieldType == typeof(float))
+                        else if (propertyInfo.PropertyType == typeof(float))
                         {
-                            float fieldValue = (float)fieldInfo.GetValue(component);
-                            if (ImGui.InputFloat($"{fieldInfo.Name}", ref fieldValue))
+                            float propertyValue = (float)propertyInfo.GetValue(component);
+                            if (ImGui.InputFloat($"{propertyInfo.Name}", ref propertyValue))
                             {
-                                fieldInfo.SetValue(component, fieldValue);
+                                propertyInfo.SetValue(component, propertyValue);
                             }
                         }
-                        else if (fieldInfo.FieldType == typeof(string))
+                        else if (propertyInfo.PropertyType == typeof(string))
                         {
-                            string fieldValue = (string)fieldInfo.GetValue(component);
-                            ImGui.Text($"{fieldInfo.Name}");
+                            string propertyValue = (string)propertyInfo.GetValue(component);
+                            ImGui.Text($"{propertyInfo.Name}");
                             ImGui.SameLine();
-                            if (ImGui.InputText($"{fieldInfo.Name}##Input", ref fieldValue, 256)) // Adjust the buffer size as needed
+
+                            // Add a null check for propertyValue
+                            if (propertyValue == null)
                             {
-                                fieldInfo.SetValue(component, fieldValue);
+                                propertyValue = string.Empty; // Set it to an empty string or some default value if it's null
                             }
+
+                            if (ImGui.InputText($"{propertyInfo.Name}##Input", ref propertyValue, 256)) // Adjust the buffer size as needed
+                            {
+                                propertyInfo.SetValue(component, propertyValue);
+                            }
+
                         }
-                        else if (fieldInfo.FieldType == typeof(Vector3)) // Handle Vector3 fields
+                        else if (propertyInfo.PropertyType == typeof(Vector3)) // Handle Vector3 properties
                         {
-                            Vector3 vectorValue = (Vector3)fieldInfo.GetValue(component);
+                            Vector3 vectorValue = (Vector3)propertyInfo.GetValue(component);
                             var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
-                            ImGui.Text($"{fieldInfo.Name}");
+                            ImGui.Text($"{propertyInfo.Name}");
                             ImGui.SameLine();
-                            if (ImGui.InputFloat3($"{fieldInfo.Name}##Input", ref rawVec)) ;
+                            if (ImGui.InputFloat3($"{propertyInfo.Name}##Input", ref rawVec))
                             {
                                 vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
-                                fieldInfo.SetValue(component, vectorValue);
+                                propertyInfo.SetValue(component, vectorValue);
                             }
                         }
                         // Add more type checks for other data types as needed
                     }
                 }
-                else if (member is PropertyInfo propertyInfo)
+
+                ImGui.EndGroup();
+
+                ImGui.Text("Methods");
+                ImGui.BeginGroup();
+                // Enumerate methods and add buttons to invoke them
+                var methods = component.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
+                foreach (var method in methods)
                 {
-                    if (propertyInfo.PropertyType == typeof(bool))
+                    if (method.GetParameters().Length == 0) // Check if the method has no parameters
                     {
-                        bool propertyValue = (bool)propertyInfo.GetValue(component);
-                        if (ImGui.Checkbox($"{propertyInfo.Name}", ref propertyValue))
+                        if (ImGui.Button(method.Name))
                         {
-                            propertyInfo.SetValue(component, propertyValue);
+                            method.Invoke(component, null);
                         }
-                    }
-                    else if (propertyInfo.PropertyType == typeof(int))
-                    {
-                        int propertyValue = (int)propertyInfo.GetValue(component);
-                        if (ImGui.InputInt($"{propertyInfo.Name}", ref propertyValue))
-                        {
-                            propertyInfo.SetValue(component, propertyValue);
-                        }
-                    }
-                    else if (propertyInfo.PropertyType == typeof(float))
-                    {
-                        float propertyValue = (float)propertyInfo.GetValue(component);
-                        if (ImGui.InputFloat($"{propertyInfo.Name}", ref propertyValue))
-                        {
-                            propertyInfo.SetValue(component, propertyValue);
-                        }
-                    }
-                    else if (propertyInfo.PropertyType == typeof(string))
-                    {
-                        string propertyValue = (string)propertyInfo.GetValue(component);
-                        ImGui.Text($"{propertyInfo.Name}");
-                        ImGui.SameLine();
-
-                        // Add a null check for propertyValue
-                        if (propertyValue == null)
-                        {
-                            propertyValue = string.Empty; // Set it to an empty string or some default value if it's null
-                        }
-
-                        if (ImGui.InputText($"{propertyInfo.Name}##Input", ref propertyValue, 256)) // Adjust the buffer size as needed
-                        {
-                            propertyInfo.SetValue(component, propertyValue);
-                        }
-
-                    }
-                    else if (propertyInfo.PropertyType == typeof(Vector3)) // Handle Vector3 properties
-                    {
-                        Vector3 vectorValue = (Vector3)propertyInfo.GetValue(component);
-                        var rawVec = new System.Numerics.Vector3(vectorValue.X, vectorValue.Y, vectorValue.Z);
-                        ImGui.Text($"{propertyInfo.Name}");
-                        ImGui.SameLine();
-                        if (ImGui.InputFloat3($"{propertyInfo.Name}##Input", ref rawVec))
-                        {
-                            vectorValue = new Vector3(rawVec.X, rawVec.Y, rawVec.Z);
-                            propertyInfo.SetValue(component, vectorValue);
-                        }
-                    }
-                    // Add more type checks for other data types as needed
-                }
-            }
-
-            ImGui.EndGroup();
-
-            ImGui.Text("Methods");
-            ImGui.BeginGroup();
-            // Enumerate methods and add buttons to invoke them
-            var methods = component.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (var method in methods)
-            {
-                if (method.GetParameters().Length == 0) // Check if the method has no parameters
-                {
-                    if (ImGui.Button(method.Name))
-                    {
-                        method.Invoke(component, null);
                     }
                 }
+                ImGui.EndGroup();
+                ImGui.TreePop(); // Close component node
             }
-            ImGui.EndGroup();
-            ImGui.TreePop(); // Close component node
         }
 
         private void CreateCamera()

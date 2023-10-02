@@ -10,16 +10,7 @@ using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 namespace Luminosity3D.Builtin
 {
 
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class RequireComponentAttribute : Attribute
-    {
-        public Type RequiredComponentType { get; }
 
-        public RequireComponentAttribute(Type requiredComponentType)
-        {
-            RequiredComponentType = requiredComponentType;
-        }
-    }
 
 
     //This is insanity, straight insanity, thats why i am rewriting it now.
@@ -232,7 +223,7 @@ namespace Luminosity3D.Builtin
             {
                 Bind();
                 CheckGLError("Binding");
-
+   
                 foreach (Assimp.Mesh mesh in Scene.Meshes)
                 {
                     var shader = shaders.Get(mesh);
@@ -423,40 +414,35 @@ namespace Luminosity3D.Builtin
 
 
     [RequireComponent(typeof(TransformComponent))]
-    public class MeshBatch : Component, IRenderable, IImguiSerialize
+    public class MeshBatch : LuminosityBehaviour, IRenderable, IImguiSerialize
     {
-        public string filePath = string.Empty;
+        private TransformComponent transform = null;
+
+        public string filePath = "./teapot.obj";
         public MeshModel model = null;
-        public Shader shader;
+        public Shader shader = null;
+        public string vert = "./shaders/builtin/pbr.vert";
+        public string frag = "./shaders/builtin/pbr.frag";
 
-        public MeshBatch(string filePath)
+        public override void Awake()
         {
-            var meshBatch = Compute(filePath);
-            model = meshBatch;
-            shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
-        }
-
-        public MeshBatch(string filePath, string vert, string frag) 
-        {
-            var meshBatch = Compute(filePath);
-            model = meshBatch;
+            transform = GetComponent<TransformComponent>();
+            ComputeBuffers(filePath);
             shader = new Shader(vert, frag);
-
         }
 
-
-        public MeshModel Compute(string filePath)
+        public void ComputeBuffers(string filePath)
         {
             var cachedMesh = MeshCache.Get(filePath);
             if (cachedMesh != null)
             {
- 
-                return cachedMesh;
+
+                model = cachedMesh;
             }
 
             var meshModel = new MeshModel(filePath);
             MeshCache.Cache(meshModel);
-            return meshModel;
+            model = meshModel;
         }
 
         public void EditorUI()
@@ -464,9 +450,9 @@ namespace Luminosity3D.Builtin
             
         }
 
-        public static Component OnEditorCreation(Entity ent)
+        public static LuminosityBehaviour OnEditorCreation(Entity ent)
         {
-            return new MeshBatch("./teapot.obj");
+            return new MeshBatch();
         }
 
         public void OnRender()
@@ -474,7 +460,6 @@ namespace Luminosity3D.Builtin
             var cam = Engine.SceneManager.ActiveScene.activeCam;
             if (cam != null)
             {
-                var transform = GetComponent<TransformComponent>();
                 if (transform != null)
                 {
                     model.Render(cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix(), LMath.ToVecTk(cam.Position));

@@ -1,7 +1,9 @@
-﻿using Luminosity3D.Utils;
+﻿using Luminosity3D.Builtin;
+using Luminosity3D.Utils;
 using Luminosity3DScening;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -9,26 +11,124 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-    public class SomeBehav : LuminosityBehaviour
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public class RequireComponentAttribute : Attribute
     {
-        public override void OnLoad()
+        public Type RequiredComponentType { get; }
+
+        public RequireComponentAttribute(Type requiredComponentType)
         {
-            var meshent = SummonEntity(EntitySummoner.CreatePBREntityWithRbConvexHull("Testmesh", "./teapot.obj", new System.Numerics.Vector3(0,0,0)));
-            
+            RequiredComponentType = requiredComponentType;
         }
     }
 
-    public class LuminosityBehaviour 
+
+
+    public class ComponentCache
     {
-        public SceneManager SceneManager { get => Engine.SceneManager; }
+        // Use a dictionary to map component types to their respective caches
+        private Dictionary<Type, List<Component>> caches = new Dictionary<Type, List<Component>>();
+        public float lastRenderTime = 0.0f;
+        public float lastPhysicsTime = 0.0f;
+        public float lastUpdateTime = 0.0f;
 
+        public void UpdatePass()
+        {
+            float currentTime = Time.time * 1000.0f; // Convert to milliseconds
+            float deltaTime = currentTime - lastUpdateTime; // Calculate time elapsed since the last pass in ms
+            lastUpdateTime = currentTime;
+
+
+            foreach (var cache in caches)
+            {
+                Type componentType = cache.Key;
+                if (componentType != typeof(RigidBodyComponent))
+                {
+                    List<Component> components = cache.Value;
+                    foreach (var comp in components)
+                    {
+                        if(comp is LuminosityBehaviour behav)
+                        {
+                            behav.LateUpdate();
+                            behav.Update();
+                            behav.LateUpdate();
+                        }
+
+                    }
+                }
+            }
+        }
+
+        public void PhysicsPass()
+        {
+            float currentTime = Time.time * 1000.0f; // Convert to milliseconds
+            float deltaTime = currentTime - lastPhysicsTime; // Calculate time elapsed since the last pass in ms
+            lastPhysicsTime = currentTime;
+
+
+            if (caches.ContainsKey(typeof(RigidBodyComponent)))
+            {
+                foreach (var comp in caches[typeof(RigidBodyComponent)])
+                {
+                    if (comp is LuminosityBehaviour behav)
+                    {
+                        behav.LateUpdate();
+                        behav.Update();
+                        behav.LateUpdate();
+                    }
+                }
+            }
+
+        }
+
+        public void RenderPass()
+        {
+            float currentTime = Time.time * 1000.0f; // Convert to milliseconds
+            float deltaTime = currentTime - lastRenderTime; // Calculate time elapsed since the last pass in ms
+            lastRenderTime = currentTime;
+
+
+            if (caches.ContainsKey(typeof(MeshBatch)))
+            {
+                foreach (var comp in caches[typeof(MeshBatch)])
+                {
+                    if (comp is MeshBatch behav)
+                    {
+                        behav.OnRender();
+                    }
+                }
+            }
+        }
+
+        public void CacheComponent(Component comp)
+        {
+
+            var compType = comp.GetType();
+
+            if (!caches.ContainsKey(compType))
+            {
+                caches[compType] = new List<Component>();
+            }
+            caches[compType].Add(comp);
+
+        }
+
+
+
+    }
+
+
+
+
+    public class LuminosityBehaviour : Component
+    {
+        public int ExecutionOrder = 0;
         public string Name = string.Empty;
+        public List<Entity> Children { get; set; }
 
-        private List<Entity> Entitys = new List<Entity>();
+        public LuminosityBehaviour()
+        {
 
-        public LuminosityBehaviour() 
-        { 
-            
         }
 
         public LuminosityBehaviour(string name)
@@ -36,97 +136,68 @@ namespace Luminosity3D.EntityComponentSystem
             Name = name;
         }
 
-        
-
-        public Entity SummonEntity(Entity entity)
+        public bool HasComponent<T>() where T : Component
         {
-            Entitys.Add(entity);
-            return entity;
+            return Parent.HasComponent<T>();
         }
 
-        public void Remove()
+        public List<T> GetComponents<T>() where T : Component
         {
-            foreach (var ent in Entitys)
+            List<T> result = new List<T>();
+            foreach (var component in Parent.GetComponents<T>())
             {
-                ent.Kill();//graceful c:
+                result.Add(component);
             }
+            return result;
         }
 
-        public virtual void Awake()
+        public T GetComponent<T>() where T : Component
         {
-            foreach(var ent in Entitys)
+            if(Parent.GetComponent<T>() == null)
             {
-                ent.Awake();
+                Logger.Log("Couldnt find " + typeof(T).FullName);
             }
+            return Parent.GetComponent<T>();
         }
 
-
-        public virtual void Start()
+        public T AddComponent<T>() where T : Component, new()
         {
-            foreach (var ent in Entitys)
-            {
-                ent.Start();
-            }
+            return Parent.AddComponent<T>();
         }
 
-
-        public virtual void EarlyUpdate()
-        {
-            foreach (var ent in Entitys)
-            {
-                ent.EarlyUpdate();
-            }
-        }
-
-
-        public virtual void Update()
-        {
-            foreach (var ent in Entitys)
-            {
-                ent.Update();
-            }
-        }
-
-
-        public virtual void LateUpdate()
-        {
-            foreach (var ent in Entitys)
-            {
-                ent.LateUpdate();
-            }
-        }
-        
-        /// <summary>
-        /// Commonly used for autoloaded lupk, allows some more flexible stuff
-        /// </summary>
         public virtual void OnStart()
         {
 
         }
 
-        /// <summary>
-        /// Commonly used for normal non autoloaded lupks, as the dev probably has some kind of idea what to hook/do when it gets loaded, with that said, OnStart isnt any diffrent other then allowing more engine tweakbility
-        /// </summary>
         public virtual void OnLoad()
         {
 
         }
 
-        public virtual void OnEnable()
-        {
-  
-        }
-   
-        public virtual void OnDisable()
+        public virtual void Awake()
         {
 
         }
 
-        public virtual void OnDestroy()
+        public virtual void Start()
         {
 
         }
 
+        public virtual void EarlyUpdate()
+        {
 
+        }
+
+        public virtual void Update()
+        {
+
+        }
+
+        public virtual void LateUpdate()
+        {
+
+        }
     }
 }

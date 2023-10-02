@@ -5,7 +5,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Luminosity3D.Builtin
 {
-    public class CameraController : Component
+    public class CameraController : LuminosityBehaviour
     {
         private Camera camera;
         private float moveSpeed = 15.0f;
@@ -20,11 +20,16 @@ namespace Luminosity3D.Builtin
 
         public override void Update()
         {
+            if (camera == null)
+            {
+                camera = GetComponent<Camera>();
+                Logger.Log("Cam null in cont");
+            }
             if (lockMovement == false && camera == Engine.SceneManager.ActiveScene.activeCam) //long big query very slow big bad oh no
             {
                 // Handle mouse input
 
-                float deltaTime = (float)Time.deltaTime;
+                float deltaTime = Time.deltaTime;
 
                 float mouseXDelta = InputManager.GetMouseDeltaX();
                 float mouseYDelta = InputManager.GetMouseDeltaY();

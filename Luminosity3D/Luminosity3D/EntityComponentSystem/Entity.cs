@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
+
+
     public class SerializedEntity
     {
         public string Name { get; set; }
@@ -41,14 +43,13 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
+
     public class Entity
     {
-        public string Name { get; set; }    
+        public string Name { get; set; }
 
-        [JsonIgnore]
-        public Entity Parent = null;
-        [JsonIgnore]
-        public List<Component> Components { get; set; } = new List<Component>();
+        public Dictionary<Type, Component> components = new Dictionary<Type, Component>();
+
         public int ExecutionOrder = int.MaxValue;
 
         public Entity()
@@ -59,73 +60,101 @@ namespace Luminosity3D.EntityComponentSystem
         public Entity(string name)
         {
             Name = name;
-         
         }
 
-        public Entity(string name, Entity parent)
+
+        public void Start()
         {
-            Name = name;
-            Parent = parent;
 
-        }
-
-        public Entity(string name, int executionOrder)
-        {
-            Name = name;
-            ExecutionOrder = executionOrder;
-
-        }
-
-        public Entity(string name, Entity parent, int executionOrder)
-        {
-            Name = name;
-            ExecutionOrder = executionOrder;
-
-        }
-
-        public List<T> GetComponents<T>() where T : Component
-        {
-            return Components.OfType<T>().ToList();
         }
 
         public T GetComponent<T>() where T : Component
         {
-            return Components.OfType<T>().ToList().FirstOrDefault();
+            Type type = typeof(T);
+            if (components.ContainsKey(type))
+            {
+                return components[type] as T;
+            }
+
+            return null; // Return null if the component is not found.
+        }
+
+        public List<T> GetComponents<T>() where T : Component
+        {
+            Type type = typeof(T);
+            List<T> result = new List<T>();
+            foreach (var component in components.Values)
+            {
+                if (type.IsAssignableFrom(component.GetType()))
+                {
+                    result.Add(component as T);
+                }
+            }
+            return result;
+        }
+
+
+        public bool HasComponent<T>() where T : Component
+        {
+            Type type = typeof(T);
+            return components.ContainsKey(type);
+        }
+
+        public T AddComponent<T>(T comp) where T : Component, new()
+        {
+            //CheckRequiredComponents<T>();
+  
+
+            Type type = typeof(T);
+            if (!components.ContainsKey(type))
+            {
+                comp.Parent = this;
+                components[type] = comp;
+                if (comp is LuminosityBehaviour behav)
+                {
+                    behav.Awake();
+                }
+                Engine.SceneManager.ActiveScene.cache.CacheComponent(comp);
+                return comp;
+            }
+            return null;
         }
 
         public T AddComponent<T>() where T : Component, new()
         {
-            CheckRequiredComponents<T>();
+            //CheckRequiredComponents<T>();
 
-            // Create a new instance of T
-            T component = new T();
+            Type type = typeof(T);
+            if (!components.ContainsKey(type))
+            {
+                T component = new T();
+                component.Parent = this;
+                
 
-            // Set the entity for the component (assuming SetEntity is a method in Component)
-            component.SetEntity(this);
+                components[type] = component;
 
-            // Call Awake method on the component (assuming Awake is a method in Component)
-            component.Awake();
+                if (component is LuminosityBehaviour behav)
+                {
+                    behav.Awake();
+                }
 
-            // Add the component to your collection (Components)
-            Components.Add(component);
+                Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
+                return component;
+            }
+            return null;
+        }
 
-            return component;
+        public bool HasComponent(Type type)
+        {
+            return components.ContainsKey(type);
         }
 
 
 
-        public T AddComponent<T>(T component) where T : Component
+        private void CheckRequiredComponents<T>() where T : Component, new()
         {
-            CheckRequiredComponents<T>();
-            Components.Add(component);
-            component.SetEntity(this);
-            component.Awake();
-            return component;
-        }
+            Type typeToAdd = typeof(T);
 
-        protected void CheckRequiredComponents<T>() where T : Component
-        {
-            var typeToAdd = typeof(T);
             var requiredAttributes = typeToAdd.GetCustomAttributes(typeof(RequireComponentAttribute), true);
 
             foreach (var attribute in requiredAttributes)
@@ -133,30 +162,19 @@ namespace Luminosity3D.EntityComponentSystem
                 if (attribute is RequireComponentAttribute requireComponentAttribute)
                 {
                     var requiredType = requireComponentAttribute.RequiredComponentType;
-                    if (!HasComponent(requiredType))
+                    if (!components.ContainsKey(requiredType))
                     {
                         try
                         {
-                            // Create a new instance of requiredType
-                            Component component = Activator.CreateInstance(requiredType) as Component;
-
-                            if (component != null)
+                            T component = new T();
+                            component.Parent = this;
+                            components[typeof(T)] = component;
+                            if (component is LuminosityBehaviour behav)
                             {
-                                // Set the entity for the component
-                                component.SetEntity(this);
-
-                                // Call Awake method on the component
-                                component.Awake();
-
-                                // Add the component to your collection (Components)
-                                Components.Add(component);
-
-                                Logger.LogToFile($"{typeToAdd.Name} requires a {requiredType.Name} component and has been added.");
+                                behav.Awake();
                             }
-                            else
-                            {
-                                Logger.Log($"Error creating an instance of {requiredType.Name}.");
-                            }
+
+                            Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
                         }
                         catch (Exception ex)
                         {
@@ -165,126 +183,8 @@ namespace Luminosity3D.EntityComponentSystem
                     }
                 }
             }
-        }
-
-
-
-        public bool HasComponent(Type componentType)
-        {
-            return Components.Any(c => componentType.IsAssignableFrom(c.GetType()));
-        }
-
-        public void Start()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.Start();
-            }
-            
-            
-        }
-
-        public void Awake()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.Awake();
-            }
-
 
         }
-
-        public void Kill()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.Destroy();
-            }
-            Engine.SceneManager.ActiveScene.Entities.Remove(this);
-        }
-
-        public void Update()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.Update();
-            }
-        }
-
-
-        public void EarlyUpdate()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.EarlyUpdate();
-
-            }
-        }
-
-        public void LateUpdate()
-        {
-            var enabledComps = Components.Where(x => x.Enabled == true);
-            var sortedComps = enabledComps.OrderBy(x => x.ExecutionOrder).Reverse();
-
-            for (int i = sortedComps.Count() - 1; i >= 0; i--)
-            {
-                var comp = sortedComps.ElementAt(i);
-                comp.LateUpdate();
-            }
-        }
-
-        // Serialize an Entity to a SerializedEntity
-        public SerializedEntity ToSerializedEntity()
-        {
-            var serializedEntity = new SerializedEntity
-            {
-                Name = this.Name,
-                Parent = this.Parent?.ToSerializedEntity(),
-                Components = this.Components.ToList()
-            };
-
-            return serializedEntity;
-        }
-
-        // Deserialize a SerializedEntity to an Entity
-        public static Entity FromSerializedEntity(SerializedEntity serializedEntity, Entity parent)
-        {
-            var entity = new Entity(serializedEntity.Name, parent);
-
-            if (serializedEntity.Parent != null)
-            {
-                entity.Parent = FromSerializedEntity(serializedEntity.Parent, parent);
-            }
-
-            foreach (var component in serializedEntity.Components)
-            {
-                entity.Components.Add(component);
-            }
-
-            return entity;
-        }
-
-
 
     }
 }

@@ -7,15 +7,4 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.Utils
 {
-    public static class Bus
-    {
-        //Big slow but work good
-        public static void Send<T>(Action<T> action) where T : Component
-        {
-            foreach(var component in Engine.FindComponents<T>())
-            {
-                action(component);
-            }
-        }
-    }
 }

@@ -15,6 +15,8 @@ namespace Luminosity3DScening
         public string Name { get; set; } = "New Scene";
         public List<Entity> Entities = new List<Entity>();
 
+        public ComponentCache cache = new Luminosity3D.EntityComponentSystem.ComponentCache();
+
         public Camera activeCam = null;
 
         public Scene()
@@ -56,7 +58,7 @@ namespace Luminosity3DScening
 
             foreach(var entity in Entities)
             {
-                Temp.Write($"{tempFolder}/ents/{entity.GetHashCode()}.json", entity.ToSerializedEntity().Serialize());
+                //Temp.Write($"{tempFolder}/ents/{entity.GetHashCode()}.json", entity.ToSerializedEntity().Serialize());
             }
 
         }
@@ -106,19 +108,6 @@ namespace Luminosity3DScening
         public void Load()
         {
             Engine.SceneManager.ActiveScene = this;
-        }
-
-        public Entity FindEntity(string name)
-        {
-            return Entities.FirstOrDefault(x => x.Name == name);
-        }
-
-        public void Update()
-        {
-            foreach (var entity in Entities)
-            {
-                entity.Update();
-            }
         }
     }
 }

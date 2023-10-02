@@ -9,16 +9,17 @@ using Luminosity3D.Utils;
 namespace Luminosity3D.Builtin
 {
     [RequireComponent(typeof(TransformComponent))]
-    public class Camera : Component
+    public class Camera : LuminosityBehaviour
     {
         private TransformComponent transform = null;
         private float MoveSpeed = 2.5f;
         private float MouseSensitivity = 0.1f;
 
-        public Vector3 Position { get => transform.Position; set => transform.Position = value; }
+        public Vector3 Position = Vector3.Zero;
+
         public Matrix4 ViewMatrix { get; private set; }
         public Matrix4 ProjectionMatrix { get; private set; }
-        public Quaternion Orientation { get; set; }
+        public Quaternion Orientation { get; set; } = Quaternion.Identity;
         public float FieldOfView { get; set; }
         public float AspectRatio { get; set; }
         public float NearClip { get; set; }
@@ -51,7 +52,7 @@ namespace Luminosity3D.Builtin
             NearClip = 0.1f;
             FarClip = 1000f;
             Orientation = Quaternion.Identity;
-
+            SetActive();
             UpdateProjectionMatrix();
             UpdateViewMatrix();
         }

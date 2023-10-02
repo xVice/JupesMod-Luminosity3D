@@ -20,7 +20,7 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(RigidBodyComponent))]
     [RequireComponent(typeof(Camera))]
 
-    public class FPSController : Component, IImguiSerialize
+    public class FPSController : LuminosityBehaviour, IImguiSerialize
     {
         TransformComponent transform;
         RigidBodyComponent rb;
@@ -45,7 +45,7 @@ namespace Luminosity3D.Builtin
         {
             if (InputManager.GetKeyPressed(Keys.F6))
             {
-                var cam = Engine.SceneManager.ActiveScene.activeCam.GetEntity().GetComponent<CameraController>();
+                var cam = Engine.SceneManager.ActiveScene.activeCam.Parent.GetComponent<CameraController>();
 
                 if (cam != null)
                 {
@@ -103,7 +103,7 @@ namespace Luminosity3D.Builtin
             camera.UpdateViewMatrix();
         }
 
-        public static Component OnEditorCreation(Entity ent)
+        public static LuminosityBehaviour OnEditorCreation(Entity ent)
         {
             return new FPSController();
         }

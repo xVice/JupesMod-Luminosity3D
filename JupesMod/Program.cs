@@ -18,8 +18,8 @@ namespace JupesMod
         private static void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
         {
             Exception ex = (Exception)e.ExceptionObject;
-            Logger.Log("Unhandled Exception:");
-            Logger.Log(ex.ToString());
+            Logger.LogToFile("Unhandled Exception:");
+            Logger.LogToFile(ex.ToString());
             // Optionally, you can log the exception here.
             // You might want to perform some cleanup or logging before exiting the application.
         }

@@ -22,6 +22,7 @@ namespace Luminosity3D
 
             using (Renderer renderer = new Renderer(1280, 780, "Jupe's Mod v0.0.5"))
             {
+                double fps = 60;
                 Renderer = renderer;
                 renderer.Run();
 
@@ -39,58 +40,7 @@ namespace Luminosity3D
             return null;
         }
 
-        //Reallllllly slow
-        public static void InvokeFunction<T>(Action<T> function) where T : Component
-        {
-            var scene = SceneManager.ActiveScene;
-
-            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
-
-            if (sortedList.Count() != 0)
-            {
-                for (int i = sortedList.Count() - 1; i >= 0; i--)
-                {
-                    var ent = sortedList.ElementAt(i);
-                    foreach(var comp in ent.Components)
-                    {
-                        if (comp is T typedComponent)
-                        {
-                            function(typedComponent);
-                        }
-                    }
-                }
-            }
-        }
-
-        public static void Update()
-        {
-            var scene = SceneManager.ActiveScene;
-
-            var sortedList = scene.Entities.OrderBy(x => x.ExecutionOrder);
-
-
-            if (sortedList.Count() != 0)
-            {
-                for (int i = sortedList.Count() - 1; i >= 0; i--)
-                {
-                    var ent = sortedList.ElementAt(i);
-                    ent.EarlyUpdate();
-                    ent.Update();
-                    ent.LateUpdate();
-                }
-            }
-        }
-
-        public static void StopEngine()
-        {
-            PackageLoader.UnloadPaks();
-        }
 
         //Add global searching shit here that is slow.
-
-        public static List<T> FindComponents<T>() where T : Component
-        {
-            return SceneManager.ActiveScene.FindObjectsOfType<T>();
-        }
     }
 }

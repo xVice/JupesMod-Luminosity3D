@@ -8,21 +8,10 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-    public interface IEngineQueryable
-    {
-        void Awake();
-        void Start();
-        void EarlyUpdate();
-        void Update();
-        void LateUpdate();
-        void OnEnable();
-        void OnDisable();
-        void OnDestroy();
-    }
 
     public interface IImguiSerialize
     {
-        abstract static Component OnEditorCreation(Entity ent);
+        abstract static LuminosityBehaviour OnEditorCreation(Entity ent);
         void EditorUI();
     }
 
@@ -42,6 +31,8 @@ namespace Luminosity3D.EntityComponentSystem
         {
             SettingsList.Add(setting);
         }
+
+
 
         public static List<IImguiSerializeSettings> GetSettings()
         {
@@ -74,6 +65,11 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void SettingUi()
         {
+            ImGui.Separator();
+            ImGui.Text("Last RenderPass: " + Engine.SceneManager.ActiveScene.cache.lastRenderTime.ToString());
+            ImGui.Text("Last Physics Update: " + Engine.SceneManager.ActiveScene.cache.lastPhysicsTime.ToString());
+            ImGui.Text("Last General Update: " + Engine.SceneManager.ActiveScene.cache.lastUpdateTime.ToString());
+            ImGui.Separator();
             ImGui.Text("Delta Time: " + Time.deltaTime.ToString());
 
             ImGui.Text("Time: " + Time.time.ToString());
@@ -81,9 +77,9 @@ namespace Luminosity3D.EntityComponentSystem
             ImGui.Text("Time Scale: " + Time.timeScale.ToString());
 
             var newts = Time.timeScale;
-            ImGui.InputDouble("##TimeScale", ref newts);
+            ImGui.InputFloat("##TimeScale", ref newts);
             Time.timeScale = newts;
-
+            ImGui.Separator();
 
         }
     }
