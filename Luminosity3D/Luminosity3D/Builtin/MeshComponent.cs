@@ -195,6 +195,7 @@ namespace Luminosity3D.Builtin
             GL.BindVertexArray(0);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.UseProgram(0);
         }
 
         public void BuildCache()
@@ -206,8 +207,7 @@ namespace Luminosity3D.Builtin
                 {
                     var shader = new Shader("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
                     shader.Use();
-
-                    var material = Material.PhongMaterial(shader, new Vector3(100, 25, 14), new Vector3(255, 15, 25), 5f);
+                    var material = Material.PhongMaterial(shader, new Vector3(15, 100, 14), new Vector3(45, 15, 255), 15f);
 
                     material.Apply();
 
@@ -222,7 +222,7 @@ namespace Luminosity3D.Builtin
         {
             try
             {
-                Bind();
+   
                 CheckGLError("Binding");
    
                 foreach (Assimp.Mesh mesh in Scene.Meshes)
@@ -237,37 +237,15 @@ namespace Luminosity3D.Builtin
                     shader.SetUniform("objectColor", new Vector3(0.25f, 0.1f, 0.5f));
                     shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
 
-                    // Create and begin an occlusion query
-                    int queryID;
-                    GL.GenQueries(1, out queryID);
-                    GL.BeginQuery(QueryTarget.SamplesPassed, queryID);
-
-                    CheckGLError("Begin occlusion query");
-
                     // Render the object conditionally based on occlusion query
                     GL.DrawElements(PrimitiveType.Triangles, mesh.FaceCount * 3, DrawElementsType.UnsignedInt, 0);
 
-                    // End the occlusion query
-                    GL.EndQuery(QueryTarget.SamplesPassed);
 
-                    CheckGLError("End occlusion query");
 
-                    int queryResult;
-                    GL.GetQueryObject(queryID, GetQueryObjectParam.QueryResult, out queryResult);
 
-                    // Delete the query object
-                    GL.DeleteQueries(1, ref queryID);
-
-                    // If the query result is greater than zero, the object is visible
-                    if (queryResult > 0)
-                    {
-                        // Object is visible, continue with rendering
-                        CheckGLError("Drawing a mesh");
-                    }
                 }
 
-                Unbind();
-                GL.UseProgram(0);
+    
                 CheckGLError("Unbinding");
             }
             catch (Exception ex)

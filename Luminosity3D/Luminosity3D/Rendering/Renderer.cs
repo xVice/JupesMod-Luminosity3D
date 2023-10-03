@@ -16,6 +16,66 @@ using Luminosity3D.EntityComponentSystem;
 
 namespace Luminosity3DRendering
 {
+
+    public class Cache<T>
+    {
+        private List<T> cache = new List<T>();
+        private readonly Func<T, object>[] sortingFunctions;
+
+        public Cache(Func<T, object>[] sortingFunctions)
+        {
+            this.sortingFunctions = sortingFunctions;
+        }
+
+        public void Add(T item)
+        {
+            // Insert the item at the correct position based on sorting functions
+            int index = cache.BinarySearch(item, new CacheItemComparer<T>(sortingFunctions));
+            if (index < 0) index = ~index; // Adjust the index if not found
+            cache.Insert(index, item);
+        }
+
+        public List<T> GetSortedCache()
+        {
+            return cache;
+        }
+    }
+
+    public class CacheItemComparer<T> : IComparer<T>
+    {
+        private readonly Func<T, object>[] sortingFunctions;
+
+        public CacheItemComparer(Func<T, object>[] sortingFunctions)
+        {
+            this.sortingFunctions = sortingFunctions;
+        }
+
+        public int Compare(T x, T y)
+        {
+            foreach (var func in sortingFunctions)
+            {
+                var result = Comparer<object>.Default.Compare(func(x), func(y));
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+            return 0;
+        }
+    }
+
+    public class RenderCache
+    {
+        
+    }
+
+
+    public class Renderable
+    {
+
+    }
+
+
     public class Renderer : GameWindow
     {
         public DiscreteDynamicsWorld dynamicsWorld;
@@ -187,7 +247,7 @@ namespace Luminosity3DRendering
             Time.deltaTime = deltaTime;
             Time.time += deltaTime * Time.timeScale;
             Engine.SceneManager.ActiveScene.cache.UpdatePass();
-            dynamicsWorld.StepSimulation(Time.deltaTime * Time.timeScale);
+            dynamicsWorld.StepSimulation(Time.deltaTime);
             Engine.SceneManager.ActiveScene.cache.PhysicsPass();
 
             IMGUIController.Update(this, (float)e.Time);

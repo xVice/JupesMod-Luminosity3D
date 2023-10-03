@@ -81,6 +81,8 @@ namespace Luminosity3D.EntityComponentSystem
 
         }
 
+        MeshModel lastModel = null;
+
         public void RenderPass()
         {
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds
@@ -90,10 +92,24 @@ namespace Luminosity3D.EntityComponentSystem
 
             if (caches.ContainsKey(typeof(MeshBatch)))
             {
-                foreach (var comp in caches[typeof(MeshBatch)])
+                var comps = caches[typeof(MeshBatch)].OrderBy(x => x.GetHashCode());
+
+                foreach (var comp in comps)
                 {
+                    
+
                     if (comp is MeshBatch behav)
                     {
+                        if(behav.model != lastModel)
+                        {
+                            if(lastModel != null)
+                            {
+                                lastModel.Unbind();
+                                
+                            }
+
+                            behav.model.Bind();
+                        }    
                         behav.OnRender();
                     }
                 }
