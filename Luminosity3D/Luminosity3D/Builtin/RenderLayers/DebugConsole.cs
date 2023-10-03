@@ -31,6 +31,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             Logger.Log("Internal console ready, loading commands..");
             LoadBuiltinCommands();
             Settings.RegisterSetting(new TestSetting());
+            Settings.RegisterSetting(new TestSetting2());
             Settings.RegisterSetting(new TimeSetting());
             IMGUIStyles.SetupImGuiStyle();
         }

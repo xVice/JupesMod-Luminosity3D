@@ -11,7 +11,7 @@ namespace Luminosity3D.EntityComponentSystem
 
     public interface IImguiSerialize
     {
-        abstract static LuminosityBehaviour OnEditorCreation(Entity ent);
+        abstract static Component OnEditorCreation();
         void EditorUI();
     }
 
@@ -54,7 +54,23 @@ namespace Luminosity3D.EntityComponentSystem
                 
                 activeScene.InstantiateEntity(EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position));
             }
-            ImGui.End();
+        }
+    }
+
+    public class TestSetting2 : IImguiSerializeSettings
+    {
+        public string SettingName { get => "Test Setting2"; set => SettingName = value; }
+        public string SettingArea { get => "Test Setting Area"; set => SettingArea = value; }
+
+        public void SettingUi()
+        {
+            ImGui.Text("Poggers2");
+            if (ImGui.Button("Spawn Pog2"))
+            {
+                var activeScene = Engine.SceneManager.ActiveScene;
+
+                activeScene.InstantiateEntity(EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position));
+            }
         }
     }
 

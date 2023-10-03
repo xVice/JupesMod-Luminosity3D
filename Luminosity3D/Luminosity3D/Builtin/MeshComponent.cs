@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using ImGuiNET;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
@@ -447,10 +448,10 @@ namespace Luminosity3D.Builtin
 
         public void EditorUI()
         {
-            
+            ImGui.Text(filePath);
         }
 
-        public static LuminosityBehaviour OnEditorCreation(Entity ent)
+        public static Component OnEditorCreation()
         {
             return new MeshBatch();
         }
@@ -462,7 +463,7 @@ namespace Luminosity3D.Builtin
             {
                 if (transform != null)
                 {
-                    model.Render(cam.ViewMatrix, cam.ProjectionMatrix, transform.GetTransformMatrix(), LMath.ToVecTk(cam.Position));
+                    model.Render(LMath.ToMatTk(cam.ViewMatrix), LMath.ToMatTk(cam.ProjectionMatrix), LMath.ToMatTk(transform.GetTransformMatrix()), LMath.ToVecTk(cam.Position));
                 }
             }
         }

@@ -20,7 +20,7 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(RigidBodyComponent))]
     [RequireComponent(typeof(Camera))]
 
-    public class FPSController : LuminosityBehaviour, IImguiSerialize
+    public class FPSController : LuminosityBehaviour
     {
         TransformComponent transform;
         RigidBodyComponent rb;
@@ -71,13 +71,14 @@ namespace Luminosity3D.Builtin
             Vector3 moveDirection = Vector3.Zero;
 
             if (InputManager.GetKeyDown(Keys.W))
-                moveDirection += camera.Forward;
+                moveDirection += Vector3.Transform(Vector3.UnitZ, camera.Rotation);
             if (InputManager.GetKeyDown(Keys.S))
-                moveDirection -= camera.Forward;
+                moveDirection -= Vector3.Transform(Vector3.UnitZ, camera.Rotation);
             if (InputManager.GetKeyDown(Keys.A))
-                moveDirection -= camera.Right;
+                moveDirection -= Vector3.Transform(Vector3.UnitX, camera.Rotation);
             if (InputManager.GetKeyDown(Keys.D))
-                moveDirection += camera.Right;
+                moveDirection += Vector3.Transform(Vector3.UnitX, camera.Rotation);
+
 
             // Normalize the movement vector and apply the move speed
             if (moveDirection.LengthSquared() > 0.0f)
@@ -97,7 +98,7 @@ namespace Luminosity3D.Builtin
             pitch = MathHelper.Clamp(pitch + deltaY, -MathHelper.PiOver2, MathHelper.PiOver2);
 
             // Update the camera orientation based on pitch and yaw
-            camera.Orientation = Quaternion.CreateFromYawPitchRoll(pitch, yaw, 0.0f);
+            camera.Rotation = Quaternion.CreateFromYawPitchRoll(pitch, yaw, 0.0f);
 
             // Update the camera's view matrix
             camera.UpdateViewMatrix();

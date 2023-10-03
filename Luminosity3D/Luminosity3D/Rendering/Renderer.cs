@@ -25,7 +25,7 @@ namespace Luminosity3DRendering
         {
             IMGUIController = new ImGuiController(this);
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-            
+
             CenterWindow(new Vector2i(1280, 720));
         }
 
@@ -136,7 +136,7 @@ namespace Luminosity3DRendering
             GL.CullFace(CullFaceMode.Back);
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal); // Adjust the depth function as needed
-
+            GL.Enable(EnableCap.Multisample);
             Engine.SceneManager.ActiveScene.cache.RenderPass();
 
             ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);

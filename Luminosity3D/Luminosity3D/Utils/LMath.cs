@@ -36,6 +36,49 @@ namespace Luminosity3D.Utils
             return new OpenTK.Mathematics.Vector3(vec.X, vec.Y, vec.Z);
         }
 
+        public static Matrix4x4 ToMat(OpenTK.Mathematics.Matrix4 openTkMatrix)
+        {
+            return new Matrix4x4(
+                openTkMatrix.M11, openTkMatrix.M12, openTkMatrix.M13, openTkMatrix.M14,
+                openTkMatrix.M21, openTkMatrix.M22, openTkMatrix.M23, openTkMatrix.M24,
+                openTkMatrix.M31, openTkMatrix.M32, openTkMatrix.M33, openTkMatrix.M34,
+                openTkMatrix.M41, openTkMatrix.M42, openTkMatrix.M43, openTkMatrix.M44
+            );
+        }
+
+        public static Matrix4 ToMatTk(Matrix4x4 systemNumericsMatrix)
+        {
+            return new Matrix4(
+                systemNumericsMatrix.M11, systemNumericsMatrix.M12, systemNumericsMatrix.M13, systemNumericsMatrix.M14,
+                systemNumericsMatrix.M21, systemNumericsMatrix.M22, systemNumericsMatrix.M23, systemNumericsMatrix.M24,
+                systemNumericsMatrix.M31, systemNumericsMatrix.M32, systemNumericsMatrix.M33, systemNumericsMatrix.M34,
+                systemNumericsMatrix.M41, systemNumericsMatrix.M42, systemNumericsMatrix.M43, systemNumericsMatrix.M44
+            );
+        }
+
+
+        public static float ToRadians(float degrees)
+        {
+            return degrees * (float)Math.PI / 180.0f;
+        }
+
+        public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>
+        {
+            if (value.CompareTo(min) < 0)
+            {
+                return min;
+            }
+            else if (value.CompareTo(max) > 0)
+            {
+                return max;
+            }
+            else
+            {
+                return value;
+            }
+        }
+
+
         public static OpenTK.Mathematics.Vector3 ToVecTk(OpenTK.Mathematics.Vector3 vec)
         {
             return new OpenTK.Mathematics.Vector3(vec.X, vec.Y, vec.Z);
