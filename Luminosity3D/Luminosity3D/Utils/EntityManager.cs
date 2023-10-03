@@ -14,19 +14,4 @@ namespace Luminosity3D.Utils
     /// 
     /// need to heavily rewrite the entire engine for this, starting: 20:50 - 19.09.23
     /// </summary>
-    public class EntityManager
-    {
-        
-        private List<Entity> Cache = new List<Entity>();
-
-        public void CacheEntity(Entity ent)
-        {
-            Cache.Add(ent);
-        }
-
-        public Entity Get(string name)
-        {
-            return Cache.Where(x => x.Name == name).FirstOrDefault();
-        }
-    }
 }

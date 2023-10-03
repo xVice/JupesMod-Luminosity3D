@@ -124,7 +124,7 @@ namespace Luminosity3D.EntityComponentSystem
     {
         public int ExecutionOrder = 0;
         public string Name = string.Empty;
-        public List<Entity> Children { get; set; }
+        public List<GameObject> Children { get; set; }
 
         public LuminosityBehaviour()
         {

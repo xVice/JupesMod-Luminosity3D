@@ -52,7 +52,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 var activeScene = Engine.SceneManager.ActiveScene;
                 
-                activeScene.InstantiateEntity(EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position));
+                EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position);
             }
         }
     }
@@ -69,7 +69,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 var activeScene = Engine.SceneManager.ActiveScene;
 
-                activeScene.InstantiateEntity(EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position));
+                EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position);
             }
         }
     }

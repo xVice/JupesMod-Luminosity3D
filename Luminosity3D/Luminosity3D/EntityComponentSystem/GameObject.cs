@@ -13,61 +13,30 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-
-
-    public class SerializedEntity
+    public class GameObject
     {
-        public string Name { get; set; }
-        public SerializedEntity Parent { get; set; }
-        [JsonIgnore]
-        public List<Component> Components { get; set; }
-
-        public string Serialize()
-        {
-            var settings = new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            };
-            return JsonConvert.SerializeObject(this, settings);
-        }
-
-        public static SerializedEntity Deserialize(string json)
-        {
-            var settings = new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            };
-            return JsonConvert.DeserializeObject<SerializedEntity>(json, settings);
-        }
-    }
-
-
-
-
-    public class Entity
-    {
-        public string Name { get; set; }
-
+        public string Name { get; set; } = "New GameObject";
+        public string Tag { get; set; } = string.Empty;
+        public bool ActiveAndEnabled { get; set; } = true;
+        public GameObject Parent = null;
+        public List<GameObject> Childs = new List<GameObject>();
         public Dictionary<Type, Component> components = new Dictionary<Type, Component>();
+        public int ExecutionOrder = 0;
 
-        public int ExecutionOrder = int.MaxValue;
-
-        public Entity()
+        public GameObject()
         {
-
+            Engine.SceneManager.ActiveScene.InstantiateEntity(this);
         }
-
-        public Entity(string name)
+        public GameObject(string name)
         {
             Name = name;
+            Engine.SceneManager.ActiveScene.InstantiateEntity(this);
         }
 
-
-        public void Start()
+        public bool CompareTag(string tag)
         {
-
+            return Tag.Equals(tag);
         }
-
         public T GetComponent<T>() where T : Component
         {
             Type type = typeof(T);
@@ -103,7 +72,7 @@ namespace Luminosity3D.EntityComponentSystem
         public T AddComponent<T>(T comp) where T : Component, new()
         {
             //CheckRequiredComponents<T>();
-  
+
 
             Type type = typeof(T);
             if (!components.ContainsKey(type))
@@ -129,7 +98,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 T component = new T();
                 component.Parent = this;
-                
+
 
                 components[type] = component;
 
@@ -185,11 +154,13 @@ namespace Luminosity3D.EntityComponentSystem
                     }
                 }
 
-                
+
 
             }
         }
 
 
     }
+
 }
+

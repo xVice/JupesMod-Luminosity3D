@@ -65,7 +65,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
             if (inputacepted)
             {
-                Engine.SceneManager.ActiveScene.InstantiateEntity(new Entity(inputString));
+                new GameObject(inputString);
                 inputacepted = false;
             }
 
@@ -226,7 +226,7 @@ namespace Luminosity3D.Builtin.RenderLayers
         string camName = "New Camera";
         System.Numerics.Vector3 camPosition = new System.Numerics.Vector3(0, 0, 0);
 
-        private Entity selectedEntity;
+        private GameObject selectedEntity;
         private Component selectedComponent;
         private bool isEntityMenuOpen;
         private bool isComponentMenuOpen;
@@ -249,7 +249,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     if (ImGui.MenuItem("Create Empty Entity"))
                     {
-                        Engine.SceneManager.ActiveScene.InstantiateEntity(new Entity("Empty Entity"));
+                        new GameObject();
                     }
 
                     if (ImGui.BeginMenu("Create 3d Entity"))
@@ -314,7 +314,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
         }
 
-        private static void ShowEntityPopup(Entity entity, LuminosityBehaviour behav)
+        private static void ShowEntityPopup(GameObject entity, LuminosityBehaviour behav)
         {
             if (ImGui.BeginMenu("Attach Component"))
             {
@@ -674,7 +674,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreateCamera(camName, camPosition, true));
+                    EntitySummoner.CreateCamera(camName, camPosition, true);
                 }
             }
 
@@ -694,8 +694,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
-                    var ent = EntitySummoner.CreateFPSController("3DObj", objFilePath, System.Numerics.Vector3.Zero);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(ent);
+                    EntitySummoner.CreateFPSController("3DObj", objFilePath, System.Numerics.Vector3.Zero);
                 }
             }
 
@@ -706,7 +705,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(EntitySummoner.CreatePBREntity("3DObj", objFilePath, new System.Numerics.Vector3(0, 0, 0)));
+                    EntitySummoner.CreatePBREntity("3DObj", objFilePath, new System.Numerics.Vector3(0, 0, 0));
                 }
             }
 
@@ -717,9 +716,8 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
-                    var ent = EntitySummoner.CreatePBREntity("3DObj", objFilePath, System.Numerics.Vector3.Zero);
-                    ent.AddComponent<SineMovement>();
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(ent);
+                    EntitySummoner.CreatePBREntity("3DObj", objFilePath, System.Numerics.Vector3.Zero);
+               
                 }
             }
 
@@ -728,10 +726,8 @@ namespace Luminosity3D.Builtin.RenderLayers
                 // Handle loading .obj file using objFilePath
                 if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
                 {
-                    // You can use objFilePath to load the .obj file here
-                    // Example: LoadObjFile(objFilePath);
-                    var ent = EntitySummoner.CreatePBREntityWithRbConvexHull("3DObj", objFilePath, System.Numerics.Vector3.Zero);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(ent);
+  
+                    EntitySummoner.CreatePBREntityWithRbConvexHull("3DObj", objFilePath, System.Numerics.Vector3.Zero);
                 }
             }
 
@@ -743,10 +739,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 // Handle loading .obj file using objFilePath
                 if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
                 {
-                    // You can use objFilePath to load the .obj file here
-                    // Example: LoadObjFile(objFilePath);
-                    var ent = EntitySummoner.CreatePBREntityWithRb("3DObj", objFilePath, System.Numerics.Vector3.Zero);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(ent);
+                    EntitySummoner.CreatePBREntityWithRb("3DObj", objFilePath, System.Numerics.Vector3.Zero);
                 }
             }
 
@@ -755,10 +748,8 @@ namespace Luminosity3D.Builtin.RenderLayers
                 // Handle loading .obj file using objFilePath
                 if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
                 {
-                    // You can use objFilePath to load the .obj file here
-                    // Example: LoadObjFile(objFilePath);
-                    var ent = EntitySummoner.CreatePBREntityWithRbAndSine("3DObj", objFilePath, System.Numerics.Vector3.Zero);
-                    Engine.SceneManager.ActiveScene.InstantiateEntity(ent);
+                    EntitySummoner.CreatePBREntityWithRbAndSine("3DObj", objFilePath, System.Numerics.Vector3.Zero);
+                    
                 }
             }
         }
@@ -949,7 +940,7 @@ namespace Luminosity3D.Builtin.RenderLayers
         {
             if (args.Length > 0)
             {
-                Engine.SceneManager.ActiveScene.InstantiateEntity(new Entity(args[0]));
+                new GameObject(args[0]);
             }
             else
             {

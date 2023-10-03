@@ -50,13 +50,13 @@ namespace Luminosity3D.Builtin
 
         public void EditorUI()
         {
-            ImGui.InputFloat3("#Position", ref Position);
+            ImGui.InputFloat3("Position", ref Position);
             Vector4 quaternionValues = new Vector4( Rotation.X, Rotation.Y, Rotation.Z, Rotation.W );
-            if (ImGui.InputFloat4("#Rotation (Quaternion)", ref quaternionValues))
+            if (ImGui.InputFloat4("Rotation (Quaternion)", ref quaternionValues))
             {
                 Rotation = new Quaternion(quaternionValues[0], quaternionValues[1], quaternionValues[2], quaternionValues[3]);
             }
-            ImGui.InputFloat3("#Scale", ref Scale);
+            ImGui.InputFloat3("Scale", ref Scale);
 
             if(ImGui.Button("Look At"))
             {

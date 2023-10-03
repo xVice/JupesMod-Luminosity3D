@@ -104,7 +104,7 @@ namespace Luminosity3D.Builtin
             camera.UpdateViewMatrix();
         }
 
-        public static LuminosityBehaviour OnEditorCreation(Entity ent)
+        public static LuminosityBehaviour OnEditorCreation(GameObject ent)
         {
             return new FPSController();
         }

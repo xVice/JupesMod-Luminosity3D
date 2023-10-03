@@ -13,7 +13,7 @@ namespace Luminosity3DScening
     public class Scene
     {
         public string Name { get; set; } = "New Scene";
-        public List<Entity> Entities = new List<Entity>();
+        public List<GameObject> Entities = new List<GameObject>();
 
         public ComponentCache cache = new Luminosity3D.EntityComponentSystem.ComponentCache();
 
@@ -63,44 +63,9 @@ namespace Luminosity3DScening
 
         }
 
-        public List<Entity> FindEntitysWithObjectsOfType<T>() where T : Component
-        {
-            List<Entity> result = new List<Entity>();
-
-            foreach (Entity entity in Entities)
-            {
-                // Check if the entity has a component of type T attached
-                if (entity.GetComponent<T>() != null)
-                {
-                    result.Add(entity);
-                }
-            }
-
-            return result;
-        }
-
-        public List<T> FindObjectsOfType<T>() where T : Component
-        {
-            List<T> result = new List<T>();
-
-            foreach (Entity entity in Entities)
-            {
-                // Check if the entity has a component of type T attached
-                if (entity.GetComponent<T>() != null)
-                {
-                    result.AddRange(entity.GetComponents<T>());
-                }
-            }
-
-            return result;
-        }
-
-
-        public Entity InstantiateEntity(Entity entity)
+        public GameObject InstantiateEntity(GameObject entity)
         {
             Entities.Add(entity);
-
-            entity.Start();
             
             return entity;
         }
