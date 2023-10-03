@@ -85,8 +85,6 @@ namespace Luminosity3D.Builtin
             ViewMatrix = Matrix4x4.CreateLookAt(Position, target, Up);
         }
 
-
-
         public void SetActive()
         {
             Engine.SceneManager.ActiveScene.activeCam = this;
@@ -98,9 +96,6 @@ namespace Luminosity3D.Builtin
             Position += direction * speed * Time.deltaTime;
             UpdateViewMatrix();
         }
-
-   
-
 
         public void RotateCamera(Vector3 orientation, float angle)
         {
@@ -129,10 +124,6 @@ namespace Luminosity3D.Builtin
             // Update the view matrix
             UpdateViewMatrix();
         }
-
-
-
-
 
         public void LookAt(Vector3 target)
         {

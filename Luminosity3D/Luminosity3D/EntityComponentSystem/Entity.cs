@@ -151,9 +151,9 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
-        private void CheckRequiredComponents<T>() where T : Component, new()
+        private void CheckRequiredComponents<T>() where T : Component
         {
-            Type typeToAdd = typeof(T);
+            Type typeToAdd = typeof(LuminosityBehaviour); // Use the parent class type
 
             var requiredAttributes = typeToAdd.GetCustomAttributes(typeof(RequireComponentAttribute), true);
 
@@ -166,9 +166,11 @@ namespace Luminosity3D.EntityComponentSystem
                     {
                         try
                         {
-                            T component = new T();
+                            // Use reflection to create an instance of the required component type
+                            var component = Activator.CreateInstance(requiredType) as Component;
                             component.Parent = this;
-                            components[typeof(T)] = component;
+                            components[requiredType] = component;
+
                             if (component is LuminosityBehaviour behav)
                             {
                                 behav.Awake();
@@ -178,13 +180,16 @@ namespace Luminosity3D.EntityComponentSystem
                         }
                         catch (Exception ex)
                         {
-                            Logger.Log($"Error adding {typeToAdd.Name} component: {ex.Message}");
+                            Logger.Log($"Error adding {requiredType.Name} component: {ex.Message}");
                         }
                     }
                 }
-            }
 
+                
+
+            }
         }
+
 
     }
 }

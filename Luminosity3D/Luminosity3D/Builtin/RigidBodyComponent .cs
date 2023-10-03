@@ -116,11 +116,45 @@ namespace Luminosity3D.EntityComponentSystem
 
     [RequireComponent(typeof(TransformComponent))]
     [RequireComponent(typeof(ColliderComponent))]
-    public class RigidBodyComponent : LuminosityBehaviour
+    public class RigidBodyComponent : LuminosityBehaviour, IImguiSerialize
     {
         public RigidBody RigidBody { get; private set; }
         public ColliderComponent Collider { get; private set; }
 
+        private System.Numerics.Vector3 directionInEditor = System.Numerics.Vector3.Zero;
+
+        public static Component OnEditorCreation()
+        {
+            return new RigidBodyComponent();
+        }
+
+        public void EditorUI()
+        {
+            ImGui.Text("Simulation data");
+
+
+            ImGui.Separator();
+            ImGui.Text("Functions");
+
+            ImGui.InputFloat3("Direction", ref directionInEditor);
+
+            if (ImGui.Button("Apply Force"))
+            {
+                ApplyForce(LMath.ToVecBs(directionInEditor));
+            }
+            if (ImGui.Button("Apply Impulse"))
+            {
+                ApplyImpulse(LMath.ToVecBs(directionInEditor));
+            }
+            if (ImGui.Button("Apply Torque"))
+            {
+                ApplyTorque(LMath.ToVecBs(directionInEditor));
+            }
+            if (ImGui.Button("Apply Torque Impulse"))
+            {
+                ApplyTorqueImpulse(LMath.ToVecBs(directionInEditor));
+            }
+        }
 
         public override void Awake() 
         {
@@ -154,34 +188,24 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
-        private System.Numerics.Vector3 directionInEditor = System.Numerics.Vector3.Zero; 
-
-        public void EditorUI()
+        #region RB helper functions.
+        private void CreateRigidBody()
         {
-            ImGui.Text("Simulation data");
+            float mass = 25.0f;
 
+            var shape = Collider.CollisionShape;
+            var position = Collider.Transform.Position;
 
-            ImGui.Separator();
-            ImGui.Text("Functions");
+            var startTransform = Matrix.Translation(LMath.ToVecBs(position));
+            var motionState = new DefaultMotionState(startTransform);
+            var localInertia = shape.CalculateLocalInertia(mass);
 
-            ImGui.InputFloat3("Direction", ref directionInEditor);
+            var rigidBodyInfo = new RigidBodyConstructionInfo(mass, motionState, shape, localInertia);
+            var rigidBody = new RigidBody(rigidBodyInfo);
 
-            if(ImGui.Button("Apply Force"))
-            {
-                ApplyForce(LMath.ToVecBs(directionInEditor));
-            }
-            if (ImGui.Button("Apply Impulse"))
-            {
-                ApplyImpulse(LMath.ToVecBs(directionInEditor));
-            }
-            if (ImGui.Button("Apply Torque"))
-            {
-                ApplyTorque(LMath.ToVecBs(directionInEditor));
-            }
-            if (ImGui.Button("Apply Torque Impulse"))
-            {
-                ApplyTorqueImpulse(LMath.ToVecBs(directionInEditor));
-            }
+            Engine.Renderer.dynamicsWorld.AddRigidBody(rigidBody);
+
+            RigidBody = rigidBody;
         }
 
         public bool CollidesWith(RigidBody rb)
@@ -275,24 +299,6 @@ namespace Luminosity3D.EntityComponentSystem
                 RigidBody.ApplyTorqueImpulse(torqueImpulse);
             }
         }
-
-        private void CreateRigidBody()
-        {
-            float mass = 25.0f;
-
-            var shape = Collider.CollisionShape;
-            var position = Collider.Transform.Position;
-
-            var startTransform = Matrix.Translation(LMath.ToVecBs(position));
-            var motionState = new DefaultMotionState(startTransform);
-            var localInertia = shape.CalculateLocalInertia(mass);
-
-            var rigidBodyInfo = new RigidBodyConstructionInfo(mass, motionState, shape, localInertia);
-            var rigidBody = new RigidBody(rigidBodyInfo);
-
-            Engine.Renderer.dynamicsWorld.AddRigidBody(rigidBody);
-
-            RigidBody = rigidBody;
-        }
+        #endregion
     }
 }

@@ -6,6 +6,7 @@ using ImGuiNET;
 
 namespace Luminosity3D.Builtin
 {
+    [RequireComponent(typeof(Camera))]
     public class CameraController : LuminosityBehaviour, IImguiSerialize
     {
         private Camera camera;

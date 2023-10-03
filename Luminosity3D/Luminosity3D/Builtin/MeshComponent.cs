@@ -425,6 +425,22 @@ namespace Luminosity3D.Builtin
         public string vert = "./shaders/builtin/pbr.vert";
         public string frag = "./shaders/builtin/pbr.frag";
 
+        public static MeshBatch FromPath(string path)
+        {
+            var batch = new MeshBatch();
+            batch.filePath = path;
+            return batch;
+        }
+
+        public static MeshBatch FromPathWithShaders(string path, string vert, string frag)
+        {
+            var batch = new MeshBatch();
+            batch.filePath = path;
+            batch.vert = vert;
+            batch.frag = frag;
+            return batch;
+        }
+
         public override void Awake()
         {
             transform = GetComponent<TransformComponent>();
