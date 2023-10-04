@@ -71,7 +71,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public T AddComponent<T>(T comp) where T : LuminosityBehaviour, new()
         {
-            //CheckRequiredComponents<T>();
+            CheckRequiredComponents<T>();
 
 
             Type type = typeof(T);
@@ -88,7 +88,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
-            //CheckRequiredComponents<T>();
+            CheckRequiredComponents<T>();
 
             Type type = typeof(T);
             if (!components.ContainsKey(type))
@@ -115,8 +115,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         private void CheckRequiredComponents<T>() where T : LuminosityBehaviour
         {
-            Type typeToAdd = typeof(LuminosityBehaviour); // Use the parent class type
-
+            var typeToAdd = typeof(T);
             var requiredAttributes = typeToAdd.GetCustomAttributes(typeof(RequireComponentAttribute), true);
 
             foreach (var attribute in requiredAttributes)

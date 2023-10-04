@@ -9,7 +9,7 @@ namespace Luminosity3D.Utils
         public static void CreatePBREntity(string entName, string filePath, Vector3 pos)
         {
             var ent = new GameObject(entName);
-            ent.AddComponent<TransformComponent>();
+            //ent.AddComponent<TransformComponent>();
             ent.AddComponent(MeshBatch.FromPath(filePath));
 
         }
@@ -18,7 +18,7 @@ namespace Luminosity3D.Utils
         {
             var cament = new GameObject(entName); // Create a new entity with the given name.
 
-            cament.AddComponent<Camera>();
+            //cament.AddComponent<Camera>();
             cament.AddComponent<CameraController>(); // Add a CameraController to the entity.
 
 
@@ -28,9 +28,9 @@ namespace Luminosity3D.Utils
         {
             var ent = new GameObject(entName);
 
-            ent.AddComponent<TransformComponent>();
+            //ent.AddComponent<TransformComponent>();
             var batch = ent.AddComponent(MeshBatch.FromPath(filePath));
-            ent.AddComponent(ColliderComponent.BuildFromMesh(batch));
+            //ent.AddComponent(ColliderComponent.BuildFromMesh(batch));
             ent.AddComponent<RigidBodyComponent>();
 
 
