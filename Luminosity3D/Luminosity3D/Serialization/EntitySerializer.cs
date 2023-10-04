@@ -13,7 +13,7 @@ namespace Luminosity3D.Serialization
         public string[] ChildNames { get; set; }
         public string Name { get; set; }
         public int ExecutionOrder { get; set; }
-        public List<Component> Components { get; set; }
+        public List<LuminosityBehaviour> Components { get; set; }
     }
 
     

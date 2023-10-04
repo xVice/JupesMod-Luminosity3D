@@ -8,7 +8,7 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace Luminosity3D.Builtin
 {
-    public class TransformComponent : Component, IImguiSerialize
+    public class TransformComponent : LuminosityBehaviour,IImguiSerialize
     {
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
@@ -43,7 +43,7 @@ namespace Luminosity3D.Builtin
             Engine.SceneManager.ActiveScene.activeCam.LookAt(Position);
         }
 
-        public static Component OnEditorCreation()
+        public static LuminosityBehaviour OnEditorCreation()
         {
             return new TransformComponent();
         }

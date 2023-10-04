@@ -932,11 +932,9 @@ namespace Luminosity3DRendering
         public List<Meshe> meshes;
         private ShaderProgram ShaderPBR;
         private Dictionary<string, TextureProgram> TexturesMap = new Dictionary<string, TextureProgram>();
-        private TransformComponent transform;
 
-        public Model(string modelPath, TransformComponent transform)
+        public Model(string modelPath)
         {
-            this.transform = transform;
             assimpModel = new AssimpModel(modelPath);
             meshes = new List<Meshe>(assimpModel.meshes);
 
@@ -959,7 +957,7 @@ namespace Luminosity3DRendering
 
         public TexturesCBMaps UseTexCubemap;
 
-        public void RenderFrame()
+        public void RenderFrame(TransformComponent transform)
         {
 
             var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
@@ -1283,7 +1281,7 @@ namespace Luminosity3DRendering
             timer.Stop();
 
             crossHair = new ViewPort("./resources/img/crosshair.png");
-            cubeMap = new CubeMap("./resources/Cubemap/meadow.png", CubeMapType.Type2);
+            cubeMap = new CubeMap("./resources/Cubemap/industrial_sunset_puresky_4k.hdr", CubeMapType.Type1);
             bloom = new Bloom();
 
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
@@ -1363,7 +1361,7 @@ namespace Luminosity3DRendering
             Time.deltaTime = deltaTime;
             Time.time += deltaTime * Time.timeScale;
             Engine.SceneManager.ActiveScene.cache.UpdatePass();
-            dynamicsWorld.StepSimulation(Time.deltaTime * Time.timeScale);
+            dynamicsWorld.StepSimulation(Time.deltaTime);
             Engine.SceneManager.ActiveScene.cache.PhysicsPass();
 
             IMGUIController.Update(this, (float)e.Time);

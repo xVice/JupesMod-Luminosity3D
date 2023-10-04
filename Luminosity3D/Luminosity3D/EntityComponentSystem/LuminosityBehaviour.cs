@@ -31,12 +31,12 @@ namespace Luminosity3D.EntityComponentSystem
     public class ComponentCache
     {
         // Use a dictionary to map component types to their respective caches
-        private Dictionary<Type, List<Component>> caches = new Dictionary<Type, List<Component>>();
+        private Dictionary<Type, List<LuminosityBehaviour>> caches = new Dictionary<Type, List<LuminosityBehaviour>>();
         public float lastRenderTime = 0.0f;
         public float lastPhysicsTime = 0.0f;
         public float lastUpdateTime = 0.0f;
 
-        public List<T> GetComponents<T>() where T : Component
+        public List<T> GetComponents<T>() where T : LuminosityBehaviour
         {
             var type = typeof(T);
             if (caches.ContainsKey(type))
@@ -58,15 +58,12 @@ namespace Luminosity3D.EntityComponentSystem
                 Type componentType = cache.Key;
                 if (componentType != typeof(RigidBodyComponent))
                 {
-                    List<Component> components = cache.Value;
+                    List<LuminosityBehaviour> components = cache.Value;
                     foreach (var comp in components)
                     {
-                        if(comp is LuminosityBehaviour behav)
-                        {
-                            behav.LateUpdate();
-                            behav.Update();
-                            behav.LateUpdate();
-                        }
+                        comp.LateUpdate();
+                        comp.Update();
+                        comp.LateUpdate();
 
                     }
                 }
@@ -115,19 +112,19 @@ namespace Luminosity3D.EntityComponentSystem
 
                 foreach(var batch in sortedBatches)
                 {
-                    batch.model.RenderFrame();
+                    batch.model.RenderFrame(batch.GetComponent<TransformComponent>());
                 }
             }
         }
 
-        public void CacheComponent(Component comp)
+        public void CacheComponent(LuminosityBehaviour comp)
         {
 
             var compType = comp.GetType();
 
             if (!caches.ContainsKey(compType))
             {
-                caches[compType] = new List<Component>();
+                caches[compType] = new List<LuminosityBehaviour>();
             }
             caches[compType].Add(comp);
 
@@ -140,10 +137,11 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
-    public class LuminosityBehaviour : Component
+    public class LuminosityBehaviour
     {
         public int ExecutionOrder = 0;
         public string Name = string.Empty;
+        public GameObject Parent { get; set; }
         public List<GameObject> Children { get; set; }
 
         public LuminosityBehaviour()
@@ -156,12 +154,12 @@ namespace Luminosity3D.EntityComponentSystem
             Name = name;
         }
 
-        public bool HasComponent<T>() where T : Component
+        public bool HasComponent<T>() where T : LuminosityBehaviour
         {
             return Parent.HasComponent<T>();
         }
 
-        public List<T> GetComponents<T>() where T : Component
+        public List<T> GetComponents<T>() where T : LuminosityBehaviour
         {
             List<T> result = new List<T>();
             foreach (var component in Parent.GetComponents<T>())
@@ -171,7 +169,7 @@ namespace Luminosity3D.EntityComponentSystem
             return result;
         }
 
-        public T GetComponent<T>() where T : Component
+        public T GetComponent<T>() where T : LuminosityBehaviour
         {
             if(Parent.GetComponent<T>() == null)
             {
@@ -180,7 +178,7 @@ namespace Luminosity3D.EntityComponentSystem
             return Parent.GetComponent<T>();
         }
 
-        public T AddComponent<T>() where T : Component, new()
+        public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
             return Parent.AddComponent<T>();
         }

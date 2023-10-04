@@ -128,7 +128,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         private System.Numerics.Vector3 directionInEditor = System.Numerics.Vector3.Zero;
 
-        public static Component OnEditorCreation()
+        public static LuminosityBehaviour OnEditorCreation()
         {
             return new RigidBodyComponent();
         }
@@ -172,7 +172,7 @@ namespace Luminosity3D.EntityComponentSystem
             if (RigidBody != null)
             {
                 // Get the motion state of the RigidBody
-                var motionState = RigidBody.MotionState as DefaultMotionState;
+                var motionState = RigidBody.MotionState;
 
                 if (motionState != null)
                 {

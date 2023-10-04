@@ -11,7 +11,7 @@ namespace Luminosity3D.EntityComponentSystem
 
     public interface IImguiSerialize
     {
-        abstract static Component OnEditorCreation();
+        abstract static LuminosityBehaviour OnEditorCreation();
         void EditorUI();
     }
 

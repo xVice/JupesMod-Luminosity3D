@@ -14,7 +14,7 @@ namespace Luminosity3D.Builtin
         private float sensitivity = 0.005f;
         public bool lockMovement = true;
 
-        public static Component OnEditorCreation()
+        public static LuminosityBehaviour OnEditorCreation()
         {
             return new CameraController();
         }

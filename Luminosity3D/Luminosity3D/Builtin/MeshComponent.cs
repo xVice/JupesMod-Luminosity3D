@@ -22,8 +22,6 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(TransformComponent))]
     public class MeshBatch : LuminosityBehaviour, IImguiSerialize
     {
-        private TransformComponent transform = null;
-
         public Model model = null;
 
         public string filePath = "./teapot.obj";
@@ -39,8 +37,7 @@ namespace Luminosity3D.Builtin
         public override void Awake()
         {
             
-            transform = GetComponent<TransformComponent>();
-            model = new Model(filePath, transform);
+            model = new Model(filePath);
 
         }
 
@@ -49,7 +46,7 @@ namespace Luminosity3D.Builtin
             ImGui.Text(filePath);
         }
 
-        public static Component OnEditorCreation()
+        public static LuminosityBehaviour OnEditorCreation()
         {
             return new MeshBatch();
         }

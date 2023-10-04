@@ -20,7 +20,7 @@ namespace Luminosity3D.EntityComponentSystem
         public bool ActiveAndEnabled { get; set; } = true;
         public GameObject Parent = null;
         public List<GameObject> Childs = new List<GameObject>();
-        public Dictionary<Type, Component> components = new Dictionary<Type, Component>();
+        public Dictionary<Type, LuminosityBehaviour> components = new Dictionary<Type, LuminosityBehaviour>();
         public int ExecutionOrder = 0;
 
         public GameObject()
@@ -37,7 +37,7 @@ namespace Luminosity3D.EntityComponentSystem
         {
             return Tag.Equals(tag);
         }
-        public T GetComponent<T>() where T : Component
+        public T GetComponent<T>() where T : LuminosityBehaviour
         {
             Type type = typeof(T);
             if (components.ContainsKey(type))
@@ -48,7 +48,7 @@ namespace Luminosity3D.EntityComponentSystem
             return null; // Return null if the component is not found.
         }
 
-        public List<T> GetComponents<T>() where T : Component
+        public List<T> GetComponents<T>() where T : LuminosityBehaviour
         {
             Type type = typeof(T);
             List<T> result = new List<T>();
@@ -63,13 +63,13 @@ namespace Luminosity3D.EntityComponentSystem
         }
 
 
-        public bool HasComponent<T>() where T : Component
+        public bool HasComponent<T>() where T : LuminosityBehaviour
         {
             Type type = typeof(T);
             return components.ContainsKey(type);
         }
 
-        public T AddComponent<T>(T comp) where T : Component, new()
+        public T AddComponent<T>(T comp) where T : LuminosityBehaviour, new()
         {
             //CheckRequiredComponents<T>();
 
@@ -79,17 +79,14 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 comp.Parent = this;
                 components[type] = comp;
-                if (comp is LuminosityBehaviour behav)
-                {
-                    behav.Awake();
-                }
+                comp.Awake();
                 Engine.SceneManager.ActiveScene.cache.CacheComponent(comp);
                 return comp;
             }
             return null;
         }
 
-        public T AddComponent<T>() where T : Component, new()
+        public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
             //CheckRequiredComponents<T>();
 
@@ -101,11 +98,7 @@ namespace Luminosity3D.EntityComponentSystem
 
 
                 components[type] = component;
-
-                if (component is LuminosityBehaviour behav)
-                {
-                    behav.Awake();
-                }
+                component.Awake();
 
                 Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
                 return component;
@@ -120,7 +113,7 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
-        private void CheckRequiredComponents<T>() where T : Component
+        private void CheckRequiredComponents<T>() where T : LuminosityBehaviour
         {
             Type typeToAdd = typeof(LuminosityBehaviour); // Use the parent class type
 
@@ -136,14 +129,10 @@ namespace Luminosity3D.EntityComponentSystem
                         try
                         {
                             // Use reflection to create an instance of the required component type
-                            var component = Activator.CreateInstance(requiredType) as Component;
+                            var component = Activator.CreateInstance(requiredType) as LuminosityBehaviour;
                             component.Parent = this;
                             components[requiredType] = component;
-
-                            if (component is LuminosityBehaviour behav)
-                            {
-                                behav.Awake();
-                            }
+                            component.Awake();
 
                             Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
                         }

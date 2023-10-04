@@ -14,7 +14,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Component = Luminosity3D.EntityComponentSystem.Component;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -490,7 +489,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
         }
 
-        void DisplayReflectionBasedExplorerNodes(Component component)
+        void DisplayReflectionBasedExplorerNodes(LuminosityBehaviour component)
         {
             if(component is IImguiSerialize imguiSeri)
             {
