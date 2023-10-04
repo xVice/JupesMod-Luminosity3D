@@ -57,6 +57,10 @@ namespace Luminosity3D.Utils
         public static void CreatePBREntityWithRbAndSine(string entName, string filePath, Vector3 pos)
         {
             var ent = new GameObject(entName);
+            ent.AddComponent<TransformComponent>();
+            ent.AddComponent(MeshBatch.FromPath(filePath));
+            ent.AddComponent<ColliderComponent>();
+            ent.AddComponent<SineMovement>();
 
         }
 

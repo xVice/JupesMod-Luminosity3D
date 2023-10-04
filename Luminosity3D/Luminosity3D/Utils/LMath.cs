@@ -7,6 +7,7 @@ using BulletSharp.Math;
 using OpenTK.Mathematics;
 using System.Numerics;
 using DevExpress.Utils;
+using Assimp;
 
 namespace Luminosity3D.Utils
 {
@@ -36,9 +37,9 @@ namespace Luminosity3D.Utils
             return new OpenTK.Mathematics.Vector3(vec.X, vec.Y, vec.Z);
         }
 
-        public static Matrix4x4 ToMat(OpenTK.Mathematics.Matrix4 openTkMatrix)
+        public static System.Numerics.Matrix4x4 ToMat(OpenTK.Mathematics.Matrix4 openTkMatrix)
         {
-            return new Matrix4x4(
+            return new System.Numerics.Matrix4x4(
                 openTkMatrix.M11, openTkMatrix.M12, openTkMatrix.M13, openTkMatrix.M14,
                 openTkMatrix.M21, openTkMatrix.M22, openTkMatrix.M23, openTkMatrix.M24,
                 openTkMatrix.M31, openTkMatrix.M32, openTkMatrix.M33, openTkMatrix.M34,
@@ -46,7 +47,7 @@ namespace Luminosity3D.Utils
             );
         }
 
-        public static Matrix4 ToMatTk(Matrix4x4 systemNumericsMatrix)
+        public static Matrix4 ToMatTk(System.Numerics.Matrix4x4 systemNumericsMatrix)
         {
             return new Matrix4(
                 systemNumericsMatrix.M11, systemNumericsMatrix.M12, systemNumericsMatrix.M13, systemNumericsMatrix.M14,
@@ -54,6 +55,18 @@ namespace Luminosity3D.Utils
                 systemNumericsMatrix.M31, systemNumericsMatrix.M32, systemNumericsMatrix.M33, systemNumericsMatrix.M34,
                 systemNumericsMatrix.M41, systemNumericsMatrix.M42, systemNumericsMatrix.M43, systemNumericsMatrix.M44
             );
+        }
+
+        public static float[] Vector3DListToFloatArray(List<Vector3D> list)
+        {
+            float[] floats = new float[list.Count * 3];
+            for (int i = 0; i < list.Count; i++)
+            {
+                floats[i * 3] = list[i].X;
+                floats[i * 3 + 1] = list[i].Y;
+                floats[i * 3 + 2] = list[i].Z;
+            }
+            return floats;
         }
 
 

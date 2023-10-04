@@ -13,65 +13,251 @@ using ImGuiNET;
 using OpenTK.Windowing.Common.Input;
 using BulletSharp;
 using Luminosity3D.EntityComponentSystem;
+using Assimp;
+using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
+using System.Drawing.Imaging;
+using System.Drawing;
+using System.Reflection;
+using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
+using Material = Assimp.Material;
+using Luminosity3D.Rendering;
+using Assimp.Configs;
+using BepuPhysics.Collidables;
+using Mesh = Assimp.Mesh;
+using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
+using Camera = Luminosity3D.Builtin.Camera;
 
 namespace Luminosity3DRendering
 {
-
-    public class Cache<T>
+    public static class AssimpCache
     {
-        private List<T> cache = new List<T>();
-        private readonly Func<T, object>[] sortingFunctions;
+        public static Dictionary<string, AssimpModel> Cache = new Dictionary<string, AssimpModel>();
 
-        public Cache(Func<T, object>[] sortingFunctions)
+
+        public static void CacheModel(string fileName, AssimpModel model)
         {
-            this.sortingFunctions = sortingFunctions;
+            Cache.Add(fileName, model);
         }
 
-        public void Add(T item)
+        public static bool HasModel(string fileName)
         {
-            // Insert the item at the correct position based on sorting functions
-            int index = cache.BinarySearch(item, new CacheItemComparer<T>(sortingFunctions));
-            if (index < 0) index = ~index; // Adjust the index if not found
-            cache.Insert(index, item);
+            return Cache.ContainsKey(fileName);
         }
 
-        public List<T> GetSortedCache()
+        public static AssimpModel Get(string fileName)
         {
-            return cache;
-        }
-    }
-
-    public class CacheItemComparer<T> : IComparer<T>
-    {
-        private readonly Func<T, object>[] sortingFunctions;
-
-        public CacheItemComparer(Func<T, object>[] sortingFunctions)
-        {
-            this.sortingFunctions = sortingFunctions;
-        }
-
-        public int Compare(T x, T y)
-        {
-            foreach (var func in sortingFunctions)
+            if (Cache.ContainsKey(fileName))
             {
-                var result = Comparer<object>.Default.Compare(func(x), func(y));
-                if (result != 0)
-                {
-                    return result;
-                }
+                return Cache[fileName];
             }
-            return 0;
+            var model = new AssimpModel(fileName);
+            Cache[fileName] = model;
+            return model;
         }
     }
 
-    public class RenderCache
+    public class AssimpModel
     {
-        
+        public List<MeshModel> Meshes = new List<MeshModel>();
+
+        private Scene scene;
+
+        public AssimpModel(string filePath)
+        {
+            AssimpContext importer = new AssimpContext();
+            importer.SetConfig(new NormalSmoothingAngleConfig(66.0f));
+            scene = importer.ImportFile(filePath, PostProcessPreset.TargetRealTimeMaximumQuality);
+            ConstructModelNode(scene.RootNode);
+            
+        }
+
+
+        private void ConstructModelNode(Node node)
+        {
+
+            foreach (int index in node.MeshIndices)
+            {
+
+                var mesh = scene.Meshes[index];
+                var mat = scene.Materials[mesh.MaterialIndex];
+                if (!ShaderCache.HasShaderForMat(mat))
+                {
+                    var shader = Shader.BuildFromMaterialPBR(mat);
+                    Logger.Log($"Build Shader for material (name if any): {mat.Name}");
+                    ShaderCache.CacheShader(mat, shader);
+                }
+                Meshes.Add(new MeshModel(scene, mesh));
+            }
+
+            for (int i = 0; i < node.ChildCount; i++)
+            {
+                ConstructModelNode(node.Children[i]);
+            }
+
+        }
     }
 
-
-    public class Renderable
+    public class MeshModel
     {
+        public Scene Scene { get; set; }
+
+        public Mesh Mesh { get; set; }
+        public Shader Shader { get; set; }
+
+        private int VAO;
+
+        private int vboVertices;
+        private int vboNormals;
+        private int vboTexCoords;
+        
+        private int ebo;
+
+        private uint[] Indicies;
+        public float[] Vertices { get; private set; }
+        public float[] Normals { get; private set; }
+        public float[] TexCoords { get; private set; }
+
+        public MeshModel(Scene scene,Mesh mesh)
+        {
+            Scene = scene;
+            Mesh = mesh;
+            var material = scene.Materials[mesh.MaterialIndex];
+            Shader = ShaderCache.Get(material);
+            Vertices = LMath.Vector3DListToFloatArray(mesh.Vertices);
+            Normals = LMath.Vector3DListToFloatArray(mesh.Normals);
+            TexCoords = LMath.Vector3DListToFloatArray(mesh.TextureCoordinateChannels[0]);
+            Indicies = mesh.GetUnsignedIndices();
+            SetupBuffers();
+        }
+
+        public void Bind()
+        {
+            GL.BindVertexArray(VAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboVertices);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+        }
+
+        public void Unbind()
+        {
+            GL.BindVertexArray(0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.UseProgram(0);
+        }
+
+        public void Cleanup()
+        {
+            GL.DeleteVertexArray(VAO);
+            GL.DeleteBuffer(vboVertices);
+            GL.DeleteBuffer(vboNormals);
+            GL.DeleteBuffer(vboTexCoords);
+            GL.DeleteBuffer(ebo);
+        }
+        private void SetupBuffers()
+        {
+            try
+            {
+                Logger.Log("In buffers creation");
+                // Create a VAO and bind it
+                GL.GenVertexArrays(1, out VAO);
+                GL.BindVertexArray(VAO);
+                LGLE.CheckGLError("VAO creation");
+
+                // Create and bind a VBO for vertex positions
+                GL.GenBuffers(1, out vboVertices);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboVertices);
+                GL.BufferData(BufferTarget.ArrayBuffer, Vertices.Length * sizeof(float), Vertices, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(0);
+                GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
+                LGLE.CheckGLError("VBO for vertices");
+
+                // Create and bind a VBO for normals if needed
+                GL.GenBuffers(1, out vboNormals);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+                GL.BufferData(BufferTarget.ArrayBuffer, Normals.Length * sizeof(float), Normals, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(1);
+                GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 0, 0);
+                LGLE.CheckGLError("VBO for normals");
+
+                // Create and bind a VBO for texture coordinates if needed
+                GL.GenBuffers(1, out vboTexCoords);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+                GL.BufferData(BufferTarget.ArrayBuffer, TexCoords.Length * sizeof(float), TexCoords, BufferUsageHint.StaticDraw);
+                GL.EnableVertexAttribArray(2);
+                GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, 0, 0);
+                LGLE.CheckGLError("VBO for texCoords");
+
+                // Create and bind an EBO for indices
+                GL.GenBuffers(1, out ebo);
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+                GL.BufferData(BufferTarget.ElementArrayBuffer, Indicies.Length * sizeof(uint), Indicies, BufferUsageHint.StaticDraw);
+                LGLE.CheckGLError("EBO for indices");
+
+                // Unbind the VAO (not the VBOs or EBO)
+                GL.BindVertexArray(0);
+                LGLE.CheckGLError("VAO unbinding");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in SetupVAO: " + ex.Message);
+            }
+        }
+
+
+
+
+        
+
+
+
+    }
+
+    public static class LGLE
+    {
+        public static void CheckGLError(string location, Exception ex = null)
+        {
+            ErrorCode errorCode = GL.GetError();
+            if (errorCode != ErrorCode.NoError)
+            {
+                if(ex != null)
+                {
+                    Logger.LogToFile($"OpenGL Error at {location}: {errorCode}");
+                    throw new Exception($"OpenGL Error at {location}: {errorCode}");
+                }
+                else
+                {
+                    Logger.LogToFile($"OpenGL Error at {location}: {errorCode}");
+                    Logger.LogToFile($"OpenGL appended exception: {ex.ToString()}");
+                    throw new Exception($"OpenGL Error at {location}: {errorCode}");
+                }
+
+            }
+        }
+        public static Vector3 FromVector(Vector3D vec)
+        {
+            Vector3 v;
+            v.X = vec.X;
+            v.Y = vec.Y;
+            v.Z = vec.Z;
+            return v;
+        }
+
+        public static Vector4 ToVector4(Color4D col)
+        {
+            return new Vector4(col.R, col.G, col.B, col.A);
+        }
+
+        public static Color4 FromColor(Color4D color)
+        {
+            Color4 c;
+            c.R = color.R;
+            c.G = color.G;
+            c.B = color.B;
+            c.A = color.A;
+            return c;
+        }
 
     }
 
@@ -197,7 +383,52 @@ namespace Luminosity3DRendering
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal); // Adjust the depth function as needed
             GL.Enable(EnableCap.Multisample);
-            Engine.SceneManager.ActiveScene.cache.RenderPass();
+
+            var meshBatches = Engine.SceneManager.ActiveScene.cache.GetComponents<MeshBatch>();
+
+            if(Engine.SceneManager.ActiveScene.activeCam != null)
+            {
+                var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                var viewMatrix = LMath.ToMatTk(cam.ViewMatrix);
+                var projectionMatrix = LMath.ToMatTk(cam.ProjectionMatrix);
+                var viewPos = LMath.ToVecTk(cam.Position);
+
+
+                foreach (var model in AssimpCache.Cache.Values)
+                {
+                    foreach (var batch in meshBatches.Where(x => x.model == model))
+                    {
+                        var transform = batch.GetComponent<TransformComponent>();
+                        foreach (var mesh in model.Meshes)
+                        {
+                            try
+                            {
+                                var shader = mesh.Shader;
+                                mesh.Bind();
+                                shader.Use();
+                                shader.SetUniform("modelMatrix", LMath.ToMatTk(transform.GetTransformMatrix()));
+                                shader.SetUniform("viewMatrix", viewMatrix);
+                                shader.SetUniform("projectionMatrix", projectionMatrix);
+                                shader.SetUniform("viewPos", viewPos);
+                                shader.SetUniform("lightColor", new Vector3(1f, 1f, 1f));
+                                shader.SetUniform("objectColor", new Vector3(0.25f, 0.1f, 0.5f));
+                                shader.SetUniform("lightPos", new Vector3(10.0f, 10.0f, 10.0f));
+
+                                // Render the object conditionally based on occlusion query
+                                GL.DrawElements(PrimitiveType.Triangles, mesh.Mesh.FaceCount * 3, DrawElementsType.UnsignedInt, 0);
+                                mesh.Unbind();
+                            }
+                            catch (Exception ex)
+                            {
+                                LGLE.CheckGLError("Render Exception", ex);
+                            }
+                        }
+
+                    }
+                }
+            }
+
+           
 
             ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 

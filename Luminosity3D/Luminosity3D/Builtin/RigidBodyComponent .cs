@@ -56,6 +56,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public void CreateCollisionShapeFromMesh(MeshBatch batch)
         {
+            /*
             // Calculate the bounding box of your mesh (simplified example)
             Vector3 min = new Vector3(float.MaxValue);
             Vector3 max = new Vector3(float.MinValue);
@@ -74,6 +75,7 @@ namespace Luminosity3D.EntityComponentSystem
 
             // Create a collision shape (using a box shape in this example)
             CollisionShape = new BoxShape(halfExtents);
+            */
         }
 
         private List<Vector3> ExtractVerticesFromMeshBatch(MeshBatch batch)
@@ -84,6 +86,7 @@ namespace Luminosity3D.EntityComponentSystem
             // Typically, you'd iterate through the vertices in your mesh data structure.
             List<Vector3> verticesList = new List<Vector3>();
 
+            /*
             // Example: Extract vertices from your MeshModel
             for (int i = 0; i < batch.model.Vertices.Length; i += 3)
             {
@@ -94,6 +97,8 @@ namespace Luminosity3D.EntityComponentSystem
             }
 
             return verticesList;
+            */
+            return new List<Vector3>();
         }
 
         public void CreateConvexHullCollisionShape(MeshBatch batch)

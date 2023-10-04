@@ -32,6 +32,16 @@ namespace Luminosity3D.EntityComponentSystem
         public float lastPhysicsTime = 0.0f;
         public float lastUpdateTime = 0.0f;
 
+        public List<T> GetComponents<T>() where T : Component
+        {
+            var type = typeof(T);
+            if (caches.ContainsKey(type))
+            {
+                return caches[type].Cast<T>().ToList();
+            }
+            return null;
+        }
+
         public void UpdatePass()
         {
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds
@@ -81,40 +91,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         }
 
-        MeshModel lastModel = null;
 
-        public void RenderPass()
-        {
-            float currentTime = Time.time * 1000.0f; // Convert to milliseconds
-            float deltaTime = currentTime - lastRenderTime; // Calculate time elapsed since the last pass in ms
-            lastRenderTime = currentTime;
-
-
-            if (caches.ContainsKey(typeof(MeshBatch)))
-            {
-                var comps = caches[typeof(MeshBatch)].OrderBy(x => x.GetHashCode());
-
-                foreach (var comp in comps)
-                {
-                    
-
-                    if (comp is MeshBatch behav)
-                    {
-                        if(behav.model != lastModel)
-                        {
-                            if(lastModel != null)
-                            {
-                                lastModel.Unbind();
-                                
-                            }
-
-                            behav.model.Bind();
-                        }    
-                        behav.OnRender();
-                    }
-                }
-            }
-        }
 
         public void CacheComponent(Component comp)
         {
