@@ -1,5 +1,5 @@
 # JupesMod / Luminosity3D
- A 3D Engine that is heavily inspired GMod and Unity.
+ A 3D Engine that is heavily inspired by GMod and Unity.
 
 ![alt text](https://github.com/xVice/storage/blob/main/jmodimg.PNG)
 
