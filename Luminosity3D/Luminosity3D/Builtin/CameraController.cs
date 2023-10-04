@@ -23,7 +23,11 @@ namespace Luminosity3D.Builtin
         {
             ImGui.InputFloat("Movement speed: ", ref moveSpeed);
             ImGui.InputFloat("Mouse Sensitivity: ", ref sensitivity);
-
+            ImGui.InputFloat3("Cam Position:", ref camera.Position);
+            if(ImGui.Button("Set active"))
+            {
+                SetActive();
+            }
         }
 
         public override void Awake()
@@ -31,8 +35,34 @@ namespace Luminosity3D.Builtin
             camera = GetComponent<Camera>();
         }
 
+        public void SetActive()
+        {
+            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Grabbed;
+            camera.SetActive();
+            lockMovement = false;
+        }
+
+        public void LockMovement()
+        {
+            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Normal;
+            lockMovement = true;
+
+        }
+
         public override void Update()
         {
+            if (InputManager.GetKeyPressed(Keys.F5))
+            {
+                if (lockMovement)
+                {
+                    SetActive();
+                }
+                else
+                {
+                    LockMovement();
+                }
+            }
+
             if (camera == null)
             {
                 camera = GetComponent<Camera>();

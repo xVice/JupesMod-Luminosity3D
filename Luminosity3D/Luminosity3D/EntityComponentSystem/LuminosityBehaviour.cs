@@ -1,6 +1,10 @@
 ﻿using Luminosity3D.Builtin;
+using Luminosity3D.Rendering;
 using Luminosity3D.Utils;
+using Luminosity3DRendering;
 using Luminosity3DScening;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -92,6 +96,29 @@ namespace Luminosity3D.EntityComponentSystem
         }
 
 
+        public void RenderPass()
+        {
+            if (Engine.SceneManager.ActiveScene.activeCam == null)
+                return;
+            float currentTime = Time.time * 1000.0f; // Convert to milliseconds
+            float deltaTime = currentTime - lastRenderTime; // Calculate time elapsed since the last pass in ms
+            lastRenderTime = currentTime;
+
+            var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+            
+
+            if (caches.ContainsKey(typeof(MeshBatch)))
+            {
+                var sortedBatches = caches[typeof(MeshBatch)]
+                    .Cast<MeshBatch>()
+                    .ToArray();
+
+                foreach(var batch in sortedBatches)
+                {
+                    batch.model.RenderFrame();
+                }
+            }
+        }
 
         public void CacheComponent(Component comp)
         {

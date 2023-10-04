@@ -22,10 +22,8 @@ namespace Luminosity3D
 
             using (Renderer renderer = new Renderer(1280, 780, "Jupe's Mod v0.0.5"))
             {
-                double fps = 60;
                 Renderer = renderer;
                 renderer.Run();
-
             }
 
         }
@@ -41,6 +39,5 @@ namespace Luminosity3D
         }
 
 
-        //Add global searching shit here that is slow.
     }
 }

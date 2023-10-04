@@ -12,7 +12,7 @@ namespace Luminosity3D.Builtin
     {
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
-        public Vector3 Scale = Vector3.One;
+        public Vector3 Scale = new Vector3(0.1f,0.1f,0.1f);
 
         public Vector3 Forward
         {

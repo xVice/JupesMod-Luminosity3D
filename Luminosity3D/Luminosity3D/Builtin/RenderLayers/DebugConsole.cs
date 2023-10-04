@@ -222,7 +222,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             ImGui.End();
         }
 
-        string objFilePath = "./teapot.obj";
+        string objFilePath = "./resources/unitron/scene.gltf";
         string camName = "New Camera";
         System.Numerics.Vector3 camPosition = new System.Numerics.Vector3(0, 0, 0);
 

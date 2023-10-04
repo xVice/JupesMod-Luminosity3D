@@ -1,0 +1,8 @@
+﻿{
+  "Name": "Start Menu",
+
+  "Description": "The Start Menu",
+  "Dependencies": [ ],
+  "Namespace": "startmenu", //set this to the namespace your entry class is in.
+  "Class": "Prog" //set this to the class name your entry method is int.
+}

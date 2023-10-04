@@ -1,14 +1,6 @@
-﻿using Assimp;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Luminosity3D.EntityComponentSystem;
-using Luminosity3D.Rendering;
-using Luminosity3D.Utils;
 using Luminosity3DRendering;
-using OpenTK.Graphics.OpenGL4;
-using OpenTK.Mathematics;
-using static Assimp.Metadata;
-using Material = Assimp.Material;
-using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 
 namespace Luminosity3D.Builtin
 {
@@ -27,46 +19,15 @@ namespace Luminosity3D.Builtin
     //now makie shadercache for cahce shader becuase big program many times big slow and bad :c
     //good?
 
-    public static class ShaderCache
-    {
-        public static Dictionary<Material, Shader> Cache = new Dictionary<Material, Shader>();
-
-
-        public static void CacheShader(Material mesh, Shader shader)
-        {
-            Cache.Add(mesh, shader);
-        }
-
-        public static bool HasShaderForMat(Material mat)
-        {
-            return Cache.ContainsKey(mat);
-        }
-
-        public static Shader Get(Material mat)
-        {
-            if (Cache.ContainsKey(mat))
-            {
-                return Cache[mat];
-            }
-            var shader = Shader.BuildFromMaterialPBR(mat);
-            Cache.Add(mat, shader);
-            return shader;
-        }
-    }
-
-   
-
-
- 
-
     [RequireComponent(typeof(TransformComponent))]
     public class MeshBatch : LuminosityBehaviour, IImguiSerialize
     {
         private TransformComponent transform = null;
 
+        public Model model = null;
+
         public string filePath = "./teapot.obj";
-        public AssimpModel model = null;
-        public Shader shader = null;
+
 
         public static MeshBatch FromPath(string path)
         {
@@ -77,8 +38,10 @@ namespace Luminosity3D.Builtin
 
         public override void Awake()
         {
+            
             transform = GetComponent<TransformComponent>();
-            model = AssimpCache.Get(filePath);
+            model = new Model(filePath, transform);
+
         }
 
         public void EditorUI()

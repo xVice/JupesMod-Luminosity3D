@@ -11,6 +11,23 @@
   <ItemGroup>
     <None Remove="icons\jmodicon.ico" />
     <None Remove="icons\jmodicon.png" />
+    <None Remove="lupk\autoload\StartMenu.lupk" />
+    <None Remove="lupk\Profilingmod.lupk" />
+    <None Remove="lupk\StartMenu.lupk" />
+    <None Remove="shaders\builtin\cubemap.vert" />
+    <None Remove="shaders\builtin\irradiance.frag" />
+    <None Remove="shaders\builtin\pbr.frag" />
+    <None Remove="shaders\builtin\pbr.vert" />
+    <None Remove="shaders\builtin\prefilter.frag" />
+    <None Remove="shaders\builtin\rectangular_to_cubemap.frag" />
+    <None Remove="shaders\builtin\renderFinal.frag" />
+    <None Remove="shaders\builtin\renderFinal.vert" />
+    <None Remove="shaders\builtin\shaderNormal.frag" />
+    <None Remove="shaders\builtin\shaderNormal.vert" />
+    <None Remove="shaders\builtin\shadersBloom\bloom.vert" />
+    <None Remove="shaders\builtin\shadersBloom\bloomFinal.frag" />
+    <None Remove="shaders\builtin\shadersBloom\downscale.frag" />
+    <None Remove="shaders\builtin\shadersBloom\upscale.frag" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,18 +37,77 @@
     <Content Include="icons\jmodicon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="lupk\autoload\StartMenu.lupk">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="lupk\Profilingmod.lupk">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="lupk\StartMenu.lupk">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\cubemap.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\irradiance.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\pbr.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\pbr.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\prefilter.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\rectangular_to_cubemap.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\renderFinal.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\renderFinal.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shaderNormal.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shaderNormal.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shadersBloom\bloom.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shadersBloom\bloomFinal.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shadersBloom\downscale.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shaders\builtin\shadersBloom\upscale.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AssimpNet" Version="4.1.0" />
+    <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
     <PackageReference Include="BepuPhysics" Version="2.4.0" />
     <PackageReference Include="BepuUtilities" Version="2.4.0" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
     <PackageReference Include="glTF2Loader" Version="1.0.0" />
+    <PackageReference Include="StbImageSharp" Version="2.27.13" />
+    <PackageReference Include="Xenko.Assimp" Version="3.1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Luminosity3D\Luminosity3D\Luminosity3D.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="scenes\Demo Scene">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

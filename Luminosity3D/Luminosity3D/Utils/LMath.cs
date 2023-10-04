@@ -59,13 +59,33 @@ namespace Luminosity3D.Utils
 
         public static float[] Vector3DListToFloatArray(List<Vector3D> list)
         {
-            float[] floats = new float[list.Count * 3];
+            if (list == null)
+            {
+                // Handle null list gracefully (return an empty float array or throw an exception).
+                return new float[0]; // Return an empty float array in this example.
+            }
+
+            int vectorSize = 3; // Assuming Vector3D has 3 components (X, Y, Z).
+            float[] floats = new float[list.Count * vectorSize];
+
             for (int i = 0; i < list.Count; i++)
             {
-                floats[i * 3] = list[i].X;
-                floats[i * 3 + 1] = list[i].Y;
-                floats[i * 3 + 2] = list[i].Z;
+                if (list[i] != null) // Check for null elements in the list.
+                {
+                    floats[i * vectorSize] = list[i].X;
+                    floats[i * vectorSize + 1] = list[i].Y;
+                    floats[i * vectorSize + 2] = list[i].Z;
+                }
+                else
+                {
+                    // Handle null elements in the list gracefully (set to default values or log an error).
+                    floats[i * vectorSize] = 0.0f; // Default X component.
+                    floats[i * vectorSize + 1] = 0.0f; // Default Y component.
+                    floats[i * vectorSize + 2] = 0.0f; // Default Z component.
+                                                       // Alternatively, you can throw an exception or log an error message here.
+                }
             }
+
             return floats;
         }
 
