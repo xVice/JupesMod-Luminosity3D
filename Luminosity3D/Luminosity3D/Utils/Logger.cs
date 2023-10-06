@@ -34,7 +34,7 @@ namespace Luminosity3D.Utils
             Console.WriteLine(logMessage);
         }
 
-        public static void LogToFile(string message, [CallerMemberName] string callerMemberName = "",
+        public static void LogToFile(string message, bool fileExclusive = true,[CallerMemberName] string callerMemberName = "",
                     [CallerFilePath] string callerFilePath = "",
                     [CallerLineNumber] int callerLineNumber = 0)
         {
@@ -47,13 +47,14 @@ namespace Luminosity3D.Utils
                 sw.WriteLine(logMessage);
 
             }
-            if (Engine.Console != null)
+
+            if (Engine.Console != null && fileExclusive == false)
             {
                 Engine.Console.Log(logMessage);
 
             }
-
             Console.WriteLine(logMessage);
+
         }
 
     }

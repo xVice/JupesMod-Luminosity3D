@@ -3,6 +3,7 @@ using OpenTK.Mathematics;
 using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
 using StbImageSharp;
 using TextureWrapMode = OpenTK.Graphics.OpenGL4.TextureWrapMode;
+using Luminosity3D.Utils;
 
 namespace Luminosity3D.Rendering
 {
@@ -34,7 +35,7 @@ namespace Luminosity3D.Rendering
         private void Init(string path)
         {
             if (!File.Exists(path))
-                throw new Exception($"Não foi possivel para encontrar a Textura: {path}");
+                throw new Exception($"Texture file doesnt exist: {path}, (place, anything in either, the resource folder of jmod or the mod you might be making and use the Resources class!)");
 
             Unit = new Tuple<TextureUnit, int>(Textureunit, getUnitInt(Textureunit));
 
@@ -130,34 +131,28 @@ namespace Luminosity3D.Rendering
             // aloque o dicionário para armazenar todos os uniforms.GL.GetUniformLocation(Handle, nome)new Dictionary<string, int>();
             uniformLocations = new Dictionary<string, int>();
 
-            // verfificamos a quantidade de uniforms que o shader possui
             GL.GetProgram(Handle, GetProgramParameterName.ActiveUniforms, out var numberOfUniforms);
 
-            // realizamos um loop em todos os uniformes,
+            // Loop through all the uniforms
             for (var i = 0; i < numberOfUniforms; i++)
             {
-                string key = GL.GetActiveUniform(Handle, i, out var size, out _);
+                string uniformName = GL.GetActiveUniform(Handle, i, out var size, out _);
 
+                // Handle array uniforms
                 if (size > 1)
                 {
-                    // opengl não armazena o nome dos uniforms de arrays, por isso devemos setar os nomes de arrays manualmente.
-                    // vou tentar explicar de uma forma melhor.
-                    // imagine o seguinte uniform colors[4], o opegl não ira armazenar todos esses arrays, ele ira armazenar apenas  
-                    // uniform colors[0], por isso devemos manualmente incrementar color[1], color[2], color[3] e color[4] em nosso dicionario.
-
                     for (int j = 0; j < size; j++)
                     {
-                        var keyArray = key.Substring(0, key.Length - 2) + $"{j}]";
-
-                        var location = GL.GetUniformLocation(Handle, keyArray);
-                        uniformLocations.Add(keyArray, location);
+                        string arrayUniformName = $"{uniformName.Substring(0, uniformName.Length - 2)}[{j}]";
+                        var location = GL.GetUniformLocation(Handle, arrayUniformName);
+                        uniformLocations.Add(arrayUniformName, location);
                     }
                 }
                 else
                 {
-                    var location = GL.GetUniformLocation(Handle, key);
-                    uniformLocations.Add(key, location);
-
+                    // Handle single uniforms
+                    var location = GL.GetUniformLocation(Handle, uniformName);
+                    uniformLocations.Add(uniformName, location);
                 }
             }
         }
@@ -182,7 +177,9 @@ namespace Luminosity3D.Rendering
 
             if (code != (int)All.True)
             {
-                throw new Exception($"Ocorreu um erro ao compilar o programa \n{CurrentShader} \n{GL.GetShaderInfoLog(shader)}");
+                string log = $"A error occured during shader compilation of \n{CurrentShader} \n{GL.GetShaderInfoLog(shader)}";
+                Logger.LogToFile(log);
+                throw new Exception(log);
             }
 
 

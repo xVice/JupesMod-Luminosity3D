@@ -1,9 +1,10 @@
-﻿using ImGuiNET;
+﻿
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.PKGLoader;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
 using OpenTK.ImGui;
+using ImGuiNET;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
@@ -14,6 +15,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using HexaEngine.ImGuizmoNET;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -230,7 +232,7 @@ namespace Luminosity3D.Builtin.RenderLayers
         private bool isEntityMenuOpen;
         private bool isComponentMenuOpen;
 
-        private void ShowEntityViewer()
+        private unsafe void ShowEntityViewer()
         {
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(ImGui.GetIO().DisplaySize.X - 300, 0), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(300, ImGui.GetIO().DisplaySize.Y - 200), ImGuiCond.FirstUseEver);
@@ -279,19 +281,14 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                     if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
                     {
+                       
+       
+
                         foreach (var comp in entity.components.Values)
                         {
                             if (ImGui.TreeNode("Component: " + comp.GetType().ToString()))
                             {
-                                if (ImGui.BeginPopupContextItem("ComponentPopup" + comp.GetHashCode()))
-                                {
-                                    if (ImGui.MenuItem("Delete Component"))
-                                    {
-                                        //component.Destroy();
-                                    }
-
-                                    ImGui.EndPopup();
-                                }
+                                //ShowEntityPopup(entity, comp);
 
                                 if (ImGui.TreeNode("Properties"))
                                 {
@@ -491,7 +488,8 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         void DisplayReflectionBasedExplorerNodes(LuminosityBehaviour component)
         {
-            if(component is IImguiSerialize imguiSeri)
+            
+            if (component is IImguiSerialize imguiSeri)
             {
                 ImGui.Text("Serialized UI:");
                 ImGui.Separator();
@@ -689,7 +687,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (ImGui.Button("Load .obj File With FPS Controller"))
             {
                 // Handle loading .obj file using objFilePath
-                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                if (!string.IsNullOrWhiteSpace(objFilePath))
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
@@ -700,7 +698,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (ImGui.Button("Load .obj File"))
             {
                 // Handle loading .obj file using objFilePath
-                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                if (!string.IsNullOrWhiteSpace(objFilePath))
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
@@ -711,7 +709,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (ImGui.Button("Load .obj File With Sine Mover"))
             {
                 // Handle loading .obj file using objFilePath
-                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                if (!string.IsNullOrWhiteSpace(objFilePath))
                 {
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
@@ -723,7 +721,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (ImGui.Button("Load .obj File With RigidBody Physics and ConvexHull Collider"))
             {
                 // Handle loading .obj file using objFilePath
-                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                if (!string.IsNullOrWhiteSpace(objFilePath))
                 {
   
                     EntitySummoner.CreatePBREntityWithRbConvexHull("3DObj", objFilePath, System.Numerics.Vector3.Zero);
@@ -736,7 +734,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             if (ImGui.Button("Load .obj File With RigidBody Physics"))
             {
                 // Handle loading .obj file using objFilePath
-                if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
+                if (!string.IsNullOrWhiteSpace(objFilePath))
                 {
                     EntitySummoner.CreatePBREntityWithRb("3DObj", objFilePath, System.Numerics.Vector3.Zero);
                 }

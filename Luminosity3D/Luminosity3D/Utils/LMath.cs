@@ -8,6 +8,7 @@ using OpenTK.Mathematics;
 using System.Numerics;
 using DevExpress.Utils;
 using Assimp;
+using System.Runtime.InteropServices;
 
 namespace Luminosity3D.Utils
 {
@@ -55,6 +56,33 @@ namespace Luminosity3D.Utils
                 systemNumericsMatrix.M31, systemNumericsMatrix.M32, systemNumericsMatrix.M33, systemNumericsMatrix.M34,
                 systemNumericsMatrix.M41, systemNumericsMatrix.M42, systemNumericsMatrix.M43, systemNumericsMatrix.M44
             );
+        }
+
+        public static unsafe float* Matrix4x4ToFloatPointer(System.Numerics.Matrix4x4 matrix)
+        {
+            float* matrixPtr = (float*)Marshal.AllocHGlobal(16 * sizeof(float));
+
+            matrixPtr[0] = matrix.M11;
+            matrixPtr[1] = matrix.M12;
+            matrixPtr[2] = matrix.M13;
+            matrixPtr[3] = matrix.M14;
+
+            matrixPtr[4] = matrix.M21;
+            matrixPtr[5] = matrix.M22;
+            matrixPtr[6] = matrix.M23;
+            matrixPtr[7] = matrix.M24;
+
+            matrixPtr[8] = matrix.M31;
+            matrixPtr[9] = matrix.M32;
+            matrixPtr[10] = matrix.M33;
+            matrixPtr[11] = matrix.M34;
+
+            matrixPtr[12] = matrix.M41;
+            matrixPtr[13] = matrix.M42;
+            matrixPtr[14] = matrix.M43;
+            matrixPtr[15] = matrix.M44;
+
+            return matrixPtr;
         }
 
         public static float[] Vector3DListToFloatArray(List<Vector3D> list)

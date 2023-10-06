@@ -92,17 +92,15 @@ namespace Luminosity3D.EntityComponentSystem
 
         }
 
-
         public void RenderPass()
-        {
+        {   
+
             if (Engine.SceneManager.ActiveScene.activeCam == null)
                 return;
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds
             float deltaTime = currentTime - lastRenderTime; // Calculate time elapsed since the last pass in ms
             lastRenderTime = currentTime;
 
-            var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
-            
 
             if (caches.ContainsKey(typeof(MeshBatch)))
             {
@@ -112,7 +110,15 @@ namespace Luminosity3D.EntityComponentSystem
 
                 foreach(var batch in sortedBatches)
                 {
-                    batch.model.RenderFrame(batch.GetComponent<TransformComponent>());
+                    var trans = batch.GetComponent<TransformComponent>();
+                    var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                    batch.model.ShaderPBR.Use();
+                    batch.model.ShaderPBR.SetUniform("model", trans.GetTransformMatrix());
+                    batch.model.ShaderPBR.SetUniform("view", cam.ViewMatrix);
+                    batch.model.ShaderPBR.SetUniform("projection", cam.ProjectionMatrix);
+                    batch.model.ShaderPBR.SetUniform("viewPos", cam.Position);
+                    batch.model.RenderFrame();
+                    //batch.model.RenderForStencil();
                 }
             }
         }

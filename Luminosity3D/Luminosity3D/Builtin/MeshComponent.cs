@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Luminosity3D.EntityComponentSystem;
+using Luminosity3D.Utils;
 using Luminosity3DRendering;
 
 namespace Luminosity3D.Builtin

@@ -1,8 +1,11 @@
-﻿using OpenTK.Windowing.GraphicsLibraryFramework;
+﻿using Luminosity3D.Rendering;
+using Luminosity3DRendering;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -129,9 +132,36 @@ namespace Luminosity3D.Utils
         }
     }
 
+
+    public interface IResourceLoader<T>
+    {
+        T Load(string path);
+    }
+
+    public class ResourceBase<T>
+    {
+        public string Path { get; private set; }
+        private T asset;
+
+        public ResourceBase(string path, T asset)
+        {
+            Path = path;
+            this.asset = asset;
+        }
+    }
+
     public static class Resources
     {
-        public const string ResourcesPath = "./resources";
+        public const string ResourcesPath = "./Resources";
+        private static Dictionary<string, object> resourceCache = new Dictionary<string, object>();
+        private static Dictionary<Type, object> resourceLoaders = new Dictionary<Type, object>();
+
+        public static void LoadBuiltinResourceTypes()
+        {
+            RegisterResourceLoader<TextureProgram, TextureProgramLoader>();
+            RegisterResourceLoader<Model, AssimpLoaderLoader>();
+            // Register other resource types in a similar manner
+        }
 
         public static void CreateResourcesFolder()
         {
@@ -141,34 +171,76 @@ namespace Luminosity3D.Utils
             }
         }
 
-        public static string Get(string name)
+        public static T Get<T>(string name)
         {
-            return File.ReadAllText(Path.Combine(ResourcesPath, name));
+            if (resourceCache.TryGetValue(name, out object cachedResource) && cachedResource is T cachedValue)
+            {
+                return cachedValue;
+            }
+
+            if (resourceLoaders.TryGetValue(typeof(T), out var loader))
+            {
+                string fullPath = Path.Combine(ResourcesPath, name);
+                if (File.Exists(fullPath))
+                {
+                    var resourceLoader = (IResourceLoader<T>)loader;
+                    T loadedResource = resourceLoader.Load(fullPath);
+                    resourceCache[name] = loadedResource;
+                    return loadedResource;
+                }
+            }
+
+            return default; // Resource not found or unsupported type
         }
 
-        public static string[] GetLines(string name)
+        // Register a custom resource loader for a specific type
+        public static void RegisterResourceLoader<T, TLoader>()
+            where TLoader : IResourceLoader<T>, new()
         {
-            return File.ReadAllLines(Path.Combine(ResourcesPath, name));
+            var loader = new TLoader();
+            resourceLoaders[typeof(T)] = loader;
         }
 
-        public static byte[] GetFileBytes(string name)
+        // Get a resource by type
+        public static T GetByType<T>(string name)
         {
-            return File.ReadAllBytes(Path.Combine(ResourcesPath, name));
-        }
+            if (resourceLoaders.TryGetValue(typeof(T), out var loader))
+            {
+                string fullPath = Path.Combine(ResourcesPath, name);
+                if (File.Exists(fullPath))
+                {
+                    var resourceLoader = (IResourceLoader<T>)loader;
+                    T loadedResource = resourceLoader.Load(fullPath);
+                    resourceCache[name] = loadedResource;
+                    return loadedResource;
+                }
+            }
 
-        public static void WriteLines(string name, string[] lines)
-        {
-            File.WriteAllLines(Path.Combine(ResourcesPath, name), lines);
-        }
-
-        public static void Write(string name, string content)
-        {
-            File.WriteAllText(Path.Combine(ResourcesPath, name), content);
-        }
-
-        public static void WriteBytes(string name, byte[] bytes)
-        {
-            File.WriteAllBytes(Path.Combine(ResourcesPath, name), bytes);
+            return default; // Resource not found or unsupported type
         }
     }
+
+
+    // Example resource loader for TextureProgram
+    //i think this is good now
+    public class TextureProgramLoader : IResourceLoader<TextureProgram>
+    {
+        public TextureProgram Load(string path)
+        {
+            // Implement your TextureProgram loading logic here
+            // You can return an instance of TextureProgram after loading it from the file.
+            return new TextureProgram(path); // Replace with actual loading logic
+        }
+    }
+
+    public class AssimpLoaderLoader : IResourceLoader<Model>
+    {
+        public Model Load(string path)
+        {
+            // Implement your TextureProgram loading logic here
+            // You can return an instance of TextureProgram after loading it from the file.
+            return new Model(path); // Replace with actual loading logic
+        }
+    }
+
 }

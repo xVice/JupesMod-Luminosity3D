@@ -19,6 +19,11 @@ namespace Luminosity3D.Utils
             Engine.StartEngine();
         }
 
+        public static void StopEngine()
+        {
+            Engine.StopEngine();
+        }
+
 
 
     }

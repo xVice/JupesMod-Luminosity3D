@@ -28,6 +28,21 @@ namespace Luminosity3D
 
         }
 
+        public static void StopEngine()
+        {
+
+            Logger.ClearLogFile();
+            Temp.ClearTemp();
+            PackageLoader.UnloadPaks();
+
+            Renderer.Close();
+
+
+
+
+
+        }
+
         public static DebugConsole GetConsole()
         {
             if(Renderer != null)

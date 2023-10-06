@@ -11,8 +11,8 @@ namespace Luminosity3D.Builtin
     public class TransformComponent : LuminosityBehaviour,IImguiSerialize
     {
         public Vector3 Position = Vector3.Zero;
-        public Quaternion Rotation = Quaternion.Identity;
-        public Vector3 Scale = new Vector3(0.1f,0.1f,0.1f);
+        public Quaternion Rotation = Quaternion.Identity * Quaternion.CreateFromAxisAngle(Vector3.UnitX, LMath.ToRadians(-90));
+        public Vector3 Scale = new Vector3(1f,1f,1f);
 
         public Vector3 Forward
         {

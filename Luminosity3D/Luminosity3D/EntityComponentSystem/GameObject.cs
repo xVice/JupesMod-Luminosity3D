@@ -7,17 +7,72 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Luminosity3D.EntityComponentSystem
 {
+    public class GameObjectSerializer
+    {
+        public static void SerializeToFile(GameObject gameObject, string path)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+
+            Directory.CreateDirectory(path);
+            string rootGOPath = Path.Combine(path, gameObject.GetHashCode().ToString());
+
+            Directory.CreateDirectory(rootGOPath);
+            Directory.CreateDirectory(Path.Combine(rootGOPath, "components"));
+
+            RecursiveBuild(rootGOPath, gameObject);
+
+            // Serialize the GameObject to JSON
+            string gameObjectJson = JsonConvert.SerializeObject(gameObject);
+            File.WriteAllText(Path.Combine(rootGOPath, "gameObject.json"), gameObjectJson);
+        }
+
+        public static GameObject DeserializeFromFile(string path)
+        {
+            // Load the serialized GameObject from JSON
+            string gameObjectJson = File.ReadAllText(Path.Combine(path, "gameObject.json"));
+            return JsonConvert.DeserializeObject<GameObject>(gameObjectJson);
+        }
+
+        private static void RecursiveBuild(string rootPath, GameObject go)
+        {
+            string currentPath = Path.Combine(rootPath, go.GetHashCode().ToString());
+            Directory.CreateDirectory(currentPath);
+            Directory.CreateDirectory(Path.Combine(currentPath, "components"));
+
+            // Serialize components here if needed
+            foreach (var kvp in go.components)
+            {
+                // Serialize the component to JSON and save it in the components directory
+                string componentJson = JsonConvert.SerializeObject(kvp.Value);
+                File.WriteAllText(Path.Combine(currentPath, "components", kvp.Key.Name + ".json"), componentJson);
+            }
+
+            // Recursively serialize children
+            foreach (var child in go.Childs)
+            {
+                RecursiveBuild(currentPath, child);
+            }
+        }
+    }
+
+    
+
     public class GameObject
     {
         public string Name { get; set; } = "New GameObject";
         public string Tag { get; set; } = string.Empty;
         public bool ActiveAndEnabled { get; set; } = true;
+        
         public GameObject Parent = null;
         public List<GameObject> Childs = new List<GameObject>();
         public Dictionary<Type, LuminosityBehaviour> components = new Dictionary<Type, LuminosityBehaviour>();
