@@ -957,12 +957,12 @@ namespace Luminosity3DRendering
         {
 
 
-            ShaderPBR.SetUniform("lightPositions", new Vector3(10,10,10));
+            ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
             ShaderPBR.SetUniform("lightColors", Vector3.One);
 
-            //GL.ActiveTexture(TextureUnit.Texture0);
-            //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
-            //ShaderPBR.SetUniform("irradianceMap", 1);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
+            ShaderPBR.SetUniform("irradianceMap", 1);
 
             //GL.ActiveTexture(TextureUnit.Texture1);
             //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Background);
