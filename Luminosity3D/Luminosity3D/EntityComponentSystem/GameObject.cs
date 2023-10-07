@@ -94,10 +94,16 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
-        public GameObject()
+        public GameObject(bool createInScene = true)
         {
+            if (createInScene)
+            {
             Engine.SceneManager.ActiveScene.InstantiateEntity(this);
+
+            }
         }
+
+        
         public GameObject(string name)
         {
             Name = name;

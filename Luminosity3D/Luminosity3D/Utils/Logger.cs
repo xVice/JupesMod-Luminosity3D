@@ -9,6 +9,30 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.Utils
 {
+    public enum LogType
+    {
+        Information,
+        Debug,
+        Warning,
+        Error
+    }
+
+    public struct Log
+    {
+        public LogType Type = LogType.Information;
+        public string Lable = string.Empty;
+        public string TimeStamp = string.Empty;
+        public string Content = string.Empty;
+
+        public Log(LogType type, string lable, string timeStamp, string content)
+        {
+            Type = type;
+            Lable = lable;
+            TimeStamp = timeStamp;
+            Content = content;
+        }
+    }
+
     public class Logger
     {
         public static void ClearLogFile()
@@ -17,43 +41,47 @@ namespace Luminosity3D.Utils
         }
 
 
-        public static void Log(string message, [CallerMemberName] string callerMemberName = "",
+
+
+        public static void Log(string message,LogType type = LogType.Information ,[CallerMemberName] string callerMemberName = "",
                             [CallerFilePath] string callerFilePath = "",
                             [CallerLineNumber] int callerLineNumber = 0)
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
-            string logMessage = $"[{timestamp}] [{callingClassName}.{callerMemberName}:{callerLineNumber}] : {message}";
+            string lable = $"[{callingClassName}.{callerMemberName}:{callerLineNumber}]";
 
             if (Engine.Console != null)
             {
-                Engine.Console.Log(logMessage);
+                var log = new Log(type, lable, timestamp, message);
+                Engine.Console.Log(log);
 
             }
 
-            Console.WriteLine(logMessage);
+            Console.WriteLine(timestamp + " " + lable + ":" + message);
         }
 
-        public static void LogToFile(string message, bool fileExclusive = true,[CallerMemberName] string callerMemberName = "",
+        public static void LogToFile(string message, LogType type = LogType.Information, bool fileExclusive = true,[CallerMemberName] string callerMemberName = "",
                     [CallerFilePath] string callerFilePath = "",
                     [CallerLineNumber] int callerLineNumber = 0)
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
-            string logMessage = $"[{timestamp}] [{callingClassName}.{callerMemberName}:{callerLineNumber}] : {message}";
-
+            string lable = $"[{callingClassName}.{callerMemberName}:{callerLineNumber}]";
+            var msg = timestamp + " " + lable + ":" + message;
             using (StreamWriter sw = File.AppendText("./log.txt"))
             {
-                sw.WriteLine(logMessage);
+                sw.WriteLine(msg);
 
             }
 
             if (Engine.Console != null && fileExclusive == false)
             {
-                Engine.Console.Log(logMessage);
+                var log = new Log(type, lable, timestamp, message);
+                Engine.Console.Log(log);
 
             }
-            Console.WriteLine(logMessage);
+            Console.WriteLine(msg);
 
         }
 

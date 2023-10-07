@@ -56,7 +56,7 @@ namespace Luminosity3D.Builtin
             FieldOfView = 90;
             AspectRatio = 1920f / 1080f;
             NearClip = .1f;
-            FarClip = 1000f;
+            FarClip = 5000f;
 
             SetActive();
             UpdateProjectionMatrix();

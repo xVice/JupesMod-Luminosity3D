@@ -106,7 +106,6 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 var sortedBatches = caches[typeof(MeshBatch)]
                     .Cast<MeshBatch>()
-                    .OrderBy(x => x.model)
                     .ToArray();
 
                 foreach(var batch in sortedBatches)

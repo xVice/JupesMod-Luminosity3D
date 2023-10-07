@@ -41,30 +41,14 @@ namespace Luminosity3D.Utils
             );
         }
 
-        public static Matrix ToMatBs(System.Numerics.Matrix4x4 systemMatrix)
+        public static Matrix ToMatBs(System.Numerics.Matrix4x4 m)
         {
-            return new Matrix
-            {
-                M11 = systemMatrix.M11,
-                M12 = systemMatrix.M12,
-                M13 = systemMatrix.M13,
-                M14 = systemMatrix.M14,
-
-                M21 = systemMatrix.M21,
-                M22 = systemMatrix.M22,
-                M23 = systemMatrix.M23,
-                M24 = systemMatrix.M24,
-                
-                M31 = systemMatrix.M31,
-                M32 = systemMatrix.M32,
-                M33 = systemMatrix.M33,
-                M34 = systemMatrix.M34,
-
-                M41 = systemMatrix.M41,
-                M42 = systemMatrix.M42,
-                M43 = systemMatrix.M43,
-                M44 = systemMatrix.M44
-            };
+            Matrix r = new Matrix();
+            r.M11 = m.M11; r.M12 = m.M12; r.M13 = m.M13; r.M14 = m.M14;
+            r.M21 = m.M21; r.M22 = m.M22; r.M23 = m.M23; r.M24 = m.M24;
+            r.M31 = m.M31; r.M32 = m.M32; r.M33 = m.M33; r.M34 = m.M34;
+            r.M41 = m.M41; r.M42 = m.M42; r.M43 = m.M43; r.M44 = m.M44;
+            return r;
         }
 
         public static Matrix4 ToMatTk(System.Numerics.Matrix4x4 systemNumericsMatrix)

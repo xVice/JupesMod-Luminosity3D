@@ -12,13 +12,25 @@ using System.Text;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
+
+
     public class DebugConsole : IMGUIRenderLayer
     {
         public CommandManager CommandManager { get; set; } = new CommandManager();
-        private List<string> messages = new List<string>();
+        private List<Log> messages = new List<Log>();
         private byte[] inputBuffer = new byte[256];
-        private bool scrollToBottom = true;
+        private bool scrollToBottom = false;
         private bool ConsoleOpen = false;
+
+
+
+        bool showThemeing = false;
+        bool showProfiler = false;
+        bool showDemos = false;
+        bool inputacepted = false;
+
+        string inputString = "";
+
 
         public DebugConsole(Renderer renderer) : base(renderer)
         {
@@ -29,14 +41,6 @@ namespace Luminosity3D.Builtin.RenderLayers
             Settings.RegisterSetting(new TimeSetting());
             IMGUIStyles.SetupImGuiStyle();
         }
-
-
-
-        bool showThemeing = false;
-        bool showProfiler = false;
-        bool showDemos = false;
-        bool inputacepted = false;
-        string inputString = "";
 
         public override void Render()
         {
@@ -173,20 +177,36 @@ namespace Luminosity3D.Builtin.RenderLayers
                     }
                     ImGui.EndMenuBar();
                 }
-                // Column 1: Display the debug messages in a scrollable text area.
                 ImGui.BeginChild("ConsoleText", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()), true, ImGuiWindowFlags.HorizontalScrollbar);
 
-                foreach (var message in messages)
+                int logIndex = 0;
+                foreach (var log in messages)
                 {
-                    ImGui.TextColored(new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f), message);
+                    ImGui.PushStyleColor(ImGuiCol.Border, GetLogColor(log.Type));
+
+                    // Generate a unique identifier for each child window based on logIndex
+                    string childWindowName = "LogWindow" + logIndex.ToString();
+
+                    // Use a collapsing header for each log
+                    bool isLogOpen = ImGui.CollapsingHeader(log.Lable + " @ " + log.TimeStamp, ImGuiTreeNodeFlags.DefaultOpen);
+
+                    if (isLogOpen)
+                    {
+                        // Calculate the height required for the content in childWindowName
+                        float contentHeight = ImGui.CalcTextSize(log.Content).Y + ImGui.GetTextLineHeightWithSpacing();
+
+                        ImGui.BeginChild(childWindowName, new System.Numerics.Vector2(0, contentHeight), true);
+
+                        ImGui.TextWrapped(log.Content);
+                        ImGui.EndChild();
+
+                    }
+                    logIndex++;
+                    ImGui.PopStyleColor();
+
+
                 }
 
-                if (scrollToBottom)
-                {
-                    ImGui.SetScrollHereY(1.0f);
-                }
-
-                //ImGui.PopStyleVar();
                 ImGui.EndChild();
 
                 // Input field for adding new debug messages.
@@ -200,10 +220,6 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 // Scroll to the end manually.
                 ImGui.SameLine();
-                if (ImGui.Button("Scroll to Bottom"))
-                {
-                    scrollToBottom = true;
-                }
 
                 // Clear the debug messages.
                 ImGui.SameLine();
@@ -214,6 +230,21 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
 
             ImGui.End();
+        }
+
+        private uint GetLogColor(LogType type)
+        {
+            switch (type)
+            {
+                case LogType.Information:
+                    return ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.0f, 1.0f, 0.0f, 1.0f)); // Green
+                case LogType.Warning:
+                    return ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 1.0f, 0.0f, 1.0f)); // Yellow
+                case LogType.Error:
+                    return ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
+                default:
+                    return ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f)); // White (fallback)
+            }
         }
 
         string objFilePath = "./resources/unitron/scene.gltf";
@@ -272,28 +303,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     var entity = ents[i];
 
-                    if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
-                    {
-                        
-
-                        //ShowEntityPopup(entity);
-
-                        foreach (var comp in entity.components.Values)
-                        {
-                            if (ImGui.TreeNode("Component: " + comp.GetType().ToString()))
-                            {
-                                if (ImGui.TreeNode("Properties"))
-                                {
-                                    DisplayReflectionBasedExplorerNodes(comp);
-                                    ImGui.TreePop();
-                                }
-
-                                ImGui.TreePop();
-                            }
-                        }
-
-                        ImGui.TreePop();
-                    }
+                    DisplayEntity(entity);
                 }
 
                 // End the group containing tree view and input box/buttons
@@ -303,8 +313,58 @@ namespace Luminosity3D.Builtin.RenderLayers
             ImGui.End();
         }
 
+        private unsafe void DisplayEntity(GameObject entity)
+        {
+            if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
+            {
+                if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Right))
+                {
+                    // Right-clicked on the entity tree node, show the popup
+                    ImGui.OpenPopup("EntityPopup");
+                }
+
+                if (ImGui.BeginPopup("EntityPopup"))
+                {
+                    ShowEntityPopup(entity);
+                    ImGui.EndPopup();
+                }
+
+                foreach (var child in entity.Childs)
+                {
+                    DisplayEntity(child);
+                }
+
+
+                // Rest of your TreeNode content here
+
+
+                foreach (var comp in entity.components.Values)
+                {
+                    if (ImGui.TreeNode("Component: " + comp.GetType().ToString()))
+                    {
+                        if (ImGui.TreeNode("Properties"))
+                        {
+                            DisplayReflectionBasedExplorerNodes(comp);
+                            ImGui.TreePop();
+                        }
+
+                        ImGui.TreePop();
+                    }
+                }
+
+                ImGui.TreePop();
+            }
+
+            
+        }
+
         private static void ShowEntityPopup(GameObject entity)
         {
+            if (ImGui.MenuItem("Create GameObject"))
+            {
+                entity.Childs.Add(new GameObject(false));
+            }
+
             if (ImGui.BeginMenu("Attach Component"))
             {
                 var componentType = typeof(LuminosityBehaviour);
@@ -316,24 +376,13 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     if (ImGui.MenuItem(derivedType.Name))
                     {
-                        if (typeof(IImguiSerialize).IsAssignableFrom(derivedType))
-                        {
-                            if (derivedType.GetInterface(nameof(IImguiSerialize)) != null)
-                            {
-                                // Use reflection to call the static method OnEditorCreation
-                                var methodInfo = derivedType.GetMethod("OnEditorCreation", BindingFlags.Public | BindingFlags.Static);
-                                if (methodInfo != null)
-                                {
-                                    entity.AddComponent((LuminosityBehaviour)methodInfo.Invoke(null, new object[] { entity }));
-                                }
-                                else
-                                {
-                                    Logger.Log($"Static method OnEditorCreation not found in {derivedType.Name}");
-                                }
-                            }
-                        }
+                        entity.AddComponent((LuminosityBehaviour)Activator.CreateInstance(derivedType));
+
+                        
                     }
                 }
+
+         
 
                 ImGui.EndMenu();
             }
@@ -343,7 +392,10 @@ namespace Luminosity3D.Builtin.RenderLayers
                 //entity.Kill();
             }
 
-            ImGui.EndPopup();
+     
+
+
+
         }
 
         void DisplayClassFieldsAndProperties(object classObject)
@@ -753,9 +805,9 @@ namespace Luminosity3D.Builtin.RenderLayers
             Logger.Log($"Loaded {CommandManager.Commands.Count()} commands into the manager!");
         }
 
-        public void Log(string message)
+        public void Log(Log log)
         {
-            messages.Add(message);
+            messages.Add(log);
             scrollToBottom = true;
         }
     }

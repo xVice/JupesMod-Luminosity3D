@@ -16,7 +16,6 @@ using Vector3 = System.Numerics.Vector3;
 namespace Luminosity3D.Builtin
 {
     [RequireComponent(typeof(TransformComponent))]
-    [RequireComponent(typeof(ColliderComponent))]
     [RequireComponent(typeof(RigidBodyComponent))]
     [RequireComponent(typeof(Camera))]
     [RequireComponent(typeof(CameraController))]
@@ -24,23 +23,22 @@ namespace Luminosity3D.Builtin
     public class FPSController : LuminosityBehaviour
     {
         RigidBodyComponent rb;
-        ColliderComponent collider;
         Camera camera;
         CameraController controller;
 
         public override void Awake()
         {
             rb = GetComponent<RigidBodyComponent>();
-            collider = rb.Collider;
             camera = GetComponent<Camera>();
+            camera.SetPosition(Transform.Position);
             controller = GetComponent<CameraController>();
             controller.LockMovement();
-          
         }
 
         public override void Update()
         {
-            var move = new Vector3();
+            var move = Vector3.Zero;  // Initialize the move vector to zero.
+
             if (InputManager.GetKeyDown(Keys.W))
             {
                 move += camera.Forward;
@@ -51,9 +49,34 @@ namespace Luminosity3D.Builtin
                 move -= camera.Forward;
             }
 
-           
+            if (InputManager.GetKeyDown(Keys.A))
+            {
+                move += camera.Right;
+            }
 
-            rb.ApplyForce(move * 15 * Time.deltaTime);
+            if (InputManager.GetKeyDown(Keys.D))
+            {
+                move -= camera.Right;
+            }
+
+            if (InputManager.GetKeyDown(Keys.Space))
+            {
+                move += Vector3.UnitY;
+            }
+
+            // Ensure that the move vector is normalized.
+            if (move.LengthSquared() > 1.0f)
+            {
+                move = Vector3.Normalize(move);
+            }
+
+            // Cap the speed to a maximum value (e.g., 5 units per second).
+            float maxSpeed = 5.0f;
+            move *= maxSpeed;
+
+            // Apply the impulse to the Rigidbody.
+            rb.ApplyImpulse(move * 15);
+
             camera.SetPosition(Transform.Position);
         }
 

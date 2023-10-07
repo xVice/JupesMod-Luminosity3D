@@ -93,8 +93,9 @@
   <ItemGroup>
     <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
-    <PackageReference Include="ImGuizmoSharp" Version="1.61.0" />
+    <PackageReference Include="ImGui.NET" Version="1.89.9.2" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
+    <PackageReference Include="Twizzle.ImGuizmo.NET" Version="1.89.4.1" />
   </ItemGroup>
 
   <ItemGroup>

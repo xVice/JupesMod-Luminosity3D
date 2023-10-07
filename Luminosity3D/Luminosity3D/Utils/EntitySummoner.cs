@@ -40,8 +40,7 @@ namespace Luminosity3D.Utils
             //trans.Position -= Vector3.UnitY * 25;
            
             var batch = ent.AddComponent(MeshBatch.FromPath(filePath));
-            
-            ent.AddComponent(RigidBodyComponent.BuildStatic());
+            ent.AddComponent<ColliderComponent>();
 
 
         }
@@ -58,8 +57,8 @@ namespace Luminosity3D.Utils
         {
             var ent = new GameObject(entName);
             var trans = ent.AddComponent<TransformComponent>();
+            trans.Scale = new Vector3(0.1f, 0.1f, 0.1f);
             trans.Position = Engine.SceneManager.ActiveScene.activeCam.Position;
-            trans.Scale = new Vector3(.01f, .01f, .01f);
             ent.AddComponent(MeshBatch.FromPath("./resources/tr_phoenix/scene.gltf"));
             ent.AddComponent<FPSController>();
 

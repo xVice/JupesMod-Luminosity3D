@@ -23,6 +23,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Runtime.CompilerServices;
 using BulletSharp.Math;
 using Vector3 = OpenTK.Mathematics.Vector3;
+using Luminosity3D.EntityComponentSystem;
 
 namespace Luminosity3DRendering
 {
@@ -38,7 +39,7 @@ namespace Luminosity3DRendering
         public AssimpModel(string FilePath, bool FlipUVs = false)
         {
             if (!File.Exists(FilePath))
-                throw new Exception($"ERROR::ASSIMP:: Arquivo nao encontrado: {FilePath}..");
+                throw new Exception($"Assimp file not found: {FilePath}..");
 
             PathModel = FilePath;
 
@@ -925,7 +926,7 @@ namespace Luminosity3DRendering
         public static void Dispose() => Vao!.Dispose();
     }
     
-    public class PhysicsWorld
+    public class Physics
     {
         private static CollisionConfiguration collisionConfig = new DefaultCollisionConfiguration();
         private static CollisionDispatcher collisiondispatcher = new CollisionDispatcher(collisionConfig);
@@ -966,7 +967,7 @@ namespace Luminosity3DRendering
             ConvexHullShape shape = new ConvexHullShape(model.assimpModel.PointsForCollision.ToArray());
 
             // Apply the scale transformation to the shape
-            shape.LocalScaling = transform.ScaleVector;
+            shape.LocalScaling = Matrix.Transpose(transform).ScaleVector;
 
             DefaultMotionState myMotionState = new DefaultMotionState(Matrix.Transpose(transform));
 
@@ -982,20 +983,49 @@ namespace Luminosity3DRendering
             return body;
         }
 
+        public static CollisionObject CreateStaticCollider(Model model, BulletSharp.Math.Matrix transform, GameObject name)
+        {
+            // Create a collision shape from the model (adjust as needed)
+            CollisionShape shape = new ConvexHullShape(model.assimpModel.PointsForCollision.ToArray());
+            shape.LocalScaling = Matrix.Transpose(transform).ScaleVector;
+
+            // Create a DefaultMotionState with the provided transform
+            DefaultMotionState motionState = new DefaultMotionState(Matrix.Transpose(transform));
+
+            // Create a RigidBodyConstructionInfo with zero mass (for a static object)
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0f, motionState, shape);
+
+            // Create a RigidBody
+            RigidBody rigidBody = new RigidBody(rbInfo);
+
+            // Set the collision flags to indicate it's a static object
+            rigidBody.CollisionFlags |= CollisionFlags.StaticObject;
+
+            // Set the user object (if needed)
+            rigidBody.UserObject = name;
+
+            // Create a CollisionObject using the RigidBody
+            CollisionObject collider = rigidBody;
+            World.AddCollisionObject(collider);
+            return collider;
+        }
 
 
-        public static RigidBody CreateRigidBody(Model model, float mass, BulletSharp.Math.Matrix transform, string name)
+
+
+
+        public static RigidBody CreateRigidBody(Model model, float mass, BulletSharp.Math.Matrix transform, GameObject name)
         {
             BulletSharp.Math.Vector3 localInertia = BulletSharp.Math.Vector3.Zero;
             var shape = new ConvexHullShape(model.assimpModel.PointsForCollision.ToArray());
-            shape.LocalScaling = transform.ScaleVector;
+            shape.LocalScaling = Matrix.Transpose(transform).ScaleVector;
 
             if (mass > 0.0)
             {
                 localInertia = shape.CalculateLocalInertia(mass);
             }
 
-            DefaultMotionState myMotionState = new DefaultMotionState(transform);
+            DefaultMotionState myMotionState = new DefaultMotionState(Matrix.Transpose(transform));
 
             RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(mass, myMotionState, shape, localInertia);
 
@@ -1008,12 +1038,39 @@ namespace Luminosity3DRendering
             return body;
         }
 
-        public static RigidBody GetRigidBodyPositionByUserObjectName(string userObjectName)
+        public static bool Raycast(System.Numerics.Vector3 start, System.Numerics.Vector3 direction, out System.Numerics.Vector3 hitPoint, out System.Numerics.Vector3 hitNormal, out CollisionObject hitObject)
+        {
+            var bsStart = LMath.ToVecBs(start);
+            var bsDirection = LMath.ToVecBs(direction);
+
+            var bspd = bsStart + bsDirection;
+
+            ClosestRayResultCallback rayCallback = new ClosestRayResultCallback(ref bsStart, ref bspd);
+
+            World.RayTest(bsStart, bspd, rayCallback);
+
+            if (rayCallback.HasHit)
+            {
+                hitPoint = LMath.ToVec(rayCallback.HitPointWorld);
+                hitNormal = LMath.ToVec(rayCallback.HitNormalWorld);
+                hitObject = rayCallback.CollisionObject;
+                return true;
+            }
+            else
+            {
+                hitPoint = LMath.ToVec(Vector3.Zero);
+                hitNormal = LMath.ToVec(Vector3.Zero);
+                hitObject = null;
+                return false;
+            }
+        }
+
+        public static RigidBody GetRigidBodyPositionByUserObjectName(GameObject userObjectName)
         {
             foreach (CollisionObject obj in World.CollisionObjectArray)
             {
                 // Check if the CollisionObject has a RigidBody and a matching user object name
-                if (obj is RigidBody rigidBody && obj.UserObject != null && obj.UserObject.ToString() == userObjectName)
+                if (obj is RigidBody rigidBody && obj.UserObject != null && obj.UserObject == userObjectName)
                 {
                     // Get the position of the RigidBody
                     return rigidBody;
@@ -1090,6 +1147,7 @@ namespace Luminosity3DRendering
 
             GL.Enable(EnableCap.CullFace);
 
+
             foreach (var item in meshes.OrderBy(x => x.Vao))
             {
 
@@ -1122,13 +1180,17 @@ namespace Luminosity3DRendering
 
 
         }
+
+
         public void RenderForStencil()
         {
             if (Stencil.RenderStencil)
             {
-                foreach (var item in meshes)
+
+                foreach (var item in meshes.OrderBy(x => x.Vao))
                 {
                     item.RenderFrame();
+ 
                 }
 
             }
@@ -1228,7 +1290,7 @@ namespace Luminosity3DRendering
     }
     public class VertexArrayObject : IDisposable, IComparable<VertexArrayObject>
     {
-        private int Handle;
+        public int Handle;
         private List<int> buffersLinked;
         public VertexArrayObject()
         {
@@ -1672,7 +1734,7 @@ void main()
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer);
             for (int i = 0; i < draw_data.CmdListsCount; i++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdListsRange[i];
+                ImDrawListPtr cmd_list = draw_data.CmdLists[i];
 
                 int vertexSize = cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>();
                 if (vertexSize > _vertexBufferSize)
@@ -1726,7 +1788,7 @@ void main()
             // Render command lists
             for (int n = 0; n < draw_data.CmdListsCount; n++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdListsRange[n];
+                ImDrawListPtr cmd_list = draw_data.CmdLists[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
                 CheckGLError($"Data Vert {n}");
@@ -1955,7 +2017,7 @@ void main()
             //crossHair = new ViewPort("./resources/img/crosshair.png");
             cubeMap = new CubeMap("./resources/Cubemap/montorfano_4k.hdr", CubeMapType.Type1);
             bloom = new Bloom();
-            PhysicsWorld.MakePlane();
+            Physics.MakePlane();
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
             GL.DepthFunc(DepthFunction.Lequal);
@@ -2043,7 +2105,7 @@ void main()
             Time.deltaTime = deltaTime;
             Time.time += deltaTime * Time.timeScale;
 
-            PhysicsWorld.Step();
+            Physics.Step();
 
             Engine.SceneManager.ActiveScene.cache.PhysicsPass();
 

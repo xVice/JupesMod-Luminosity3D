@@ -1,5 +1,7 @@
-﻿using BulletSharp;
+﻿using Assimp;
+using BulletSharp;
 using BulletSharp.Math;
+using BulletSharp.SoftBody;
 using ImGuiNET;
 using Luminosity3D.Builtin;
 using Luminosity3D.Utils;
@@ -13,6 +15,7 @@ namespace Luminosity3D.EntityComponentSystem
     public class ColliderComponent : LuminosityBehaviour
     {
         public CollisionShape CollisionShape = null;
+        public CollisionObject collider = null;
 
         private MeshBatch batch = null;
 
@@ -23,7 +26,8 @@ namespace Luminosity3D.EntityComponentSystem
             if (HasComponent<MeshBatch>())
             {
                 batch = GetComponent<MeshBatch>();
-                CollisionShape = BuildConvexHull(batch).CollisionShape;
+                
+                collider = Physics.CreateStaticCollider(batch.model, LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
             }
             else
             {
@@ -120,7 +124,6 @@ namespace Luminosity3D.EntityComponentSystem
     }
 
     [RequireComponent(typeof(TransformComponent))]
-    [RequireComponent(typeof(ColliderComponent))]
 
     public class RigidBodyComponent : LuminosityBehaviour, IImguiSerialize
     {
@@ -159,7 +162,7 @@ namespace Luminosity3D.EntityComponentSystem
             }
             if (ImGui.Button("Apply Impulse"))
             {
-                ApplyImpulse(LMath.ToVecBs(directionInEditor));
+                ApplyImpulse(directionInEditor);
             }
             if (ImGui.Button("Apply Torque"))
             {
@@ -173,7 +176,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public override void Awake() 
         {
-            Collider = GetComponent<ColliderComponent>();
+            //Collider = GetComponent<ColliderComponent>();
             CreateRigidBody();
         }
 
@@ -194,11 +197,11 @@ namespace Luminosity3D.EntityComponentSystem
                     var newPosition = new Vector3(worldTransform.M41, worldTransform.M42, worldTransform.M43);
 
                     // Extract the rotation quaternion from the transformation matrix
-                    var newRotation = Quaternion.RotationMatrix(worldTransform);
+                    var newRotation = BulletSharp.Math.Quaternion.RotationMatrix(worldTransform);
 
                     // Update the Collider's position and rotation
-                    Collider.Transform.Position = LMath.ToVec(newPosition);
-                    Collider.Transform.Rotation = LMath.ToQuat(newRotation);
+                    Transform.Position = LMath.ToVec(newPosition);
+                    Transform.Rotation = LMath.ToQuat(newRotation);
                 }
             }
         }
@@ -211,15 +214,8 @@ namespace Luminosity3D.EntityComponentSystem
             if (HasComponent<MeshBatch>())
             {
                 var batch = GetComponent<MeshBatch>();
-                if (Static){
-                    RigidBody = PhysicsWorld.CreateStaticRigidBody(batch.model, LMath.ToMatBs(Transform.GetTransformMatrix()), GetHashCode().ToString());
+                RigidBody = Physics.CreateRigidBody(batch.model, mass, LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
 
-                }
-                else
-                {
-                    RigidBody = PhysicsWorld.CreateRigidBody(batch.model, mass, LMath.ToMatBs(Transform.GetTransformMatrix()), GetHashCode().ToString());
-
-                }
             }
         }
 
@@ -287,15 +283,50 @@ namespace Luminosity3D.EntityComponentSystem
         {
             if (RigidBody != null)
             {
-                RigidBody.ApplyCentralForce(LMath.ToVecBs(force));
+                // Create a BulletSharp Vector3 from the System.Numerics Vector3
+                Vector3 relativeForce = LMath.ToVecBs(force);
+
+                // Get the current world transform of the RigidBody
+                Matrix boxTrans = RigidBody.MotionState.WorldTransform;
+
+                // Extract the rotation quaternion from the 4x4 matrix
+                BulletSharp.Math.Quaternion rotation = BulletSharp.Math.Quaternion.Identity;
+                rotation.X = boxTrans.M11;
+                rotation.Y = boxTrans.M12;
+                rotation.Z = boxTrans.M13;
+                rotation.W = boxTrans.M44; // Assuming the quaternion's W component is in M44
+
+                // Rotate the relativeForce by the extracted quaternion
+                Vector3 correctedForce = Vector3.Transform(relativeForce, rotation);
+
+                // Apply the corrected force as central force
+                RigidBody.ApplyCentralForce(correctedForce);
             }
         }
 
-        public void ApplyImpulse(Vector3 impulse)
+
+
+        public void ApplyImpulse(System.Numerics.Vector3 impulse)
         {
             if (RigidBody != null)
             {
-                RigidBody.ApplyCentralImpulse(impulse);
+                // Create a BulletSharp Vector3 from the System.Numerics Vector3
+                Vector3 relativeForce = LMath.ToVecBs(impulse);
+
+                // Get the current world transform of the RigidBody
+                Matrix boxTrans = RigidBody.MotionState.WorldTransform;
+
+                // Extract the rotation quaternion from the 4x4 matrix
+                BulletSharp.Math.Quaternion rotation = BulletSharp.Math.Quaternion.Identity;
+                rotation.X = boxTrans.M11;
+                rotation.Y = boxTrans.M12;
+                rotation.Z = boxTrans.M13;
+                rotation.W = boxTrans.M44; // Assuming the quaternion's W component is in M44
+
+                // Rotate the relativeForce by the extracted quaternion
+                Vector3 correctedForce = Vector3.Transform(relativeForce, rotation);
+
+                RigidBody.ApplyCentralImpulse(relativeForce);
             }
         }
 
