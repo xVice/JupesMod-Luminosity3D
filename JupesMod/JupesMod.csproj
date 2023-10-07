@@ -92,14 +92,9 @@
 
   <ItemGroup>
     <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
-    <PackageReference Include="BepuPhysics" Version="2.4.0" />
-    <PackageReference Include="BepuUtilities" Version="2.4.0" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
-    <PackageReference Include="glTF2Loader" Version="1.0.0" />
-    <PackageReference Include="HexaEngine.ImGuizmo" Version="2.0.16" />
-    <PackageReference Include="ImGui.NET" Version="1.89.9.2" />
+    <PackageReference Include="ImGuizmoSharp" Version="1.61.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
-    <PackageReference Include="Xenko.Assimp" Version="3.1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -109,6 +104,9 @@
   <ItemGroup>
     <None Update="scenes\Demo Scene">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="shaders\builtin\colored.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

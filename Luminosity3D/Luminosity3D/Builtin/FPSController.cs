@@ -19,89 +19,42 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(ColliderComponent))]
     [RequireComponent(typeof(RigidBodyComponent))]
     [RequireComponent(typeof(Camera))]
+    [RequireComponent(typeof(CameraController))]
 
     public class FPSController : LuminosityBehaviour
     {
-        TransformComponent transform;
         RigidBodyComponent rb;
         ColliderComponent collider;
         Camera camera;
-
-        private float moveSpeed = 5.0f;
-        private float sensitivity = 0.1f;
-        private float pitch = 0.0f;
-        private float yaw = 0.0f;
-        private bool isgrabbed = false;
+        CameraController controller;
 
         public override void Awake()
         {
-            transform = GetComponent<TransformComponent>();
             rb = GetComponent<RigidBodyComponent>();
             collider = rb.Collider;
             camera = GetComponent<Camera>();
+            controller = GetComponent<CameraController>();
+            controller.LockMovement();
+          
         }
 
         public override void Update()
         {
-            if (InputManager.GetKeyPressed(Keys.F6))
-            {
-                var cam = Engine.SceneManager.ActiveScene.activeCam.Parent.GetComponent<CameraController>();
-
-                if (cam != null)
-                {
-                    isgrabbed = !isgrabbed;
-                    if (isgrabbed)
-                    {
-                        cam.lockMovement = false;
-                        Engine.Renderer.CursorState = CursorState.Grabbed;
-                    }
-                    else
-                    {
-                        cam.lockMovement = true;
-                        Engine.Renderer.CursorState = CursorState.Normal;
-                    }
-                }
-
-            }
-        }
-
-        public override void LateUpdate()
-        {
-            // Handle player input for movement
-            Vector3 moveDirection = Vector3.Zero;
-
+            var move = new Vector3();
             if (InputManager.GetKeyDown(Keys.W))
-                moveDirection += Vector3.Transform(Vector3.UnitZ, camera.Rotation);
-            if (InputManager.GetKeyDown(Keys.S))
-                moveDirection -= Vector3.Transform(Vector3.UnitZ, camera.Rotation);
-            if (InputManager.GetKeyDown(Keys.A))
-                moveDirection -= Vector3.Transform(Vector3.UnitX, camera.Rotation);
-            if (InputManager.GetKeyDown(Keys.D))
-                moveDirection += Vector3.Transform(Vector3.UnitX, camera.Rotation);
-
-
-            // Normalize the movement vector and apply the move speed
-            if (moveDirection.LengthSquared() > 0.0f)
             {
-                moveDirection *= moveSpeed;
-
-                // Apply the force to the rigid body
-                RigidBodyComponent rigidBodyComponent = GetComponent<RigidBodyComponent>();
-                rigidBodyComponent.ApplyForce(LMath.ToVecBs(moveDirection));
+                move += camera.Forward;
             }
 
-            // Handle mouse input for camera rotation
-            float deltaX = InputManager.GetMouseDeltaX() * sensitivity * (float)Time.deltaTime;
-            float deltaY = InputManager.GetMouseDeltaY() * sensitivity * (float)Time.deltaTime;
+            if (InputManager.GetKeyDown(Keys.S))
+            {
+                move -= camera.Forward;
+            }
 
-            yaw += deltaX;
-            pitch = MathHelper.Clamp(pitch + deltaY, -MathHelper.PiOver2, MathHelper.PiOver2);
+           
 
-            // Update the camera orientation based on pitch and yaw
-            camera.Rotation = Quaternion.CreateFromYawPitchRoll(pitch, yaw, 0.0f);
-
-            // Update the camera's view matrix
-            camera.UpdateViewMatrix();
+            rb.ApplyForce(move * 15 * Time.deltaTime);
+            camera.SetPosition(Transform.Position);
         }
 
         public static LuminosityBehaviour OnEditorCreation(GameObject ent)

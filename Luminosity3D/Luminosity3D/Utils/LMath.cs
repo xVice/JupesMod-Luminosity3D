@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BulletSharp.Math;
-using OpenTK.Mathematics;
-using System.Numerics;
-using DevExpress.Utils;
+﻿using OpenTK.Mathematics;
 using Assimp;
 using System.Runtime.InteropServices;
+using BulletSharp.Math;
 
 namespace Luminosity3D.Utils
 {
@@ -46,6 +39,32 @@ namespace Luminosity3D.Utils
                 openTkMatrix.M31, openTkMatrix.M32, openTkMatrix.M33, openTkMatrix.M34,
                 openTkMatrix.M41, openTkMatrix.M42, openTkMatrix.M43, openTkMatrix.M44
             );
+        }
+
+        public static Matrix ToMatBs(System.Numerics.Matrix4x4 systemMatrix)
+        {
+            return new Matrix
+            {
+                M11 = systemMatrix.M11,
+                M12 = systemMatrix.M12,
+                M13 = systemMatrix.M13,
+                M14 = systemMatrix.M14,
+
+                M21 = systemMatrix.M21,
+                M22 = systemMatrix.M22,
+                M23 = systemMatrix.M23,
+                M24 = systemMatrix.M24,
+                
+                M31 = systemMatrix.M31,
+                M32 = systemMatrix.M32,
+                M33 = systemMatrix.M33,
+                M34 = systemMatrix.M34,
+
+                M41 = systemMatrix.M41,
+                M42 = systemMatrix.M42,
+                M43 = systemMatrix.M43,
+                M44 = systemMatrix.M44
+            };
         }
 
         public static Matrix4 ToMatTk(System.Numerics.Matrix4x4 systemNumericsMatrix)

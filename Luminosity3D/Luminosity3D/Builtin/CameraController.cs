@@ -13,10 +13,16 @@ namespace Luminosity3D.Builtin
         private float moveSpeed = 15.0f;
         private float sensitivity = 0.005f;
         public bool lockMovement = true;
+        public bool lockPosition = false;
 
         public static LuminosityBehaviour OnEditorCreation()
         {
             return new CameraController();
+        }
+
+        public void LockPosition()
+        {
+
         }
 
         public void EditorUI()
@@ -76,36 +82,40 @@ namespace Luminosity3D.Builtin
                 camera.RotateCamera(-camera.Up, mouseXDelta * sensitivity);
                 camera.RotateCamera(camera.Right, mouseYDelta * sensitivity);
 
-                // Handle movement based on keyboard input
-                Vector3 moveDirection = Vector3.Zero;
-                if (InputManager.GetKeyDown(Keys.W))
+                if (!lockPosition)
                 {
-                    moveDirection += Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)); // Move forward
+                    // Handle movement based on keyboard input
+                    Vector3 moveDirection = Vector3.Zero;
+                    if (InputManager.GetKeyDown(Keys.W))
+                    {
+                        moveDirection += Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)); // Move forward
+                    }
+
+                    if (InputManager.GetKeyDown(Keys.S))
+                    {
+                        moveDirection -= Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)); // Move backward
+                    }
+
+                    if (InputManager.GetKeyDown(Keys.A))
+                    {
+                        // Strafe left
+                        moveDirection -= Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)), Vector3.UnitY);
+                    }
+
+                    if (InputManager.GetKeyDown(Keys.D))
+                    {
+                        // Strafe right
+                        moveDirection += Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)), Vector3.UnitY);
+                    }
+
+
+                    // Normalize moveDirection if you want constant speed when moving diagonally.
+                    //moveDirection.Normalize();
+
+                    // Update the camera's position based on movement input
+                    camera.Move(moveDirection, moveSpeed);
                 }
-
-                if (InputManager.GetKeyDown(Keys.S))
-                {
-                    moveDirection -= Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)); // Move backward
-                }
-
-                if (InputManager.GetKeyDown(Keys.A))
-                {
-                    // Strafe left
-                    moveDirection -= Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)), Vector3.UnitY);
-                }
-
-                if (InputManager.GetKeyDown(Keys.D))
-                {
-                    // Strafe right
-                    moveDirection += Vector3.Cross(Vector3.Transform(-Vector3.UnitZ, Matrix4x4.CreateFromQuaternion(camera.Rotation)), Vector3.UnitY);
-                }
-
-
-                // Normalize moveDirection if you want constant speed when moving diagonally.
-                //moveDirection.Normalize();
-
-                // Update the camera's position based on movement input
-                camera.Move(moveDirection, moveSpeed);
+               
             }
         }
    

@@ -55,7 +55,7 @@ namespace Luminosity3D.Builtin
 
             FieldOfView = 90;
             AspectRatio = 1920f / 1080f;
-            NearClip = 0.1f;
+            NearClip = .1f;
             FarClip = 1000f;
 
             SetActive();
@@ -91,6 +91,12 @@ namespace Luminosity3D.Builtin
         public void SetActive()
         {
             Engine.SceneManager.ActiveScene.activeCam = this;
+        }
+
+        public void SetPosition(Vector3 position)
+        {
+            Position = position;
+            UpdateViewMatrix();
         }
 
         public void Move(Vector3 direction, float speed)

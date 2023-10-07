@@ -72,11 +72,27 @@ namespace Luminosity3D.EntityComponentSystem
         public string Name { get; set; } = "New GameObject";
         public string Tag { get; set; } = string.Empty;
         public bool ActiveAndEnabled { get; set; } = true;
-        
+
+
         public GameObject Parent = null;
         public List<GameObject> Childs = new List<GameObject>();
         public Dictionary<Type, LuminosityBehaviour> components = new Dictionary<Type, LuminosityBehaviour>();
         public int ExecutionOrder = 0;
+
+        public TransformComponent Transform
+        {
+            get
+            {
+                if (HasComponent<TransformComponent>())
+                {
+                    return GetComponent<TransformComponent>();
+                }
+                else
+                {
+                    return AddComponent<TransformComponent>();
+                }
+            }
+        }
 
         public GameObject()
         {
@@ -132,7 +148,7 @@ namespace Luminosity3D.EntityComponentSystem
             Type type = typeof(T);
             if (!components.ContainsKey(type))
             {
-                comp.Parent = this;
+                comp.GameObject = this;
                 components[type] = comp;
                 comp.Awake();
                 Engine.SceneManager.ActiveScene.cache.CacheComponent(comp);
@@ -149,7 +165,7 @@ namespace Luminosity3D.EntityComponentSystem
             if (!components.ContainsKey(type))
             {
                 T component = new T();
-                component.Parent = this;
+                component.GameObject = this;
 
 
                 components[type] = component;
@@ -182,13 +198,17 @@ namespace Luminosity3D.EntityComponentSystem
                     {
                         try
                         {
-                            // Use reflection to create an instance of the required component type
-                            var component = Activator.CreateInstance(requiredType) as LuminosityBehaviour;
-                            component.Parent = this;
-                            components[requiredType] = component;
-                            component.Awake();
+                            if (!HasComponent(requiredType))
+                            {
+                                // Use reflection to create an instance of the required component type
+                                var component = Activator.CreateInstance(requiredType) as LuminosityBehaviour;
+                                component.GameObject = this;
+                                components[requiredType] = component;
+                                component.Awake();
 
-                            Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
+                                Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
+                            }
+
                         }
                         catch (Exception ex)
                         {
@@ -196,14 +216,8 @@ namespace Luminosity3D.EntityComponentSystem
                         }
                     }
                 }
-
-
-
             }
         }
-
-
     }
-
 }
 

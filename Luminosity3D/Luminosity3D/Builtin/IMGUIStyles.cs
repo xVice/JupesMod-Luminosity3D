@@ -11,7 +11,6 @@ namespace Luminosity3D.Builtin
             var style = ImGuiNET.ImGui.GetStyle();
 
             style.Alpha = 1.0f;
-            style.DisabledAlpha = 0.6000000238418579f;
             style.WindowPadding = new Vector2(8.0f, 8.0f);
             style.WindowRounding = 4.0f;
             style.WindowBorderSize = 0.0f;
@@ -27,7 +26,6 @@ namespace Luminosity3D.Builtin
             style.FrameBorderSize = 0.0f;
             style.ItemSpacing = new Vector2(8.0f, 4.0f);
             style.ItemInnerSpacing = new Vector2(4.0f, 4.0f);
-            style.CellPadding = new Vector2(4.0f, 2.0f);
             style.IndentSpacing = 21.0f;
             style.ColumnsMinSpacing = 6.0f;
             style.ScrollbarSize = 11.0f;
@@ -36,7 +34,6 @@ namespace Luminosity3D.Builtin
             style.GrabRounding = 2.0f;
             style.TabRounding = 3.5f;
             style.TabBorderSize = 0.0f;
-            style.TabMinWidthForCloseButton = 0.0f;
             style.ColorButtonPosition = ImGuiDir.Right;
             style.ButtonTextAlign = new Vector2(0.5f, 0.5f);
             style.SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -83,11 +80,6 @@ namespace Luminosity3D.Builtin
             style.Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.3098039329051971f, 0.3098039329051971f, 0.3490196168422699f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.2274509817361832f, 0.2274509817361832f, 0.2470588237047195f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableRowBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            style.Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(1.0f, 1.0f, 1.0f, 0.05999999865889549f);
             style.Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
             style.Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
             style.Colors[(int)ImGuiCol.NavHighlight] = new Vector4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
@@ -102,7 +94,6 @@ namespace Luminosity3D.Builtin
             var style = ImGuiNET.ImGui.GetStyle();
 
             style.Alpha = 1.0f;
-            style.DisabledAlpha = 0.6000000238418579f;
             style.WindowPadding = new Vector2(8.0f, 8.0f);
             style.WindowRounding = 7.0f;
             style.WindowBorderSize = 1.0f;
@@ -118,7 +109,6 @@ namespace Luminosity3D.Builtin
             style.FrameBorderSize = 1.0f;
             style.ItemSpacing = new Vector2(6.0f, 6.0f);
             style.ItemInnerSpacing = new Vector2(6.0f, 6.0f);
-            style.CellPadding = new Vector2(6.0f, 6.0f);
             style.IndentSpacing = 25.0f;
             style.ColumnsMinSpacing = 6.0f;
             style.ScrollbarSize = 15.0f;
@@ -127,7 +117,6 @@ namespace Luminosity3D.Builtin
             style.GrabRounding = 3.0f;
             style.TabRounding = 4.0f;
             style.TabBorderSize = 1.0f;
-            style.TabMinWidthForCloseButton = 0.0f;
             style.ColorButtonPosition = ImGuiDir.Right;
             style.ButtonTextAlign = new Vector2(0.5f, 0.5f);
             style.SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -174,11 +163,7 @@ namespace Luminosity3D.Builtin
             style.Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
-            style.Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
-            style.Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.2784313857555389f, 0.2784313857555389f, 0.2784313857555389f, 0.2899999916553497f);
-            style.Colors[(int)ImGuiCol.TableRowBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            style.Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(1.0f, 1.0f, 1.0f, 0.05999999865889549f);
+
             style.Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.2000000029802322f, 0.2196078449487686f, 0.2274509817361832f, 1.0f);
             style.Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
             style.Colors[(int)ImGuiCol.NavHighlight] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -193,7 +178,6 @@ namespace Luminosity3D.Builtin
             var style = ImGuiNET.ImGui.GetStyle();
 
             style.Alpha = 1.0f;
-            style.DisabledAlpha = 0.1000000014901161f;
             style.WindowPadding = new Vector2(8.0f, 8.0f);
             style.WindowRounding = 10.0f;
             style.WindowBorderSize = 0.0f;
@@ -209,7 +193,6 @@ namespace Luminosity3D.Builtin
             style.FrameBorderSize = 0.0f;
             style.ItemSpacing = new Vector2(5.0f, 4.0f);
             style.ItemInnerSpacing = new Vector2(5.0f, 5.0f);
-            style.CellPadding = new Vector2(4.0f, 2.0f);
             style.IndentSpacing = 5.0f;
             style.ColumnsMinSpacing = 5.0f;
             style.ScrollbarSize = 15.0f;
@@ -218,7 +201,6 @@ namespace Luminosity3D.Builtin
             style.GrabRounding = 5.0f;
             style.TabRounding = 5.0f;
             style.TabBorderSize = 0.0f;
-            style.TabMinWidthForCloseButton = 0.0f;
             style.ColorButtonPosition = ImGuiDir.Right;
             style.ButtonTextAlign = new Vector2(0.5f, 0.5f);
             style.SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -265,11 +247,6 @@ namespace Luminosity3D.Builtin
             style.Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(0.7372549176216125f, 0.6941176652908325f, 0.886274516582489f, 0.5490196347236633f);
             style.Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.6196078658103943f, 0.5764706134796143f, 0.7686274647712708f, 0.5490196347236633f);
             style.Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(0.7372549176216125f, 0.6941176652908325f, 0.886274516582489f, 0.5490196347236633f);
-            style.Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.4235294163227081f, 0.3803921639919281f, 0.572549045085907f, 0.5490196347236633f);
-            style.Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.4235294163227081f, 0.3803921639919281f, 0.572549045085907f, 0.2918455004692078f);
-            style.Colors[(int)ImGuiCol.TableRowBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            style.Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(1.0f, 1.0f, 1.0f, 0.03433477878570557f);
             style.Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.7372549176216125f, 0.6941176652908325f, 0.886274516582489f, 0.5490196347236633f);
             style.Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(1.0f, 1.0f, 0.0f, 0.8999999761581421f);
             style.Colors[(int)ImGuiCol.NavHighlight] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -284,7 +261,6 @@ namespace Luminosity3D.Builtin
             var style = ImGuiNET.ImGui.GetStyle();
 
             style.Alpha = 1.0f;
-            style.DisabledAlpha = 0.6000000238418579f;
             style.WindowPadding = new Vector2(8.0f, 8.0f);
             style.WindowRounding = 0.0f;
             style.WindowBorderSize = 1.0f;
@@ -300,7 +276,6 @@ namespace Luminosity3D.Builtin
             style.FrameBorderSize = 1.0f;
             style.ItemSpacing = new Vector2(8.0f, 4.0f);
             style.ItemInnerSpacing = new Vector2(4.0f, 4.0f);
-            style.CellPadding = new Vector2(4.0f, 2.0f);
             style.IndentSpacing = 21.0f;
             style.ColumnsMinSpacing = 6.0f;
             style.ScrollbarSize = 14.0f;
@@ -309,7 +284,6 @@ namespace Luminosity3D.Builtin
             style.GrabRounding = 0.0f;
             style.TabRounding = 0.0f;
             style.TabBorderSize = 0.0f;
-            style.TabMinWidthForCloseButton = 0.0f;
             style.ColorButtonPosition = ImGuiDir.Right;
             style.ButtonTextAlign = new Vector2(0.5f, 0.5f);
             style.SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -356,11 +330,6 @@ namespace Luminosity3D.Builtin
             style.Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(0.5882353186607361f, 0.5372549295425415f, 0.1764705926179886f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(1.0f, 0.7764706015586853f, 0.2784313857555389f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(1.0f, 0.6000000238418579f, 0.0f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.3098039329051971f, 0.3098039329051971f, 0.3490196168422699f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.2274509817361832f, 0.2274509817361832f, 0.2470588237047195f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableRowBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            style.Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(1.0f, 1.0f, 1.0f, 0.05999999865889549f);
             style.Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.5882353186607361f, 0.5372549295425415f, 0.1764705926179886f, 1.0f);
             style.Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(0.729411780834198f, 0.6666666865348816f, 0.239215686917305f, 1.0f);
             style.Colors[(int)ImGuiCol.NavHighlight] = new Vector4(0.5882353186607361f, 0.5372549295425415f, 0.1764705926179886f, 1.0f);
@@ -375,7 +344,6 @@ namespace Luminosity3D.Builtin
             var style = ImGuiNET.ImGui.GetStyle();
 
             style.Alpha = 1.0f;
-            style.DisabledAlpha = 0.6000000238418579f;
             style.WindowPadding = new Vector2(8.0f, 8.0f);
             style.WindowRounding = 5.300000190734863f;
             style.WindowBorderSize = 1.0f;
@@ -391,7 +359,6 @@ namespace Luminosity3D.Builtin
             style.FrameBorderSize = 1.0f;
             style.ItemSpacing = new Vector2(8.0f, 6.5f);
             style.ItemInnerSpacing = new Vector2(4.0f, 4.0f);
-            style.CellPadding = new Vector2(4.0f, 2.0f);
             style.IndentSpacing = 21.0f;
             style.ColumnsMinSpacing = 6.0f;
             style.ScrollbarSize = 14.0f;
@@ -400,7 +367,6 @@ namespace Luminosity3D.Builtin
             style.GrabRounding = 2.299999952316284f;
             style.TabRounding = 4.0f;
             style.TabBorderSize = 0.0f;
-            style.TabMinWidthForCloseButton = 0.0f;
             style.ColorButtonPosition = ImGuiDir.Right;
             style.ButtonTextAlign = new Vector2(0.5f, 0.5f);
             style.SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -447,11 +413,6 @@ namespace Luminosity3D.Builtin
             style.Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(1.0f, 0.4274509847164154f, 0.3490196168422699f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.8980392217636108f, 0.6980392336845398f, 0.0f, 1.0f);
             style.Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(1.0f, 0.6000000238418579f, 0.0f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.3098039329051971f, 0.3098039329051971f, 0.3490196168422699f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.2274509817361832f, 0.2274509817361832f, 0.2470588237047195f, 1.0f);
-            style.Colors[(int)ImGuiCol.TableRowBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-            style.Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(1.0f, 1.0f, 1.0f, 0.05999999865889549f);
             style.Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.1843137294054031f, 0.3960784375667572f, 0.7921568751335144f, 0.8999999761581421f);
             style.Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(1.0f, 1.0f, 0.0f, 0.8999999761581421f);
             style.Colors[(int)ImGuiCol.NavHighlight] = new Vector4(0.2588235437870026f, 0.5882353186607361f, 0.9764705896377563f, 1.0f);

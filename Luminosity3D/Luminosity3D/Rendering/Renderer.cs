@@ -21,6 +21,8 @@ using Face = Assimp.Face;
 using Luminosity3D.Builtin;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Runtime.CompilerServices;
+using BulletSharp.Math;
+using Vector3 = OpenTK.Mathematics.Vector3;
 
 namespace Luminosity3DRendering
 {
@@ -30,7 +32,7 @@ namespace Luminosity3DRendering
         private Scene scene;
         public List<Meshe> meshes { get; }
         public Meshe FirstMeshe => meshes[0];
-        public List<double> PointsForCollision { get; }
+        public List<float> PointsForCollision { get; }
         private string PathModel = string.Empty;
 
         public AssimpModel(string FilePath, bool FlipUVs = false)
@@ -42,7 +44,7 @@ namespace Luminosity3DRendering
 
             scene = new Scene();
             meshes = new List<Meshe>();
-            PointsForCollision = new List<double>();
+            PointsForCollision = new List<float>();
 
             using (var importer = new AssimpContext())
             {
@@ -262,9 +264,9 @@ namespace Luminosity3DRendering
             return v;
         }
 
-        public static Vector4 ToVector4(Color4D col)
+        public static System.Numerics.Vector4 ToVector4(Color4D col)
         {
-            return new Vector4(col.R, col.G, col.B, col.A);
+            return new System.Numerics.Vector4(col.R, col.G, col.B, col.A);
         }
 
         public static Color4 FromColor(Color4D color)
@@ -922,6 +924,110 @@ namespace Luminosity3DRendering
         }
         public static void Dispose() => Vao!.Dispose();
     }
+    
+    public class PhysicsWorld
+    {
+        private static CollisionConfiguration collisionConfig = new DefaultCollisionConfiguration();
+        private static CollisionDispatcher collisiondispatcher = new CollisionDispatcher(collisionConfig);
+        private static DbvtBroadphase broadphase = new DbvtBroadphase();
+
+        // External uses
+        public static DiscreteDynamicsWorld World { get; } = new DiscreteDynamicsWorld(collisiondispatcher, broadphase, null, collisionConfig);
+        public static AlignedCollisionObjectArray ObjectsArray { get => World.CollisionObjectArray; }
+
+
+        private static float _gravity = -9.807f;
+        public static float Gravity
+        {
+            get => _gravity;
+            set
+            {
+                _gravity = -value;
+                World.Gravity = new BulletSharp.Math.Vector3(0.0f, _gravity, 0.0f);
+            }
+        }
+
+        public static void Step()
+        {
+            World.StepSimulation(Time.deltaTime);
+        }
+
+        public static void MakePlane()
+        {
+            CollisionShape groundShape = new StaticPlaneShape(new BulletSharp.Math.Vector3(0, 1, 0), -50);
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0, new DefaultMotionState(), groundShape);
+            RigidBody groundBody = new RigidBody(rbInfo);
+            World.AddRigidBody(groundBody);
+        }
+
+        public static RigidBody CreateStaticRigidBody(Model model, BulletSharp.Math.Matrix transform, string name)
+        {
+            // Create the ConvexHullShape from the model's points
+            ConvexHullShape shape = new ConvexHullShape(model.assimpModel.PointsForCollision.ToArray());
+
+            // Apply the scale transformation to the shape
+            shape.LocalScaling = transform.ScaleVector;
+
+            DefaultMotionState myMotionState = new DefaultMotionState(Matrix.Transpose(transform));
+
+            // Set the mass to zero to create a static rigid body
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0.0f, myMotionState, shape);
+
+            RigidBody body = new RigidBody(rbInfo);
+
+            body.UserObject = name;
+
+            World.AddRigidBody(body);
+
+            return body;
+        }
+
+
+
+        public static RigidBody CreateRigidBody(Model model, float mass, BulletSharp.Math.Matrix transform, string name)
+        {
+            BulletSharp.Math.Vector3 localInertia = BulletSharp.Math.Vector3.Zero;
+            var shape = new ConvexHullShape(model.assimpModel.PointsForCollision.ToArray());
+            shape.LocalScaling = transform.ScaleVector;
+
+            if (mass > 0.0)
+            {
+                localInertia = shape.CalculateLocalInertia(mass);
+            }
+
+            DefaultMotionState myMotionState = new DefaultMotionState(transform);
+
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(mass, myMotionState, shape, localInertia);
+
+            RigidBody body = new RigidBody(rbInfo);
+
+            body.UserObject = name;
+
+            World.AddRigidBody(body);
+            rbInfo.Dispose();
+            return body;
+        }
+
+        public static RigidBody GetRigidBodyPositionByUserObjectName(string userObjectName)
+        {
+            foreach (CollisionObject obj in World.CollisionObjectArray)
+            {
+                // Check if the CollisionObject has a RigidBody and a matching user object name
+                if (obj is RigidBody rigidBody && obj.UserObject != null && obj.UserObject.ToString() == userObjectName)
+                {
+                    // Get the position of the RigidBody
+                    return rigidBody;
+                }
+            }
+
+            // If the user object name is not found, return a default position or handle the case accordingly
+            return null;
+        }
+
+       
+
+    }
+    
     public class Model : IDisposable
     {
         public AssimpModel assimpModel;
@@ -934,9 +1040,9 @@ namespace Luminosity3DRendering
             assimpModel = new AssimpModel(modelPath);
             meshes = new List<Meshe>(assimpModel.meshes);
 
-            ShaderPBR = new ShaderProgram("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
+            ShaderPBR = new ShaderProgram("./shaders/builtin/pbr.vert", "./shaders/builtin/colored.frag");
 
-            foreach (var index in meshes)
+            foreach (var index in meshes.OrderBy(x => x.Vao))
             {
                 LoadTextures(index.DiffusePath, PixelInternalFormat.SrgbAlpha, TextureUnit.Texture4);
                 LoadTextures(index.NormalPath, PixelInternalFormat.Rgba, TextureUnit.Texture5);
@@ -953,34 +1059,38 @@ namespace Luminosity3DRendering
 
         public TexturesCBMaps UseTexCubemap;
 
-        public void RenderFrame()
+        public void RenderFrame(TransformComponent trans, Camera cam)
         {
+            ShaderPBR.Use();
+            ShaderPBR.SetUniform("model", trans.GetTransformMatrix());
+            ShaderPBR.SetUniform("view", cam.ViewMatrix);
+            ShaderPBR.SetUniform("projection", cam.ProjectionMatrix);
+            //ShaderPBR.SetUniform("viewPos", cam.Position);
 
+            //ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
+            //ShaderPBR.SetUniform("lightColors", new Vector3(1f,0f,0f));
 
-            ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
-            ShaderPBR.SetUniform("lightColors", Vector3.One);
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
-            ShaderPBR.SetUniform("irradianceMap", 1);
+            //GL.ActiveTexture(TextureUnit.Texture0);
+            //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
+            //ShaderPBR.SetUniform("irradianceMap", 1);
 
             //GL.ActiveTexture(TextureUnit.Texture1);
             //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Background);
             //ShaderPBR.SetUniform("backgroundMap", 1);
 
             //ShaderPBR.SetUniform("gammaCubemap", 1.0f);
-            //ShaderPBR.SetUniform("interpolation", 0.9f);
+            //ShaderPBR.SetUniform("interpolation", 0.1f);
 
             //ShaderPBR.SetUniform("emissiveStrength", 15.0f);
 
             //ShaderPBR.SetUniform("gamma", 1.5f);
-            //ShaderPBR.SetUniform("luminousStrength", 15.0f);
+            //ShaderPBR.SetUniform("luminousStrength", 55.0f);
             //ShaderPBR.SetUniform("specularStrength", 15.5f);
 
 
             GL.Enable(EnableCap.CullFace);
 
-            foreach (var item in meshes)
+            foreach (var item in meshes.OrderBy(x => x.Vao))
             {
 
                 if (TexturesMap.ContainsKey(item.DiffusePath))
@@ -995,12 +1105,12 @@ namespace Luminosity3DRendering
 
                 if (TexturesMap.ContainsKey(item.LightMap))
                 {
-                    ShaderPBR.SetUniform("AmbienteRoughnessMetallic", TexturesMap[item.LightMap].Use);
+                    //ShaderPBR.SetUniform("AmbienteRoughnessMetallic", TexturesMap[item.LightMap].Use);
                 }
 
                 if (TexturesMap.ContainsKey(item.EmissivePath))
                 {
-                    ShaderPBR.SetUniform("EmissiveMap", TexturesMap[item.EmissivePath].Use);
+                    //ShaderPBR.SetUniform("EmissiveMap", TexturesMap[item.EmissivePath].Use);
                 }
 
 
@@ -1053,7 +1163,7 @@ namespace Luminosity3DRendering
         private int indicesCount;
         public string DiffusePath, SpecularPath, NormalPath, HeightMap, MetallicPath, RoughnnesPath, LightMap, EmissivePath, AmbientOcclusionPath;
 
-        private VertexArrayObject Vao;
+        public VertexArrayObject Vao;
         private BufferObject<Vertex> Vbo;
         private BufferObject<ushort> Ebo;
         public unsafe Meshe(List<Vertex> Vertices, List<ushort> Indices, ModelTexturesPath texturesPath)
@@ -1116,7 +1226,7 @@ namespace Luminosity3DRendering
                 Console.WriteLine($"{TypeTexture} : {pathTex}");
         }
     }
-    public class VertexArrayObject : IDisposable
+    public class VertexArrayObject : IDisposable, IComparable<VertexArrayObject>
     {
         private int Handle;
         private List<int> buffersLinked;
@@ -1147,6 +1257,19 @@ namespace Luminosity3DRendering
         {
             GL.DeleteVertexArray(Handle);
             GL.DeleteBuffers(buffersLinked.Count, buffersLinked.ToArray());
+        }
+
+        public int CompareTo(VertexArrayObject? obj)
+        {
+            if(obj != null)
+            {
+                if (Handle <= obj.Handle)
+                {
+                    return 1;
+                }
+            }
+            
+            return 0;
         }
     }
     public class BufferObject<TDataType>
@@ -1549,7 +1672,7 @@ void main()
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer);
             for (int i = 0; i < draw_data.CmdListsCount; i++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdLists[i];
+                ImDrawListPtr cmd_list = draw_data.CmdListsRange[i];
 
                 int vertexSize = cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>();
                 if (vertexSize > _vertexBufferSize)
@@ -1603,7 +1726,7 @@ void main()
             // Render command lists
             for (int n = 0; n < draw_data.CmdListsCount; n++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdLists[n];
+                ImDrawListPtr cmd_list = draw_data.CmdListsRange[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
                 CheckGLError($"Data Vert {n}");
@@ -1761,10 +1884,12 @@ void main()
             }
         }
     }
+   
+    
+    
+    
     public class Renderer : GameWindow
     {
-        public DiscreteDynamicsWorld dynamicsWorld;
-
         public CubeMap cubeMap;
         private ViewPort crossHair;
         private Bloom bloom;
@@ -1795,25 +1920,12 @@ void main()
         {
             var imagePath = "./icons/jmodicon.png"; // Specify the correct image path
 
-            using (var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imagePath))
+            // Load the image using StbImageSharp
+            using (var stream = File.OpenRead(imagePath))
             {
-                var imageBytes = new byte[image.Width * image.Height * 4];
+                var result = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
 
-                for (int y = 0; y < image.Height; y++)
-                {
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        var pixel = image[x, y];
-                        var index = (y * image.Width + x) * 4;
-
-                        imageBytes[index] = pixel.R;
-                        imageBytes[index + 1] = pixel.G;
-                        imageBytes[index + 2] = pixel.B;
-                        imageBytes[index + 3] = pixel.A;
-                    }
-                }
-
-                var windowIcon = new WindowIcon(new OpenTK.Windowing.Common.Input.Image(image.Width, image.Height, imageBytes));
+                var windowIcon = new WindowIcon(new OpenTK.Windowing.Common.Input.Image(result.Width, result.Height, result.Data));
 
                 return windowIcon;
             }
@@ -1828,21 +1940,6 @@ void main()
             var timer = new Stopwatch();
             timer.Start();
 
-            // Initialize BulletSharp components
-            CollisionConfiguration collisionConfig = new DefaultCollisionConfiguration();
-            CollisionDispatcher dispatcher = new CollisionDispatcher(collisionConfig);
-            BroadphaseInterface broadphase = new DbvtBroadphase();
-            ConstraintSolver solver = new SequentialImpulseConstraintSolver();
-
-            dynamicsWorld = new DiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfig);
-            dynamicsWorld.Gravity = new BulletSharp.Math.Vector3(0, -9.81f, 0); // Set the gravity
-            
-            // Create a large plane at -50
-            CollisionShape groundShape = new StaticPlaneShape(new BulletSharp.Math.Vector3(0, 1, 0), -50);
-            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0, new DefaultMotionState(), groundShape);
-            RigidBody groundBody = new RigidBody(rbInfo);
-            dynamicsWorld.AddRigidBody(groundBody);
-
             Console = new DebugConsole(this);
             AddLayer(Console);
 
@@ -1855,9 +1952,10 @@ void main()
             Engine.PackageLoader.LoadPaks();
             timer.Stop();
 
-            crossHair = new ViewPort("./resources/img/crosshair.png");
-            cubeMap = new CubeMap("./resources/Cubemap/industrial_sunset_puresky_4k.hdr", CubeMapType.Type1);
+            //crossHair = new ViewPort("./resources/img/crosshair.png");
+            cubeMap = new CubeMap("./resources/Cubemap/montorfano_4k.hdr", CubeMapType.Type1);
             bloom = new Bloom();
+            PhysicsWorld.MakePlane();
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
             GL.DepthFunc(DepthFunction.Lequal);
@@ -1899,12 +1997,12 @@ void main()
 
             if (Engine.SceneManager.ActiveScene.activeCam != null)
             {
-                //bloom.BindBloom();
+  
                 cubeMap.RenderFrame();
                 Engine.SceneManager.ActiveScene.cache.RenderPass();
 
-                //bloom.RenderFrame();
-                crossHair.RenderFrame(Vector2.Zero, 0.03f);
+    
+                //crossHair.RenderFrame(Vector2.Zero, 0.03f);
                
             }
 
@@ -1929,18 +2027,29 @@ void main()
 
         }
 
+        protected override void OnTextInput(TextInputEventArgs e)
+        {
+            base.OnTextInput(e);
+            IMGUIController.PressChar(e.AsString[0]);
+           
+        }
+
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+            IMGUIController.Update(this, (float)e.Time);
             // Calculate Delta Time (time between frames).
             float deltaTime = (float)e.Time;
             Time.deltaTime = deltaTime;
             Time.time += deltaTime * Time.timeScale;
-            Engine.SceneManager.ActiveScene.cache.UpdatePass();
-            dynamicsWorld.StepSimulation(Time.deltaTime);
+
+            PhysicsWorld.Step();
 
             Engine.SceneManager.ActiveScene.cache.PhysicsPass();
-            IMGUIController.Update(this, (float)e.Time);
+
+            Engine.SceneManager.ActiveScene.cache.UpdatePass();
+
+            
 
 
         }

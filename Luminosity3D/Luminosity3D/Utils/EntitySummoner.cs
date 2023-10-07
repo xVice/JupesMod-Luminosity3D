@@ -30,7 +30,20 @@ namespace Luminosity3D.Utils
             ent.AddComponent<RigidBodyComponent>();
 
 
-   
+
+        }
+
+        public static void CreatePBREntityWithRbStatic(string entName, string filePath, Vector3 pos)
+        {
+            var ent = new GameObject(entName);
+            var trans = ent.AddComponent<TransformComponent>();
+            //trans.Position -= Vector3.UnitY * 25;
+           
+            var batch = ent.AddComponent(MeshBatch.FromPath(filePath));
+            
+            ent.AddComponent(RigidBodyComponent.BuildStatic());
+
+
         }
 
         public static void CreatePBREntityWithRbConvexHull(string entName, string filePath, Vector3 pos)
@@ -44,7 +57,11 @@ namespace Luminosity3D.Utils
         public static void CreateFPSController(string entName, string filePath, Vector3 pos)
         {
             var ent = new GameObject(entName);
-
+            var trans = ent.AddComponent<TransformComponent>();
+            trans.Position = Engine.SceneManager.ActiveScene.activeCam.Position;
+            trans.Scale = new Vector3(.01f, .01f, .01f);
+            ent.AddComponent(MeshBatch.FromPath("./resources/tr_phoenix/scene.gltf"));
+            ent.AddComponent<FPSController>();
 
         }
 

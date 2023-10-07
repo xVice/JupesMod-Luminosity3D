@@ -1,21 +1,14 @@
 ﻿
 using Luminosity3D.EntityComponentSystem;
-using Luminosity3D.PKGLoader;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
-using OpenTK.ImGui;
 using ImGuiNET;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using HexaEngine.ImGuizmoNET;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -253,7 +246,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                         new GameObject();
                     }
 
-                    if (ImGui.BeginMenu("Create 3d Entity"))
+                    if (ImGui.BeginMenu("Create 3D Entity"))
                     {
                         Create3DObject();
                         ImGui.EndMenu();
@@ -281,15 +274,14 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                     if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
                     {
-                       
-       
+                        
+
+                        //ShowEntityPopup(entity);
 
                         foreach (var comp in entity.components.Values)
                         {
                             if (ImGui.TreeNode("Component: " + comp.GetType().ToString()))
                             {
-                                //ShowEntityPopup(entity, comp);
-
                                 if (ImGui.TreeNode("Properties"))
                                 {
                                     DisplayReflectionBasedExplorerNodes(comp);
@@ -298,7 +290,6 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                                 ImGui.TreePop();
                             }
-    
                         }
 
                         ImGui.TreePop();
@@ -308,53 +299,44 @@ namespace Luminosity3D.Builtin.RenderLayers
                 // End the group containing tree view and input box/buttons
                 ImGui.EndGroup();
             }
+
+            ImGui.End();
         }
 
-        private static void ShowEntityPopup(GameObject entity, LuminosityBehaviour behav)
+        private static void ShowEntityPopup(GameObject entity)
         {
             if (ImGui.BeginMenu("Attach Component"))
             {
-                var componentType = typeof(Component);
+                var componentType = typeof(LuminosityBehaviour);
                 var derivedTypes = AppDomain.CurrentDomain.GetAssemblies()
                     .SelectMany(s => s.GetTypes())
                     .Where(p => componentType.IsAssignableFrom(p) && p != componentType);
-                foreach (var derivedType in
-                // Populate the menu with derived types
-                from derivedType in derivedTypes
-                where ImGui.MenuItem(derivedType.Name)
-                select derivedType)
-                {
-                    if (typeof(IImguiSerialize).IsAssignableFrom(derivedType))
-                    {
-                        if (derivedType.GetInterface(nameof(IImguiSerialize)) != null)
-                        {
-                            // Use reflection to call the static method OnEditorCreation
-                            var methodInfo = derivedType.GetMethod("OnEditorCreation", BindingFlags.Public | BindingFlags.Static);
-                            if (methodInfo != null)
-                            {
-                                entity.AddComponent((LuminosityBehaviour)methodInfo.Invoke(null, new object[] { entity }));
-                            }
-                            else
-                            {
 
-                                Logger.Log($"Static method OnEditorCreation not found in {derivedType.Name}");
+                foreach (var derivedType in derivedTypes)
+                {
+                    if (ImGui.MenuItem(derivedType.Name))
+                    {
+                        if (typeof(IImguiSerialize).IsAssignableFrom(derivedType))
+                        {
+                            if (derivedType.GetInterface(nameof(IImguiSerialize)) != null)
+                            {
+                                // Use reflection to call the static method OnEditorCreation
+                                var methodInfo = derivedType.GetMethod("OnEditorCreation", BindingFlags.Public | BindingFlags.Static);
+                                if (methodInfo != null)
+                                {
+                                    entity.AddComponent((LuminosityBehaviour)methodInfo.Invoke(null, new object[] { entity }));
+                                }
+                                else
+                                {
+                                    Logger.Log($"Static method OnEditorCreation not found in {derivedType.Name}");
+                                }
                             }
                         }
-
-                    }
-                    else
-                    {
-                        var newComp = Activator.CreateInstance(derivedType);
-                        var addComponentMethod = behav.GetType().GetMethod("AddComponent").MakeGenericMethod(derivedType);
-                        addComponentMethod.Invoke(behav, new object[] { newComp });
-
                     }
                 }
 
                 ImGui.EndMenu();
             }
-
-
 
             if (ImGui.MenuItem("Delete Entity"))
             {
@@ -728,8 +710,15 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
             }
 
+            if (ImGui.Button("Load .obj File With RigidBody Physics Static"))
+            {
+                // Handle loading .obj file using objFilePath
+                if (!string.IsNullOrWhiteSpace(objFilePath))
+                {
+                    EntitySummoner.CreatePBREntityWithRbStatic("3DObj", objFilePath, System.Numerics.Vector3.Zero);
+                }
+            }
 
-            
 
             if (ImGui.Button("Load .obj File With RigidBody Physics"))
             {

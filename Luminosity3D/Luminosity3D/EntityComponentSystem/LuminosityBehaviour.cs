@@ -106,18 +106,14 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 var sortedBatches = caches[typeof(MeshBatch)]
                     .Cast<MeshBatch>()
+                    .OrderBy(x => x.model)
                     .ToArray();
 
                 foreach(var batch in sortedBatches)
                 {
-                    var trans = batch.GetComponent<TransformComponent>();
                     var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
-                    batch.model.ShaderPBR.Use();
-                    batch.model.ShaderPBR.SetUniform("model", trans.GetTransformMatrix());
-                    batch.model.ShaderPBR.SetUniform("view", cam.ViewMatrix);
-                    batch.model.ShaderPBR.SetUniform("projection", cam.ProjectionMatrix);
-                    batch.model.ShaderPBR.SetUniform("viewPos", cam.Position);
-                    batch.model.RenderFrame();
+
+                    batch.model.RenderFrame(batch.GameObject.Transform, cam);
                     //batch.model.RenderForStencil();
                 }
             }
@@ -146,8 +142,17 @@ namespace Luminosity3D.EntityComponentSystem
     public class LuminosityBehaviour
     {
         public int ExecutionOrder = 0;
+       
         public string Name = string.Empty;
-        public GameObject Parent { get; set; }
+
+        public GameObject GameObject { get; set; }
+        public TransformComponent Transform
+        {
+            get
+            {
+                return GameObject.Transform;
+            }
+        }
         public List<GameObject> Children { get; set; }
 
         public LuminosityBehaviour()
@@ -162,13 +167,13 @@ namespace Luminosity3D.EntityComponentSystem
 
         public bool HasComponent<T>() where T : LuminosityBehaviour
         {
-            return Parent.HasComponent<T>();
+            return GameObject.HasComponent<T>();
         }
 
         public List<T> GetComponents<T>() where T : LuminosityBehaviour
         {
             List<T> result = new List<T>();
-            foreach (var component in Parent.GetComponents<T>())
+            foreach (var component in GameObject.GetComponents<T>())
             {
                 result.Add(component);
             }
@@ -177,16 +182,16 @@ namespace Luminosity3D.EntityComponentSystem
 
         public T GetComponent<T>() where T : LuminosityBehaviour
         {
-            if(Parent.GetComponent<T>() == null)
+            if(GameObject.GetComponent<T>() == null)
             {
                 Logger.Log("Couldnt find " + typeof(T).FullName);
             }
-            return Parent.GetComponent<T>();
+            return GameObject.GetComponent<T>();
         }
 
         public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
-            return Parent.AddComponent<T>();
+            return GameObject.AddComponent<T>();
         }
 
         public virtual void OnStart()

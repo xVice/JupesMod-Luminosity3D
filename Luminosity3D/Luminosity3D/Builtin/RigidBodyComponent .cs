@@ -3,6 +3,7 @@ using BulletSharp.Math;
 using ImGuiNET;
 using Luminosity3D.Builtin;
 using Luminosity3D.Utils;
+using Luminosity3DRendering;
 using static BulletSharp.Dbvt;
 
 namespace Luminosity3D.EntityComponentSystem
@@ -12,13 +13,12 @@ namespace Luminosity3D.EntityComponentSystem
     public class ColliderComponent : LuminosityBehaviour
     {
         public CollisionShape CollisionShape = null;
-        public TransformComponent Transform = null;
 
         private MeshBatch batch = null;
 
         public override void Awake()
         {
-            Transform = GetComponent<TransformComponent>(); // Assign the TransformComponent reference
+            
             
             if (HasComponent<MeshBatch>())
             {
@@ -121,12 +121,22 @@ namespace Luminosity3D.EntityComponentSystem
 
     [RequireComponent(typeof(TransformComponent))]
     [RequireComponent(typeof(ColliderComponent))]
+
     public class RigidBodyComponent : LuminosityBehaviour, IImguiSerialize
     {
         public RigidBody RigidBody { get; private set; }
         public ColliderComponent Collider { get; private set; }
 
+        public bool Static = false;
+
         private System.Numerics.Vector3 directionInEditor = System.Numerics.Vector3.Zero;
+
+        public static RigidBodyComponent BuildStatic()
+        {
+            var rb = new RigidBodyComponent();
+            rb.Static = true;
+            return rb;
+        }
 
         public static LuminosityBehaviour OnEditorCreation()
         {
@@ -145,7 +155,7 @@ namespace Luminosity3D.EntityComponentSystem
 
             if (ImGui.Button("Apply Force"))
             {
-                ApplyForce(LMath.ToVecBs(directionInEditor));
+                ApplyForce(directionInEditor);
             }
             if (ImGui.Button("Apply Impulse"))
             {
@@ -198,19 +208,19 @@ namespace Luminosity3D.EntityComponentSystem
         {
             float mass = 25.0f;
 
-            var shape = Collider.CollisionShape;
-            var position = Collider.Transform.Position;
+            if (HasComponent<MeshBatch>())
+            {
+                var batch = GetComponent<MeshBatch>();
+                if (Static){
+                    RigidBody = PhysicsWorld.CreateStaticRigidBody(batch.model, LMath.ToMatBs(Transform.GetTransformMatrix()), GetHashCode().ToString());
 
-            var startTransform = Matrix.Translation(LMath.ToVecBs(position));
-            var motionState = new DefaultMotionState(startTransform);
-            var localInertia = shape.CalculateLocalInertia(mass);
+                }
+                else
+                {
+                    RigidBody = PhysicsWorld.CreateRigidBody(batch.model, mass, LMath.ToMatBs(Transform.GetTransformMatrix()), GetHashCode().ToString());
 
-            var rigidBodyInfo = new RigidBodyConstructionInfo(mass, motionState, shape, localInertia);
-            var rigidBody = new RigidBody(rigidBodyInfo);
-
-            Engine.Renderer.dynamicsWorld.AddRigidBody(rigidBody);
-
-            RigidBody = rigidBody;
+                }
+            }
         }
 
         public bool CollidesWith(RigidBody rb)
@@ -273,11 +283,11 @@ namespace Luminosity3D.EntityComponentSystem
             return RigidBody.LinearDamping;
         }
 
-        public void ApplyForce(Vector3 force)
+        public void ApplyForce(System.Numerics.Vector3 force)
         {
             if (RigidBody != null)
             {
-                RigidBody.ApplyCentralForce(force);
+                RigidBody.ApplyCentralForce(LMath.ToVecBs(force));
             }
         }
 
