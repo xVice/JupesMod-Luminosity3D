@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using ImGuizmoNET;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -272,7 +273,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 if (ImGui.BeginPopup("GlobalPopup"))
                 {
-                    if (ImGui.MenuItem("Create Empty Entity"))
+                    if (ImGui.MenuItem("Create GameObject"))
                     {
                         new GameObject();
                     }
@@ -319,6 +320,8 @@ namespace Luminosity3D.Builtin.RenderLayers
             {
                 if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Right))
                 {
+
+
                     // Right-clicked on the entity tree node, show the popup
                     ImGui.OpenPopup("EntityPopup");
                 }
@@ -329,14 +332,31 @@ namespace Luminosity3D.Builtin.RenderLayers
                     ImGui.EndPopup();
                 }
 
+
+
                 foreach (var child in entity.Childs)
                 {
                     DisplayEntity(child);
                 }
 
 
-                // Rest of your TreeNode content here
 
+                // Rest of your TreeNode content here
+                var cam = Engine.SceneManager.ActiveScene.activeCam;
+                var trans = entity.GetComponent<TransformComponent>();
+
+                if (cam != null && trans != null)
+                {
+                    var floats = LMath.MatriciesToFloats(cam.ViewMatrix, cam.ProjectionMatrix, trans.GetTransformMatrix());
+                    var view = floats[0];
+                    var proj = floats[1];
+                    var mat = floats[2];
+
+                    ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
+                    ImGuizmo.Enable(true);
+                    
+                    //ImGuizmo.Manipulate(ref view, ref proj, OPERATION.SCALE, MODE.LOCAL, ref mat);
+                }
 
                 foreach (var comp in entity.components.Values)
                 {
@@ -532,6 +552,55 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 ImGui.Separator();
                 //return;
+            }
+
+            if (ImGui.TreeNode("Serializeable Fields"))
+            {
+                ImGui.BeginGroup();
+
+                var fieldsAndProperties = component.GetType()
+                    .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static)
+                    .Where(member => member.MemberType == MemberTypes.Field || member.MemberType == MemberTypes.Property || member.MemberType == MemberTypes.Method);
+
+                foreach (var member in fieldsAndProperties)
+                {
+                    if (member is FieldInfo fieldInfo)
+                    {
+                        // Check if the field has the SerializeField attribute
+                        if (fieldInfo.IsDefined(typeof(SerializeFieldAttribute), false))
+                        {
+                            object fieldValueObj = fieldInfo.GetValue(component);
+                            // Display the field value or do something with it
+                            ImGui.Text($"{fieldInfo.Name}: {fieldValueObj}");
+                        }
+                    }
+                    else if (member is PropertyInfo propertyInfo)
+                    {
+                        // Check if the property has the SerializeField attribute
+                        if (propertyInfo.IsDefined(typeof(SerializeFieldAttribute), false))
+                        {
+                            object propertyValueObj = propertyInfo.GetValue(component);
+                            // Display the property value or do something with it
+                            ImGui.Text($"{propertyInfo.Name}: {propertyValueObj}");
+                        }
+                    }
+                    else if (member is MethodInfo methInfo)
+                    {
+                        if(methInfo.IsDefined(typeof(SerializeFieldAttribute), false))
+                        {
+                            // Check if the property has the SerializeField attribute
+                            if (ImGui.Button(methInfo.Name)) // Display a button with the method name
+                            {
+                                // Invoke the method
+                                methInfo.Invoke(member, null); // Replace yourObjectInstance with the actual object instance
+                            }
+                        }
+
+                    }
+                }
+
+                ImGui.EndGroup();
+                ImGui.TreePop();
             }
 
             if (ImGui.TreeNode("Fields/Properties"))
@@ -894,7 +963,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
                 else
                 {
-                    Logger.Log($"Couldn't find the config/script: {args[0].ToString()}");
+                    Logger.Log($"Couldn't find the config/script: {args[0].ToString()}", LogType.Error);
                 }
 
 
@@ -926,7 +995,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
                 else
                 {
-                    Logger.Log($"Couldn't find the lupk: {pakName}.lupk!");
+                    Logger.Log($"Couldn't find the lupk: {pakName}.lupk!", LogType.Warning);
                 }
             }
             else
@@ -946,15 +1015,15 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         public override void Execute(string[] args)
         {
-            Logger.Log("Enumerating registered commands..");
+            Logger.Log("Enumerating registered commands..", LogType.Debug);
             foreach (var command in Engine.Console.CommandManager.Commands)
             {
-                Logger.Log("-------------------------------------------------------------------------------------");
-                Logger.Log("Commmand: " + command.Command);
-                Logger.Log("Description: " + command.Description);
+                Logger.Log("-------------------------------------------------------------------------------------", LogType.Debug);
+                Logger.Log("Commmand: " + command.Command, LogType.Debug);
+                Logger.Log("Description: " + command.Description, LogType.Debug);
             }
-            Logger.Log("-------------------------------------------------------------------------------------");
-            Logger.Log($"Jupe mods help, enumerated: {Engine.Console.CommandManager.Commands.Count()} commands!");
+            Logger.Log("-------------------------------------------------------------------------------------", LogType.Debug);
+            Logger.Log($"Jupe mods help, enumerated: {Engine.Console.CommandManager.Commands.Count()} commands!", LogType.Debug);
         }
     }
 

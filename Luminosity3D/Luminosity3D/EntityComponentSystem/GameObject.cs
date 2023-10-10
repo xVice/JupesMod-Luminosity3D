@@ -218,7 +218,7 @@ namespace Luminosity3D.EntityComponentSystem
                         }
                         catch (Exception ex)
                         {
-                            Logger.Log($"Error adding {requiredType.Name} component: {ex.Message}");
+                            Logger.Log($"Error adding {requiredType.Name} component: {ex.Message}", LogType.Error);
                         }
                     }
                 }

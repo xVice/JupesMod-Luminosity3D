@@ -7,9 +7,9 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(TransformComponent))]
     public class SineMovement : LuminosityBehaviour
     {
-        public float amplitude = 1f; // Height of the sine wave
-        public float frequency = 1f; // Speed of the sine wave
-        private Vector3 initialPosition;
+        [SerializeField] float amplitude = 1f; // Height of the sine wave
+        [SerializeField] float frequency = 1f; // Speed of the sine wave
+        [SerializeField] Vector3 initialPosition;
 
         public override void Awake()
         {

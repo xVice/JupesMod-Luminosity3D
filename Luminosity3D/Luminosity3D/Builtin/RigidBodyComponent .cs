@@ -207,7 +207,7 @@ namespace Luminosity3D.EntityComponentSystem
         }
 
         #region RB helper functions.
-        private void CreateRigidBody()
+        [SerializeField] void CreateRigidBody()
         {
             float mass = 25.0f;
 

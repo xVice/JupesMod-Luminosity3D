@@ -19,6 +19,7 @@ uniform vec3 lightPositions;
 uniform vec3 lightColors;
 uniform vec3 viewPos;
 
+uniform float emissiveStrength;
 uniform float gammaCubemap;
 uniform float interpolation;
 uniform float luminousStrength;
@@ -99,71 +100,74 @@ vec3 getNormalFromMap()
 }
 
 void main()
-{		
-    // material properties
-    
-    vec3 albedo = pow(elimineAlpha(AlbedoMap), vec3(2.2));
+{
+    // Material properties
+    vec3 albedo = texture(AlbedoMap, TexCoords).rgb;
+    vec3 emissive = pow(elimineAlpha(EmissiveMap), vec3(2.2));
+    vec3 metallicRoughnessAo = texture(AmbienteRoughnessMetallic, TexCoords).rgb;
+    float metallic = metallicRoughnessAo.b;
+    float roughness = metallicRoughnessAo.g;
+    float ao = metallicRoughnessAo.r;
 
-    vec3 emissive = elimineAlpha(EmissiveMap);
-
-    float metallic = texture(AmbienteRoughnessMetallic, TexCoords).b;
-    float roughness = texture(AmbienteRoughnessMetallic, TexCoords).g;
-    float ao = texture(AmbienteRoughnessMetallic, TexCoords).r;
-       
-       
-    // input lighting data
-    //vec3 N = normalize(Normal);
+    // Input lighting data
     vec3 N = getNormalFromMap();
     vec3 V = normalize(viewPos - WorldPos);
-    vec3 R = reflect(-V, N); 
+    vec3 R = reflect(-V, N);
 
+    // Reflectivity
     vec3 baseReflectivity = mix(vec3(0.04), albedo, metallic);
 
-    // reflectance equation
+    // Initialize output color
     vec3 Lo = vec3(0.0);
 
+    // Lighting calculations
     vec3 L = normalize(lightPositions - WorldPos);
     vec3 H = normalize(V + L);
     float distance = length(lightPositions - WorldPos);
     float attenuation = 1.0 / (distance * distance);
     vec3 radiance = lightColors * attenuation;
 
-    float NdotV = max(dot(N,V), 0.00001);
-    float NdotL = max(dot(N,L), 0.00001);
-    float HdotV = max(dot(H,V), 0.0);
-    float NdotH = max(dot(N,H), 0.0);
+    float NdotV = max(dot(N, V), 0.00001);
+    float NdotL = max(dot(N, L), 0.00001);
+    float HdotV = max(dot(H, V), 0.0);
+    float NdotH = max(dot(N, H), 0.0);
 
+    // Microfacet calculations
     float D = DistributionGGX(NdotH, roughness);
     float G = GeometrySmith(NdotV, NdotL, roughness);
     vec3 F = fresnelSchlickRoughness(NdotV, baseReflectivity, roughness);
 
-    vec3 specular = D * G * F;
-    specular /= 4.0 * NdotV * NdotL;
-    float nNdotL = max(dot(N, L), 0.0);    
-    vec3 kD = (1.0 - F) * (1.0 - metallic);
-    Lo += (kD * albedo / PI + specular) * radiance * nNdotL;
-    
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse      = irradiance * albedo;
-    
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(backgroundMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
-    prefilteredColor = LuminousCubemap(prefilteredColor);
-    
-    vec2 brdf  = vec2(luminousStrength, specularStrength);
+    vec3 specular = D * G * F / (4.0 * NdotV * NdotL);
+    float nNdotL = max(dot(N, L), 0.0);
 
+    vec3 kD = (1.0 - F) * (1.0 - metallic);
+
+    Lo += (kD * albedo / PI + specular) * radiance * nNdotL;
+
+    // Calculate irradiance and diffuse
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse = irradiance * albedo;
+
+    // Sample pre-filtered map for IBL specular
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(backgroundMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    prefilteredColor = LuminousCubemap(prefilteredColor);
+
+    vec2 brdf = vec2(luminousStrength, specularStrength);
     specular += prefilteredColor * (F * brdf.x + brdf.y);
 
+    // Ambient lighting
     vec3 ambient = (kD * diffuse + specular) * ao;
-    
-    vec3 color = ambient + Lo;
+
+    vec3 emissiveContribution = emissive * emissiveStrength; //* 2.0; 
+    // Final color
+    vec3 color = ambient + emissiveContribution + Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
 
-    // gamma correct
-    color = pow(color, vec3(1.0/2.2)); 
+    // Gamma correction
+    color = pow(color, vec3(1.0/2.2));
 
-    FragColor = vec4(color , 1.0);
+    FragColor = vec4(color, 1.0);
 }

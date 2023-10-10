@@ -11,8 +11,8 @@ namespace Luminosity3D.Builtin
 {
     public unsafe class TransformComponent : LuminosityBehaviour, IImguiSerialize
     {
-        private Matrix4x4 transformMatrix = Matrix4x4.Identity;
-        private bool drawGizmo = false;
+        [SerializeField] Matrix4x4 transformMatrix = Matrix4x4.Identity;
+        [SerializeField] bool drawGizmo = false;
 
         public Vector3 Position
         {

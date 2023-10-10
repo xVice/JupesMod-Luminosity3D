@@ -61,9 +61,70 @@ namespace Luminosity3D.Utils
             );
         }
 
-        public static unsafe float* Matrix4x4ToFloatPointer(System.Numerics.Matrix4x4 matrix)
+        private static float[] Matrix4x4ToArray(System.Numerics.Matrix4x4 matrix)
         {
-            float* matrixPtr = (float*)Marshal.AllocHGlobal(16 * sizeof(float));
+            float[] result = new float[16];
+
+            result[0] = matrix.M11;
+            result[1] = matrix.M12;
+            result[2] = matrix.M13;
+            result[3] = matrix.M14;
+
+            result[4] = matrix.M21;
+            result[5] = matrix.M22;
+            result[6] = matrix.M23;
+            result[7] = matrix.M24;
+
+            result[8] = matrix.M31;
+            result[9] = matrix.M32;
+            result[10] = matrix.M33;
+            result[11] = matrix.M34;
+
+            result[12] = matrix.M41;
+            result[13] = matrix.M42;
+            result[14] = matrix.M43;
+            result[15] = matrix.M44;
+
+            return result;
+        }
+
+
+        public static float[] MatriciesToFloats(System.Numerics.Matrix4x4 view, System.Numerics.Matrix4x4 proj, System.Numerics.Matrix4x4 trans)
+        {
+
+            // Extract view, projection, and translation components
+            System.Numerics.Vector3 translation = trans.Translation;
+            System.Numerics.Matrix4x4 viewProjection = System.Numerics.Matrix4x4.Transpose(trans);
+            viewProjection.M41 = 0.0f;
+            viewProjection.M42 = 0.0f;
+            viewProjection.M43 = 0.0f;
+
+            // Convert the components to floats
+            float[] viewProjectionFloats = new float[16];
+            for (int row = 0; row < 4; row++)
+            {
+                for (int col = 0; col < 4; col++)
+                {
+                    viewProjectionFloats[row * 4 + col] = viewProjection[row, col];
+                }
+            }
+
+            // Extract individual floats for view, projection, and translation
+            float viewFloat = viewProjectionFloats[0];
+            float projectionFloat = viewProjectionFloats[5];
+            float translationFloat = translation.Length();
+
+            float[] projectionFloats = new float[3];
+            projectionFloats[0] = viewFloat;
+            projectionFloats[1] = projectionFloat;
+            projectionFloats[2] = translationFloat;
+
+            return projectionFloats;
+        }
+
+        public static unsafe float[] Matrix4x4ToFloatPointer(System.Numerics.Matrix4x4 matrix)
+        {
+            float[] matrixPtr = new float[15];
 
             matrixPtr[0] = matrix.M11;
             matrixPtr[1] = matrix.M12;

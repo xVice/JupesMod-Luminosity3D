@@ -38,23 +38,23 @@ namespace Luminosity3D.LuminosityPackageLoader
                         {
                             // Handle exceptions thrown by the invoked method
                             Exception innerEx = ex.InnerException;
-                            Logger.Log($"{PAK.metadata.Name} START ERROR LOG (During Method Invocation)");
-                            Logger.Log($"An error occurred while invoking 'OnLoad' method for {PAK.metadata.Name}:");
-                            Logger.Log(innerEx.ToString());
-                            Logger.Log($"{PAK.metadata.Name} END ERROR LOG (During Method Invocation)");
+                            Logger.Log($"{PAK.metadata.Name} START ERROR LOG (During Method Invocation)", LogType.Error);
+                            Logger.Log($"An error occurred while invoking 'OnLoad' method for {PAK.metadata.Name}:", LogType.Error);
+                            Logger.Log(innerEx.ToString(), LogType.Error);
+                            Logger.Log($"{PAK.metadata.Name} END ERROR LOG (During Method Invocation)", LogType.Error);
                         }
                         catch (Exception ex)
                         {
                             // Handle other exceptions during method invocation
-                            Logger.Log($"{PAK.metadata.Name} START ERROR LOG (During Method Invocation)");
-                            Logger.Log($"An error occurred while invoking 'OnLoad' method for {PAK.metadata.Name}:");
-                            Logger.Log(ex.ToString());
-                            Logger.Log($"{PAK.metadata.Name} END ERROR LOG (During Method Invocation)");
+                            Logger.Log($"{PAK.metadata.Name} START ERROR LOG (During Method Invocation)", LogType.Error);
+                            Logger.Log($"An error occurred while invoking 'OnLoad' method for {PAK.metadata.Name}:", LogType.Error);
+                            Logger.Log(ex.ToString(), LogType.Error);
+                            Logger.Log($"{PAK.metadata.Name} END ERROR LOG (During Method Invocation)", LogType.Error);
                         }
                     }
                     else
                     {
-                        Logger.Log($"Method 'OnLoad' not found in {PAK.metadata.Name}.PAK");
+                        Logger.Log($"Method 'OnLoad' not found in {PAK.metadata.Name}.PAK", LogType.Error);
                     }
 
                 }
@@ -62,10 +62,10 @@ namespace Luminosity3D.LuminosityPackageLoader
             catch (Exception ex)
             {
                 // Handle any exceptions that occur outside of the method invocation
-                Logger.Log($"{PAK.metadata.Name} START ERROR LOG (Outside of Method Invocation)");
-                Logger.Log($"A fatal error occurred while starting: {PAK.metadata.Name}, exception below.");
-                Logger.Log(ex.ToString());
-                Logger.Log($"{PAK.metadata.Name} END ERROR LOG (Outside of Method Invocation)");
+                Logger.Log($"{PAK.metadata.Name} START ERROR LOG (Outside of Method Invocation)", LogType.Error);
+                Logger.Log($"A fatal error occurred while starting: {PAK.metadata.Name}, exception below.", LogType.Error);
+                Logger.Log(ex.ToString(), LogType.Error);
+                Logger.Log($"{PAK.metadata.Name} END ERROR LOG (Outside of Method Invocation)", LogType.Error);
             }
         }
     }

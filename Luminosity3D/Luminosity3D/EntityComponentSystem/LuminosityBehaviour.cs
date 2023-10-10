@@ -27,6 +27,55 @@ namespace Luminosity3D.EntityComponentSystem
     }
 
 
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public class RPCAttribute : Attribute
+    {
+
+        public RPCAttribute()
+        {
+            
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    public class PredictedAttribute : Attribute
+    {
+
+        public PredictedAttribute()
+        {
+
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = true)]
+    public class SerializeFieldAttribute : Attribute
+    {
+
+        public SerializeFieldAttribute()
+        {
+
+        }
+    }
+
+    public static class Net
+    {
+        private static string ConnectedToIp { get; set; } = string.Empty;
+        private static string ConnectedToPort { get; set; } = string.Empty;
+        private static bool Connected { get; set; } = false;
+
+        public static bool ConnectToServer(string ip, int port)
+        {
+
+
+            return true;
+        }
+
+       // public static bool SendToServer()
+
+
+    }
+
+
 
     public class ComponentCache
     {
@@ -46,6 +95,7 @@ namespace Luminosity3D.EntityComponentSystem
             return null;
         }
 
+        
         public void UpdatePass()
         {
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds

@@ -1,10 +1,14 @@
-﻿using Luminosity3D.Rendering;
+﻿using Luminosity3D.EntityComponentSystem;
+using Luminosity3D.Rendering;
 using Luminosity3DRendering;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
@@ -149,6 +153,79 @@ namespace Luminosity3D.Utils
             this.asset = asset;
         }
     }
+
+    public static class RpcMethodParameterSerializer
+    {
+        public static string SerializeMethodParameters(object target, MethodInfo methodInfo)
+        {
+            var rpcAttribute = methodInfo.GetCustomAttribute<RPCAttribute>();
+            if (rpcAttribute == null)
+            {
+                throw new InvalidOperationException("Method is not decorated with RPCAttribute");
+            }
+
+            var parameters = methodInfo.GetParameters();
+            var parameterValues = parameters.Select(p =>
+            {
+                var prop = target.GetType().GetProperty(p.Name);
+                return prop.GetValue(target, null);
+            }).ToArray();
+
+            var json = JsonConvert.SerializeObject(parameterValues, Formatting.Indented);
+            return json;
+        }
+
+        public static object InvokeMethodWithArguments(object target, string methodName, object[] arguments)
+        {
+            MethodInfo methodInfo = target.GetType().GetMethod(methodName);
+            if (methodInfo == null)
+            {
+                throw new InvalidOperationException($"Method '{methodName}' not found on the target object.");
+            }
+
+            try
+            {
+                object result = methodInfo.Invoke(target, arguments);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions that occur during method invocation.
+                // You can log the exception or rethrow it as needed.
+                throw ex;
+            }
+        }
+
+        public static object[] DeserializeMethodParameters(string json, MethodInfo methodInfo)
+        {
+            var rpcAttribute = methodInfo.GetCustomAttribute<RPCAttribute>();
+            if (rpcAttribute == null)
+            {
+                throw new InvalidOperationException("Method is not decorated with RPCAttribute");
+            }
+
+            var parameters = methodInfo.GetParameters();
+            var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
+
+            try
+            {
+                var parameterValues = JsonConvert.DeserializeObject(json);
+                if (parameterValues is object[] arrayOfObjects)
+                {
+                    return arrayOfObjects;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle deserialization error, log the exception, or throw a custom exception.
+                // Example: Console.WriteLine("Deserialization error: " + ex.Message);
+                // You might want to throw a specific exception or return a default value based on your use case.
+            }
+
+            return null; // Handle deserialization error gracefully or throw an exception.
+        }
+    }
+
 
     public static class Resources
     {

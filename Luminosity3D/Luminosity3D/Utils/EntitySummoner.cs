@@ -9,6 +9,7 @@ namespace Luminosity3D.Utils
         public static void CreatePBREntity(string entName, string filePath, Vector3 pos)
         {
             var ent = new GameObject(entName);
+
             ent.AddComponent(MeshBatch.FromPath(filePath));
 
         }
@@ -26,7 +27,7 @@ namespace Luminosity3D.Utils
         {
             var ent = new GameObject(entName);
 
-            var batch = ent.AddComponent(MeshBatch.FromPath(filePath));
+            ent.AddComponent(MeshBatch.FromPath(filePath));
             ent.AddComponent<RigidBodyComponent>();
 
 

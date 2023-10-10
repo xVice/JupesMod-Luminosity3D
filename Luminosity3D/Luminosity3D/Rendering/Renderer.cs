@@ -24,6 +24,7 @@ using System.Runtime.CompilerServices;
 using BulletSharp.Math;
 using Vector3 = OpenTK.Mathematics.Vector3;
 using Luminosity3D.EntityComponentSystem;
+using ImGuizmoNET;
 
 namespace Luminosity3DRendering
 {
@@ -1097,7 +1098,8 @@ namespace Luminosity3DRendering
             assimpModel = new AssimpModel(modelPath);
             meshes = new List<Meshe>(assimpModel.meshes);
 
-            ShaderPBR = new ShaderProgram("./shaders/builtin/pbr.vert", "./shaders/builtin/colored.frag");
+            //ShaderPBR = new ShaderProgram("./shaders/builtin/pbr.vert", "./shaders/builtin/colored.frag");
+            ShaderPBR = new ShaderProgram("./shaders/builtin/pbr.vert", "./shaders/builtin/pbr.frag");
 
             foreach (var index in meshes.OrderBy(x => x.Vao))
             {
@@ -1122,33 +1124,35 @@ namespace Luminosity3DRendering
             ShaderPBR.SetUniform("model", trans.GetTransformMatrix());
             ShaderPBR.SetUniform("view", cam.ViewMatrix);
             ShaderPBR.SetUniform("projection", cam.ProjectionMatrix);
-            //ShaderPBR.SetUniform("viewPos", cam.Position);
+            
+            //von hier mit pbr
+            ShaderPBR.SetUniform("viewPos", cam.Position);
 
-            //ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
-            //ShaderPBR.SetUniform("lightColors", new Vector3(1f,0f,0f));
+            ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
+            ShaderPBR.SetUniform("lightColors", new Vector3(1f,0f,0f));
 
-            //GL.ActiveTexture(TextureUnit.Texture0);
-            //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
-            //ShaderPBR.SetUniform("irradianceMap", 1);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Irradiance);
+            ShaderPBR.SetUniform("irradianceMap", 1);
 
-            //GL.ActiveTexture(TextureUnit.Texture1);
-            //GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Background);
-            //ShaderPBR.SetUniform("backgroundMap", 1);
+            GL.ActiveTexture(TextureUnit.Texture1);
+            GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Background);
+            ShaderPBR.SetUniform("backgroundMap", 1);
 
             //ShaderPBR.SetUniform("gammaCubemap", 1.0f);
             //ShaderPBR.SetUniform("interpolation", 0.1f);
 
-            //ShaderPBR.SetUniform("emissiveStrength", 15.0f);
+            ShaderPBR.SetUniform("emissiveStrength", 15f);
 
             //ShaderPBR.SetUniform("gamma", 1.5f);
             //ShaderPBR.SetUniform("luminousStrength", 55.0f);
             //ShaderPBR.SetUniform("specularStrength", 15.5f);
-
+            //bis hier für ohne pbr
 
             GL.Enable(EnableCap.CullFace);
 
 
-            foreach (var item in meshes.OrderBy(x => x.Vao))
+            foreach (var item in meshes)
             {
 
                 if (TexturesMap.ContainsKey(item.DiffusePath))
@@ -1158,17 +1162,17 @@ namespace Luminosity3DRendering
 
                 if (TexturesMap.ContainsKey(item.NormalPath))
                 {
-                    //ShaderPBR.SetUniform("NormalMap", TexturesMap[item.NormalPath].Use);
+                    ShaderPBR.SetUniform("NormalMap", TexturesMap[item.NormalPath].Use); //das
                 }
 
                 if (TexturesMap.ContainsKey(item.LightMap))
                 {
-                    //ShaderPBR.SetUniform("AmbienteRoughnessMetallic", TexturesMap[item.LightMap].Use);
+                    ShaderPBR.SetUniform("AmbienteRoughnessMetallic", TexturesMap[item.LightMap].Use); //das
                 }
 
                 if (TexturesMap.ContainsKey(item.EmissivePath))
                 {
-                    //ShaderPBR.SetUniform("EmissiveMap", TexturesMap[item.EmissivePath].Use);
+                    ShaderPBR.SetUniform("EmissiveMap", TexturesMap[item.EmissivePath].Use); //das
                 }
 
 
@@ -1416,7 +1420,11 @@ namespace Luminosity3DRendering
             CompatibilityProfile = (GL.GetInteger((GetPName)All.ContextProfileMask) & (int)All.ContextCompatibilityProfileBit) != 0;
 
             IntPtr context = ImGui.CreateContext();
+            //ImGuizmo.SetImGuiContext(context);
+            ImGuizmo.SetImGuiContext(context);
+            
             ImGui.SetCurrentContext(context);
+
             var io = ImGui.GetIO();
             io.Fonts.AddFontDefault();
 
@@ -1427,7 +1435,9 @@ namespace Luminosity3DRendering
 
             SetPerFrameImGuiData(1f / 60f);
 
+            //ImGuizmo.BeginFrame();
             ImGui.NewFrame();
+            //ImGuizmo.BeginFrame();
             _frameBegun = true;
         }
 
@@ -1565,7 +1575,9 @@ void main()
             {
                 _frameBegun = false;
                 ImGui.Render();
+  
                 RenderImDrawData(ImGui.GetDrawData());
+          
             }
         }
 
@@ -1584,6 +1596,8 @@ void main()
 
             _frameBegun = true;
             ImGui.NewFrame();
+            
+           
         }
 
         /// <summary>
@@ -1734,7 +1748,7 @@ void main()
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer);
             for (int i = 0; i < draw_data.CmdListsCount; i++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdLists[i];
+                ImDrawListPtr cmd_list = draw_data.CmdListsRange[i];
 
                 int vertexSize = cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>();
                 if (vertexSize > _vertexBufferSize)
@@ -1788,7 +1802,7 @@ void main()
             // Render command lists
             for (int n = 0; n < draw_data.CmdListsCount; n++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdLists[n];
+                ImDrawListPtr cmd_list = draw_data.CmdListsRange[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
                 CheckGLError($"Data Vert {n}");
@@ -2015,13 +2029,12 @@ void main()
             timer.Stop();
 
             //crossHair = new ViewPort("./resources/img/crosshair.png");
-            cubeMap = new CubeMap("./resources/Cubemap/montorfano_4k.hdr", CubeMapType.Type1);
+            cubeMap = new CubeMap("./resources/Cubemap/industrial_sunset_puresky_4k.hdr", CubeMapType.Type1);
             bloom = new Bloom();
             Physics.MakePlane();
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
             GL.DepthFunc(DepthFunction.Lequal);
-
 
             GL.Enable(EnableCap.FramebufferSrgb);
             GL.Enable(EnableCap.Multisample);
