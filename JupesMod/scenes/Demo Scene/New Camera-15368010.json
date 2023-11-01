@@ -1,0 +1,103 @@
+{
+  "ExecutionOrder": 0,
+  "Parent": null,
+  "Childs": [],
+  "components": {
+    "Luminosity3D.Builtin.Camera, Luminosity3D, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": {
+      "$type": "Luminosity3D.Builtin.Camera, Luminosity3D",
+      "Rotation": {
+        "X": -0.21313782,
+        "Y": -0.7842523,
+        "Z": -0.3743349,
+        "W": 0.44653553,
+        "IsIdentity": false
+      },
+      "Position": {
+        "X": -15.440243,
+        "Y": 10.118466,
+        "Z": -12.126384
+      },
+      "ExecutionOrder": 0,
+      "Name": "",
+      "ViewMatrix": {
+        "M11": -0.5103568,
+        "M12": 0.6686155,
+        "M13": -0.5408229,
+        "M14": 0.0,
+        "M21": 2.8312206E-07,
+        "M22": 0.6288912,
+        "M23": 0.77749336,
+        "M24": 0.0,
+        "M31": 0.8599628,
+        "M32": 0.39679885,
+        "M33": -0.32095906,
+        "M34": 0.0,
+        "M41": 2.5482035,
+        "M42": 8.771906,
+        "M43": -20.10955,
+        "M44": 1.0,
+        "IsIdentity": false,
+        "Translation": {
+          "X": 2.5482035,
+          "Y": 8.771906,
+          "Z": -20.10955
+        }
+      },
+      "ProjectionMatrix": {
+        "M11": 0.5625,
+        "M12": 0.0,
+        "M13": 0.0,
+        "M14": 0.0,
+        "M21": 0.0,
+        "M22": 1.0,
+        "M23": 0.0,
+        "M24": 0.0,
+        "M31": 0.0,
+        "M32": 0.0,
+        "M33": -1.00002,
+        "M34": -1.0,
+        "M41": 0.0,
+        "M42": 0.0,
+        "M43": -0.100002006,
+        "M44": 0.0,
+        "IsIdentity": false,
+        "Translation": {
+          "X": 0.0,
+          "Y": 0.0,
+          "Z": -0.100002006
+        }
+      },
+      "Forward": {
+        "X": 0.54082316,
+        "Y": -0.77749324,
+        "Z": 0.32095873
+      },
+      "Right": {
+        "X": 0.51035655,
+        "Y": 1.4901161E-08,
+        "Z": -0.85996294
+      },
+      "Up": {
+        "X": 0.66861534,
+        "Y": 0.6288913,
+        "Z": 0.39679876
+      },
+      "FieldOfView": 90.0,
+      "AspectRatio": 1.7777778,
+      "NearClip": 0.1,
+      "FarClip": 5000.0
+    },
+    "Luminosity3D.Builtin.CameraController, Luminosity3D, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": {
+      "$type": "Luminosity3D.Builtin.CameraController, Luminosity3D",
+      "moveSpeed": 15.0,
+      "sensitivity": 0.005,
+      "lockMovement": true,
+      "lockPosition": false,
+      "ExecutionOrder": 0,
+      "Name": ""
+    }
+  },
+  "Name": "New Camera",
+  "Tag": "",
+  "ActiveAndEnabled": true
+}

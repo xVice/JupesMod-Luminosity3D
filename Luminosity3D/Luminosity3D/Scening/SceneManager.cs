@@ -4,16 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Luminosity3D;
+using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
 
 namespace Luminosity3DScening
 {
     public class SceneManager
     {
-        public List<Scene> Scenes = new List<Scene>();
-        public Scene ActiveScene = new Scene();
+        public static List<Scene> Scenes = new List<Scene>();
+        public static Scene ActiveScene = new Scene();
 
-        public Scene Next()
+        public static Scene Next()
         {
             var nextScene = new Scene();
             var nextIndex = Scenes.IndexOf(ActiveScene) + 1;
@@ -24,12 +25,12 @@ namespace Luminosity3DScening
             return nextScene;
         }
 
-        public List<Scene> GetScenes()
+        public static List<Scene> GetScenes()
         {
             return Scenes;
         }
 
-        public Scene ActivateNext()
+        public static Scene ActivateNext()
         {
             var nextIndex = Scenes.IndexOf(ActiveScene) + 1;
             if (nextIndex >= Scenes.Count())
@@ -39,15 +40,45 @@ namespace Luminosity3DScening
             return ActiveScene;
         }
 
-        public Scene AddScene(Scene scene)
+        public static Scene AddScene(Scene scene)
         {
             Scenes.Add(scene);
             return scene;
         }
 
-        public Scene GetScene(string name)
+        public static Scene GetScene(string name)
         {
             return (Scene)Scenes.Where(x => x.Name == name);
+        }
+
+        public static void LoadScene(string sceneName, bool setActive = true)
+        {
+            var scene = new Scene(sceneName);
+            var scenePath = $"./scenes/{scene.Name}";
+
+            if (!Directory.Exists(scenePath))
+            {
+                Logger.Log("No scene found..");
+                return;
+            }
+
+
+            if (setActive)
+            {
+                scene.Load();
+            }
+
+
+            foreach (var folder in Directory.GetFiles(scenePath, "*.json"))
+            {
+                Engine.Renderer.Title = $"{JModVersionInfo.TitleString} - Loading: ({Path.GetFileName(folder)})..";
+                var go = GameObjectSerializer.DeserializeFromPath(folder);
+                scene.InstantiateEntity(go);
+            }
+            Engine.Renderer.Title = JModVersionInfo.TitleString;
+
+
+
         }
     }
 }

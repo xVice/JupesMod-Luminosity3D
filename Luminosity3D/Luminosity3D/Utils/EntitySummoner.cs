@@ -1,17 +1,18 @@
 ﻿using Luminosity3D.Builtin;
 using Luminosity3D.EntityComponentSystem;
+using Luminosity3DScening;
 using System.Numerics;
 
 namespace Luminosity3D.Utils
 {
     public static class EntitySummoner
     {
-        public static void CreatePBREntity(string entName, string filePath, Vector3 pos)
+        public static GameObject CreatePBREntity(string entName, string filePath, Vector3 pos)
         {
             var ent = new GameObject(entName);
 
             ent.AddComponent(MeshBatch.FromPath(filePath));
-
+            return ent;
         }
 
         public static void CreateCamera(string entName, Vector3 pos, bool setActive)
@@ -59,7 +60,7 @@ namespace Luminosity3D.Utils
             var ent = new GameObject(entName);
             var trans = ent.AddComponent<TransformComponent>();
             trans.Scale = new Vector3(0.1f, 0.1f, 0.1f);
-            trans.Position = Engine.SceneManager.ActiveScene.activeCam.Position;
+            trans.Position = SceneManager.ActiveScene.activeCam.Position;
             ent.AddComponent(MeshBatch.FromPath("./resources/tr_phoenix/scene.gltf"));
             ent.AddComponent<FPSController>();
 

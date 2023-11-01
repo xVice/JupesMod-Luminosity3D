@@ -7,6 +7,11 @@ using Luminosity3DScening;
 
 namespace Luminosity3D
 {
+    public class JModVersionInfo
+    {
+        public const string TitleString = "Jupe's Mod v0.0.5";
+    }
+
     public static class Engine
     {
         public static SceneManager SceneManager = new SceneManager();
@@ -20,7 +25,7 @@ namespace Luminosity3D
             Logger.ClearLogFile();
 
 
-            using (Renderer renderer = new Renderer(1280, 780, "Jupe's Mod v0.0.5"))
+            using (Renderer renderer = new Renderer(1280, 780, JModVersionInfo.TitleString))
             {
                 Renderer = renderer;
                 renderer.Run();
@@ -30,12 +35,10 @@ namespace Luminosity3D
 
         public static void StopEngine()
         {
-
-            Logger.ClearLogFile();
-            Temp.ClearTemp();
-            PackageLoader.UnloadPaks();
-
             Renderer.Close();
+
+
+
 
 
 

@@ -25,17 +25,27 @@ using BulletSharp.Math;
 using Vector3 = OpenTK.Mathematics.Vector3;
 using Luminosity3D.EntityComponentSystem;
 using ImGuizmoNET;
+using Noesis;
+using Matrix4 = OpenTK.Mathematics.Matrix4;
+using Path = System.IO.Path;
+using Matrix = BulletSharp.Math.Matrix;
+using Marshal = System.Runtime.InteropServices.Marshal;
+using MouseButton = OpenTK.Windowing.GraphicsLibraryFramework.MouseButton;
+using Luminosity3D.PKGLoader;
+using Luminosity3DScening;
 
 namespace Luminosity3DRendering
 {
 
     public class AssimpModel : IDisposable
     {
-        private Scene scene;
+        private Assimp.Scene scene;
         public List<Meshe> meshes { get; }
         public Meshe FirstMeshe => meshes[0];
         public List<float> PointsForCollision { get; }
         private string PathModel = string.Empty;
+
+       
 
         public AssimpModel(string FilePath, bool FlipUVs = false)
         {
@@ -44,7 +54,7 @@ namespace Luminosity3DRendering
 
             PathModel = FilePath;
 
-            scene = new Scene();
+            scene = new Assimp.Scene();
             meshes = new List<Meshe>();
             PointsForCollision = new List<float>();
 
@@ -257,7 +267,7 @@ namespace Luminosity3DRendering
 
             }
         }
-        public static Vector3 FromVector(Vector3D vec)
+        public static Vector3 FromVector(Assimp.Vector3D vec)
         {
             Vector3 v;
             v.X = vec.X;
@@ -609,7 +619,8 @@ namespace Luminosity3DRendering
         {
 
             shaderRender.Use();
-            var activeCam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+            var activeCam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+            Logger.LogToFile("Cam in cubemap:" + activeCam.Name);
             shaderRender.SetUniform("projection", activeCam.ProjectionMatrix);
             shaderRender.SetUniform("view", activeCam.ViewMatrix);
 
@@ -1126,6 +1137,7 @@ namespace Luminosity3DRendering
             ShaderPBR.SetUniform("projection", cam.ProjectionMatrix);
             
             //von hier mit pbr
+            
             ShaderPBR.SetUniform("viewPos", cam.Position);
 
             ShaderPBR.SetUniform("lightPositions", new Vector3(0,5,0));
@@ -1139,14 +1151,15 @@ namespace Luminosity3DRendering
             GL.BindTexture(TextureTarget.TextureCubeMap, UseTexCubemap.Background);
             ShaderPBR.SetUniform("backgroundMap", 1);
 
-            //ShaderPBR.SetUniform("gammaCubemap", 1.0f);
-            //ShaderPBR.SetUniform("interpolation", 0.1f);
+            ShaderPBR.SetUniform("gammaCubemap", 25.0f);
+            ShaderPBR.SetUniform("interpolation", 25f);
 
             ShaderPBR.SetUniform("emissiveStrength", 15f);
 
             //ShaderPBR.SetUniform("gamma", 1.5f);
-            //ShaderPBR.SetUniform("luminousStrength", 55.0f);
-            //ShaderPBR.SetUniform("specularStrength", 15.5f);
+            ShaderPBR.SetUniform("luminousStrength", 25.0f);
+            ShaderPBR.SetUniform("specularStrength", 35.5f);
+            
             //bis hier für ohne pbr
 
             GL.Enable(EnableCap.CullFace);
@@ -1188,6 +1201,7 @@ namespace Luminosity3DRendering
 
         public void RenderForStencil()
         {
+            //bloom scheiße
             if (Stencil.RenderStencil)
             {
 
@@ -1960,10 +1974,67 @@ void main()
             }
         }
     }
-   
-    
-    
-    
+
+    public abstract class NoesisUI : IRenderLayer
+    {
+        public Renderer.RenderLayerType LayerType => Renderer.RenderLayerType.GLRender; //just use gl layer for "other stuff"
+
+        public Noesis.View view = null;
+
+        private string xml = string.Empty;
+
+
+        public NoesisUI(string xml)
+        {
+            this.xml = xml;
+            InitView();
+        }
+
+        public Noesis.View GetView()
+        {
+            return view;
+        }
+
+        private void InitView()
+        {
+            Noesis.Log.SetLogCallback((level, channel, message) =>
+            {
+                if (channel == "")
+                {
+                    // [TRACE] [DEBUG] [INFO] [WARNING] [ERROR]
+                    string[] prefixes = new string[] { "T", "D", "I", "W", "E" };
+                    string prefix = (int)level < prefixes.Length ? prefixes[(int)level] : " ";
+                    Logger.Log("[NOESIS/" + prefix + "] " + message);
+                }
+            });
+
+            Noesis.GUI.SetLicense("JupesMod", "zRS01y1YtNeiVPBdnxxcJT2NEhJU4fzspf2DItbz0iURquRG");
+
+            Noesis.GUI.Init();
+
+            Noesis.Grid xaml = (Noesis.Grid)Noesis.GUI.ParseXaml(xml);
+
+            // View creation to render and interact with the user interface
+            // We transfer the ownership to a global pointer instead of a Ptr<> because there is no way
+            // in GLUT to do shutdown and we don't want the Ptr<> to be released at global time
+            view = Noesis.GUI.CreateView(xaml);
+            //view.SetIs
+
+            // Renderer initialization with an OpenGL device
+            view.Renderer.Init(new Noesis.RenderDeviceGL());
+        }
+
+        public void Render()
+        {
+            view.SetSize(Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
+            view.Update(Time.time);
+            view.Renderer.UpdateRenderTree();
+            view.Renderer.RenderOffscreen();
+            view.Renderer.Render();
+        }
+    }
+
+
     public class Renderer : GameWindow
     {
         public CubeMap cubeMap;
@@ -2021,14 +2092,14 @@ void main()
 
             Logger.Log("Starting Jupe's Mod..");
             Logger.Log("Deleting loaded lupk files..");
-            Engine.PackageLoader.UnloadPaks();
+            PackageLoader.UnloadPaks();
 
             Logger.Log("Loading lupks..");
 
             Engine.PackageLoader.LoadPaks();
             timer.Stop();
 
-            //crossHair = new ViewPort("./resources/img/crosshair.png");
+            crossHair = new ViewPort("./resources/img/crosshair.png");
             cubeMap = new CubeMap("./resources/Cubemap/industrial_sunset_puresky_4k.hdr", CubeMapType.Type1);
             bloom = new Bloom();
             Physics.MakePlane();
@@ -2049,6 +2120,10 @@ void main()
             GL.Enable(EnableCap.LineSmooth);
             GL.Enable(EnableCap.ColorSum);
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
+            
+            Logger.Log("Loading scene..");
+            SceneManager.LoadScene("Demo Scene");
+            Logger.Log("Scene loaded!");
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -2070,14 +2145,14 @@ void main()
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            if (Engine.SceneManager.ActiveScene.activeCam != null)
+            if (SceneManager.ActiveScene.activeCam != null && SceneManager.ActiveScene.activeCam.GetComponent<Camera>() != null)
             {
   
                 cubeMap.RenderFrame();
-                Engine.SceneManager.ActiveScene.cache.RenderPass();
+                SceneManager.ActiveScene.cache.RenderPass();
 
     
-                //crossHair.RenderFrame(Vector2.Zero, 0.03f);
+                crossHair.RenderFrame(Vector2.Zero, 0.03f);
                
             }
 
@@ -2109,6 +2184,76 @@ void main()
            
         }
 
+        protected override void OnMouseMove(MouseMoveEventArgs e)
+        {
+            var mouseState = InputManager.GetMouse();
+            if (renderLayers.Count != 0)
+            {
+                for (int i = renderLayers.Count() - 1; i >= 0; i--)
+                {
+                    
+                    var renderLayer = renderLayers[i];
+                    if(renderLayer is NoesisUI ngui)
+                    {
+                     
+                        
+                        ngui.GetView().MouseMove((int)mouseState.Delta.X, (int)mouseState.Delta.Y);
+                    }
+
+           
+                }
+            }
+        }
+
+        protected override void OnMouseDown(OpenTK.Windowing.Common.MouseButtonEventArgs e)
+        {
+            var mouseState = InputManager.GetMouse();
+
+            for (int i = renderLayers.Count() - 1; i >= 0; i--)
+            {
+
+                var renderLayer = renderLayers[i];
+                if (renderLayer is NoesisUI ngui)
+                {
+                    if (e.Button == MouseButton.Left)
+                    {
+                        ngui.GetView().MouseButtonDown((int)mouseState.Delta.X, (int)mouseState.Delta.Y, Noesis.MouseButton.Left);
+
+                    }
+                    if (e.Button == MouseButton.Right)
+                    {
+                        ngui.GetView().MouseButtonDown((int)mouseState.Delta.X, (int)mouseState.Delta.Y, Noesis.MouseButton.Right);
+
+                    }
+                }
+            }
+        }
+
+        protected override void OnMouseUp(OpenTK.Windowing.Common.MouseButtonEventArgs e)
+        {
+            var mouseState = InputManager.GetMouse();
+
+            for (int i = renderLayers.Count() - 1; i >= 0; i--)
+            {
+
+                var renderLayer = renderLayers[i];
+                if (renderLayer is NoesisUI ngui)
+                {
+                    if (e.Button == MouseButton.Left)
+                    {
+                        ngui.GetView().MouseButtonUp((int)mouseState.Delta.X, (int)mouseState.Delta.Y, Noesis.MouseButton.Left);
+
+                    }
+                    if (e.Button == MouseButton.Right)
+                    {
+                        ngui.GetView().MouseButtonUp((int)mouseState.Delta.X, (int)mouseState.Delta.Y, Noesis.MouseButton.Right);
+
+                    }
+                }
+            }
+        }
+
+
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
@@ -2120,9 +2265,9 @@ void main()
 
             Physics.Step();
 
-            Engine.SceneManager.ActiveScene.cache.PhysicsPass();
+            SceneManager.ActiveScene.cache.PhysicsPass();
 
-            Engine.SceneManager.ActiveScene.cache.UpdatePass();
+            SceneManager.ActiveScene.cache.UpdatePass();
 
             
 

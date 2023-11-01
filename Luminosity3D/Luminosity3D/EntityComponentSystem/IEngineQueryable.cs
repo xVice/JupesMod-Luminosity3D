@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Luminosity3D.Utils;
+using Luminosity3DScening;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,7 +51,7 @@ namespace Luminosity3D.EntityComponentSystem
             ImGui.Text("Poggers");
             if(ImGui.Button("Spawn Pog"))
             {
-                var activeScene = Engine.SceneManager.ActiveScene;
+                var activeScene = SceneManager.ActiveScene;
                 
                 EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position);
             }
@@ -67,7 +68,7 @@ namespace Luminosity3D.EntityComponentSystem
             ImGui.Text("Poggers2");
             if (ImGui.Button("Spawn Pog2"))
             {
-                var activeScene = Engine.SceneManager.ActiveScene;
+                var activeScene = SceneManager.ActiveScene;
 
                 EntitySummoner.CreatePBREntityWithRb("Test setting ent", "./fish.obj", activeScene.activeCam.Position);
             }
@@ -82,9 +83,9 @@ namespace Luminosity3D.EntityComponentSystem
         public void SettingUi()
         {
             ImGui.Separator();
-            ImGui.Text("Last RenderPass: " + Engine.SceneManager.ActiveScene.cache.lastRenderTime.ToString());
-            ImGui.Text("Last Physics Update: " + Engine.SceneManager.ActiveScene.cache.lastPhysicsTime.ToString());
-            ImGui.Text("Last General Update: " + Engine.SceneManager.ActiveScene.cache.lastUpdateTime.ToString());
+            ImGui.Text("Last RenderPass: " + SceneManager.ActiveScene.cache.lastRenderTime.ToString());
+            ImGui.Text("Last Physics Update: " + SceneManager.ActiveScene.cache.lastPhysicsTime.ToString());
+            ImGui.Text("Last General Update: " + SceneManager.ActiveScene.cache.lastUpdateTime.ToString());
             ImGui.Separator();
             ImGui.Text("Delta Time: " + Time.deltaTime.ToString());
 

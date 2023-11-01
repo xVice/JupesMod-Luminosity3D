@@ -1,4 +1,6 @@
-﻿using Luminosity3D.Utils;
+﻿using Luminosity3D.EntityComponentSystem;
+using Luminosity3D.PKGLoader;
+using Luminosity3D.Utils;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -14,12 +16,12 @@ namespace JupesMod
             // Attach the exception handler
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(ExceptionHandler);
             AppDomain.CurrentDomain.FirstChanceException += new EventHandler<FirstChanceExceptionEventArgs>(FirstExceptionHandler);
-
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(ApplicationCloseHandler);
 
             Temp.ClearTemp();
             Resources.LoadBuiltinResourceTypes();
             Resources.CreateResourcesFolder();
-
+            Net.StartServer("192.168.2.126", 42069);
             LD.StartEngine();
             
         }
@@ -30,8 +32,9 @@ namespace JupesMod
             Exception ex = (Exception)e.ExceptionObject;
             Logger.LogToFile("Unhandled Exception:");
             Logger.LogToFile(ex.ToString());
-            MessageBox((IntPtr)0,$"Oops!\n JupesMod has crashed!\n\nDont worry though, your progress has been saved and logs were generated.\n\nException:\n{ex.Message}", "JupesMod Crash Handler", 0);
-            LD.StopEngine();
+            MessageBox((IntPtr)0,$"Oops!\nJupesMod has crashed!\n\nDont worry though, your progress has been saved and logs were generated.\n\nIn File:{ex.Source}\n\nIn Method:{ex.TargetSite.Name}\n\nException:\n{ex.Message}", "JupesMod Crash Handler", 0);
+            
+            
         }
 
         private static void FirstExceptionHandler(object sender, FirstChanceExceptionEventArgs e)
@@ -39,6 +42,16 @@ namespace JupesMod
             Exception ex = e.Exception;
             string errorMessage = $"A first chance, unhandled exception occurred:\n\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
             Logger.LogToFile(errorMessage);
+        }
+
+        private static void ApplicationCloseHandler(object sender, EventArgs e)
+        {
+            Net.StopServer();
+            PackageLoader.UnloadPaks();
+            Logger.ClearLogFile();
+            Temp.ClearTemp();
+            LD.StopEngine();
+            Logger.LogToFile("JMod is closing now, logs end after here. If the dont, something is really wrong.");
         }
     }
 }

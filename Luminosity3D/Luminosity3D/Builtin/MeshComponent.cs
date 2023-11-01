@@ -2,6 +2,7 @@
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
+using Newtonsoft.Json;
 
 namespace Luminosity3D.Builtin
 {
@@ -16,16 +17,20 @@ namespace Luminosity3D.Builtin
     //its shit, need to rewrite :c
     //
     //kinda better still 50% shit, only 35% nowit j
-    //hoiy fuckinton it workie now  tho c: c: c: c: c: c:  C:.C . C:.C .C 
+    //hoiy fuckintoncity it workie now  tho c: c: c: c: c: c:  C:.C . C:.C .C 
     //now makie shadercache for cahce shader becuase big program many times big slow and bad :c
     //good?
+    //
+    // fuck you its not good, how does one learn opengl??????????????????????????????????????????????????????????????????????????????????????????????????????????????
+    //fucking learning chinese is more straightforward smh
 
     [RequireComponent(typeof(TransformComponent))]
     public class MeshBatch : LuminosityBehaviour, IImguiSerialize
     {
+        [JsonIgnore]
         public Model model = null;
 
-        public string filePath = "./teapot.obj";
+        public string filePath = string.Empty;
 
 
         public static MeshBatch FromPath(string path)
@@ -37,8 +42,11 @@ namespace Luminosity3D.Builtin
 
         public override void Awake()
         {
-            
-            model = new Model(filePath);
+            if(model == null)
+            {
+                model = new Model(filePath);
+
+            }
 
         }
 

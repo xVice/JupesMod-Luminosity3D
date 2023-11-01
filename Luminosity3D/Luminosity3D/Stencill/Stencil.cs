@@ -1,5 +1,6 @@
 using Luminosity3D.Builtin;
 using Luminosity3D.Rendering;
+using Luminosity3DScening;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
@@ -59,7 +60,7 @@ namespace Luminosity3D
                 GL.StencilMask(MASK_MIN);
 
                 model = model * Matrix4.CreateScale(1.001f);
-                var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
                 shaderStencil.Use();
                 shaderStencil.SetUniform("model", model);
                 shaderStencil.SetUniform("view", cam.ViewMatrix);

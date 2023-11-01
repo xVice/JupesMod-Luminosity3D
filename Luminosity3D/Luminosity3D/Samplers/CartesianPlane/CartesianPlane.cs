@@ -1,6 +1,7 @@
 using Luminosity3D.Builtin;
 using Luminosity3D.Rendering;
 using Luminosity3DRendering;
+using Luminosity3DScening;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
@@ -52,7 +53,7 @@ namespace Luminosity3D
             shader.Use();
 
 
-            var activecam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+            var activecam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
             shader.SetUniform("model", Matrix4.Identity);
             shader.SetUniform("view", activecam.ViewMatrix);
             shader.SetUniform("projection", activecam.ProjectionMatrix);

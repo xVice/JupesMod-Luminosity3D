@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using ImGuizmoNET;
+using Luminosity3DScening;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -18,7 +19,6 @@ namespace Luminosity3D.Builtin.RenderLayers
     public class DebugConsole : IMGUIRenderLayer
     {
         public CommandManager CommandManager { get; set; } = new CommandManager();
-        private List<Log> messages = new List<Log>();
         private byte[] inputBuffer = new byte[256];
         private bool scrollToBottom = false;
         private bool ConsoleOpen = false;
@@ -40,7 +40,7 @@ namespace Luminosity3D.Builtin.RenderLayers
             Settings.RegisterSetting(new TestSetting());
             Settings.RegisterSetting(new TestSetting2());
             Settings.RegisterSetting(new TimeSetting());
-            IMGUIStyles.SetupImGuiStyle();
+            IMGUIStyles.SetupVisualStudioImGuiStyle();
         }
 
         public override void Render()
@@ -78,7 +78,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                     if(ImGui.Button("Save to file") && sceneExportPath != string.Empty)
                     {
-                        Engine.SceneManager.ActiveScene.SerializeToFile(sceneExportPath);
+                        SceneManager.ActiveScene.SerializeToFile(sceneExportPath);
                     }
                   
                 }
@@ -180,16 +180,17 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
                 ImGui.BeginChild("ConsoleText", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()), true, ImGuiWindowFlags.HorizontalScrollbar);
 
-                int logIndex = 0;
-                foreach (var log in messages)
+                int logIndex = 0; // Start from the beginning of the list
+                for (int i = Logger.logList.Count - 1; i >= 0; i--)
                 {
+                    var log = Logger.logList[logIndex];
                     ImGui.PushStyleColor(ImGuiCol.Border, GetLogColor(log.Type));
 
                     // Generate a unique identifier for each child window based on logIndex
                     string childWindowName = "LogWindow" + logIndex.ToString();
 
                     // Use a collapsing header for each log
-                    bool isLogOpen = ImGui.CollapsingHeader(log.Lable + " @ " + log.TimeStamp, ImGuiTreeNodeFlags.DefaultOpen);
+                    bool isLogOpen = ImGui.CollapsingHeader($"ID:[{logIndex}] " + log.Lable + " @ " + log.TimeStamp, ImGuiTreeNodeFlags.DefaultOpen);
 
                     if (isLogOpen)
                     {
@@ -199,14 +200,14 @@ namespace Luminosity3D.Builtin.RenderLayers
                         ImGui.BeginChild(childWindowName, new System.Numerics.Vector2(0, contentHeight), true);
 
                         ImGui.TextWrapped(log.Content);
+
                         ImGui.EndChild();
-
                     }
-                    logIndex++;
+
+                    logIndex++; // Move to the next log in the original order
                     ImGui.PopStyleColor();
-
-
                 }
+
 
                 ImGui.EndChild();
 
@@ -226,7 +227,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 ImGui.SameLine();
                 if (ImGui.Button("Clear"))
                 {
-                    messages.Clear();
+                    Logger.logList.Clear();
                 }
             }
 
@@ -252,10 +253,6 @@ namespace Luminosity3D.Builtin.RenderLayers
         string camName = "New Camera";
         System.Numerics.Vector3 camPosition = new System.Numerics.Vector3(0, 0, 0);
 
-        private GameObject selectedEntity;
-        private Component selectedComponent;
-        private bool isEntityMenuOpen;
-        private bool isComponentMenuOpen;
 
         private unsafe void ShowEntityViewer()
         {
@@ -299,7 +296,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 // Group to contain the tree view and input box/buttons
                 ImGui.BeginGroup();
 
-                var ents = Engine.SceneManager.ActiveScene.Entities.OrderBy(x => x.ExecutionOrder).Reverse().ToList();
+                var ents = SceneManager.ActiveScene.Entities.OrderBy(x => x.ExecutionOrder).Reverse().ToList();
                 for (int i = ents.Count() - 1; i >= 0; i--)
                 {
                     var entity = ents[i];
@@ -342,7 +339,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
 
                 // Rest of your TreeNode content here
-                var cam = Engine.SceneManager.ActiveScene.activeCam;
+                var cam = SceneManager.ActiveScene.activeCam;
                 var trans = entity.GetComponent<TransformComponent>();
 
                 if (cam != null && trans != null)
@@ -378,11 +375,22 @@ namespace Luminosity3D.Builtin.RenderLayers
             
         }
 
-        private static void ShowEntityPopup(GameObject entity)
+        private void ShowEntityPopup(GameObject entity)
         {
             if (ImGui.MenuItem("Create GameObject"))
             {
                 entity.Childs.Add(new GameObject(false));
+            }
+
+            if (ImGui.Button("Load .obj File"))
+            {
+                // Handle loading .obj file using objFilePath
+                if (!string.IsNullOrWhiteSpace(objFilePath))
+                {
+                    // You can use objFilePath to load the .obj file here
+                    // Example: LoadObjFile(objFilePath);
+                    entity.Childs.Add(EntitySummoner.CreatePBREntity("3DObj", objFilePath, new System.Numerics.Vector3(0, 0, 0)));
+                }
             }
 
             if (ImGui.BeginMenu("Attach Component"))
@@ -409,7 +417,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
             if (ImGui.MenuItem("Delete Entity"))
             {
-                //entity.Kill();
+                entity.Kill();
             }
 
      
@@ -871,14 +879,16 @@ namespace Luminosity3D.Builtin.RenderLayers
             CommandManager.RegisterCommand(new LoadLUPKCommand());
             CommandManager.RegisterCommand(new GetActiveDirectory());
             CommandManager.RegisterCommand(new MeisterCommand());
+            CommandManager.RegisterCommand(new NoesisCommand());
+            CommandManager.RegisterCommand(new JoinCommand());
+            CommandManager.RegisterCommand(new MakeServerCommand());
+            CommandManager.RegisterCommand(new SayCommand());
+            CommandManager.RegisterCommand(new SaveCommand());
+            CommandManager.RegisterCommand(new LoadCommand());
+            
             Logger.Log($"Loaded {CommandManager.Commands.Count()} commands into the manager!");
         }
 
-        public void Log(Log log)
-        {
-            messages.Add(log);
-            scrollToBottom = true;
-        }
     }
 
 
@@ -936,6 +946,125 @@ namespace Luminosity3D.Builtin.RenderLayers
         public void RegisterCommand(DebugCommand command)
         {
             Commands.Add(command);
+        }
+    }
+
+    public class TestNoesis : NoesisUI
+    {
+        public TestNoesis(string xml) : base(xml)
+        {
+            
+        }
+
+        
+    }
+
+
+    public class SayCommand : DebugCommand
+    {
+        public override string Command { get => "say"; }
+        public override string Description { get => "write a networked message as a raw string, could be used for custom protocols"; }
+
+        public override void Execute(string[] args)
+        {
+            Net.SendMessageToAllClients(args[0]);
+
+
+        }
+    }
+
+    public class JoinCommand : DebugCommand
+    {
+        public override string Command { get => "join"; }
+        public override string Description { get => "Join a server"; }
+
+        public override void Execute(string[] args)
+        {
+            Net.JoinServer(args[0], 42069);
+
+
+        }
+    }
+
+    public class MakeServerCommand : DebugCommand
+    {
+        public override string Command { get => "createserver"; }
+        public override string Description { get => "Create a server"; }
+
+        public override void Execute(string[] args)
+        {
+            Net.StartServer(args[0], 42069);
+
+
+        }
+    }
+
+    public class SaveCommand : DebugCommand
+    {
+        public override string Command { get => "savescene"; }
+        public override string Description { get => "Noesis UI Demo"; }
+
+        public override void Execute(string[] args)
+        {
+            var scenePath = $"./scenes/{args[0]}";
+
+            if (!Directory.Exists(scenePath))
+            {
+                Directory.CreateDirectory(scenePath);
+            }
+
+            foreach(var go in SceneManager.ActiveScene.Entities)
+            {
+                GameObjectSerializer.SerializeToPath(go, scenePath);
+            }
+
+
+        }
+    }
+
+    public class LoadCommand : DebugCommand
+    {
+        public override string Command { get => "loadscene"; }
+        public override string Description { get => "Noesis UI Demo"; }
+
+        public override void Execute(string[] args)
+        {
+
+
+            
+            var scenePath = $"./scenes/{args[0]}";
+
+
+
+            if (!Directory.Exists(scenePath))
+            {
+                Logger.Log("No scene found..");
+            }
+
+            SceneManager.LoadScene(args[0]);
+            
+
+            
+
+
+        }
+    }
+
+
+
+
+
+    public class NoesisCommand : DebugCommand
+    {
+        public override string Command { get => "noesisdemo"; }
+        public override string Description { get => "Noesis UI Demo"; }
+
+        public override void Execute(string[] args)
+        {
+            Engine.Renderer.AddLayer(new TestNoesis(File.ReadAllText("./resources/noesisui.xml")));
+
+
+
         }
     }
 

@@ -66,13 +66,13 @@ namespace Luminosity3DScening
         public GameObject InstantiateEntity(GameObject entity)
         {
             Entities.Add(entity);
-            
+            entity.Awake();
             return entity;
         }
 
         public void Load()
         {
-            Engine.SceneManager.ActiveScene = this;
+            SceneManager.ActiveScene = this;
         }
     }
 }

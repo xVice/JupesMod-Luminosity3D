@@ -1,84 +1,90 @@
 ﻿using Luminosity3D.Builtin;
 using Luminosity3D.Utils;
+using Luminosity3DScening;
 using Newtonsoft.Json;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Threading.Tasks;
+using System.Dynamic;
+using System.Reflection;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-    public class GameObjectSerializer
+    public static class GameObjectSerializer
     {
-        public static void SerializeToFile(GameObject gameObject, string path)
+
+        public static void SerializeToPath(GameObject obj, string path)
         {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, true);
-            }
-
-            Directory.CreateDirectory(path);
-            string rootGOPath = Path.Combine(path, gameObject.GetHashCode().ToString());
-
-            Directory.CreateDirectory(rootGOPath);
-            Directory.CreateDirectory(Path.Combine(rootGOPath, "components"));
-
-            RecursiveBuild(rootGOPath, gameObject);
-
-            // Serialize the GameObject to JSON
-            string gameObjectJson = JsonConvert.SerializeObject(gameObject);
-            File.WriteAllText(Path.Combine(rootGOPath, "gameObject.json"), gameObjectJson);
+            SerializeObj(obj, path);
         }
 
-        public static GameObject DeserializeFromFile(string path)
+        public static string SerializeToString(GameObject obj)
         {
-            // Load the serialized GameObject from JSON
-            string gameObjectJson = File.ReadAllText(Path.Combine(path, "gameObject.json"));
-            return JsonConvert.DeserializeObject<GameObject>(gameObjectJson);
+            return JsonConvert.SerializeObject(obj, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
         }
 
-        private static void RecursiveBuild(string rootPath, GameObject go)
+        private static void SerializeObj(GameObject obj, string path)
         {
-            string currentPath = Path.Combine(rootPath, go.GetHashCode().ToString());
-            Directory.CreateDirectory(currentPath);
-            Directory.CreateDirectory(Path.Combine(currentPath, "components"));
-
-            // Serialize components here if needed
-            foreach (var kvp in go.components)
+            if (!Directory.Exists(path))
             {
-                // Serialize the component to JSON and save it in the components directory
-                string componentJson = JsonConvert.SerializeObject(kvp.Value);
-                File.WriteAllText(Path.Combine(currentPath, "components", kvp.Key.Name + ".json"), componentJson);
+                Directory.CreateDirectory(path);
             }
 
-            // Recursively serialize children
-            foreach (var child in go.Childs)
-            {
-                RecursiveBuild(currentPath, child);
-            }
+            File.WriteAllText(Path.Combine(path, $"{obj.Name}-{obj.GetHashCode()}.json"), JsonConvert.SerializeObject(obj, Formatting.Indented, new JsonSerializerSettings{TypeNameHandling = TypeNameHandling.Auto}));
         }
+
+
+
+        public static GameObject DeserializeFromPath(string path)
+        {
+            if (File.Exists(path))
+            {
+                GameObject rootGameObject = JsonConvert.DeserializeObject<GameObject>(File.ReadAllText(path), new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Auto
+                });
+
+
+                return rootGameObject;
+
+            }
+            return null;
+        }
+
+        public static GameObject DeserializeFromString(string data)
+        {
+            GameObject rootGameObject = JsonConvert.DeserializeObject<GameObject>(data, new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto
+            });
+
+
+            return rootGameObject;
+        }
+
     }
 
-    
+
 
     public class GameObject
     {
         public string Name { get; set; } = "New GameObject";
         public string Tag { get; set; } = string.Empty;
         public bool ActiveAndEnabled { get; set; } = true;
-
-
-        public GameObject Parent = null;
-        public List<GameObject> Childs = new List<GameObject>();
-        public Dictionary<Type, LuminosityBehaviour> components = new Dictionary<Type, LuminosityBehaviour>();
         public int ExecutionOrder = 0;
 
+
+        //[JsonIgnore]
+        public GameObject Parent = null;
+
+        [JsonIgnore]
+        public Scene Scene { get; set; }
+
+        //[JsonIgnore]
+        public List<GameObject> Childs = new List<GameObject>();
+
+        //[JsonIgnore]
+        public Dictionary<Type, LuminosityBehaviour> components = new Dictionary<Type, LuminosityBehaviour>();
+
+        [JsonIgnore]
         public TransformComponent Transform
         {
             get
@@ -94,11 +100,36 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
+        public GameObject()
+        {
+            Childs = new List<GameObject>();
+            components = new Dictionary<Type, LuminosityBehaviour>();
+        }
+
+        public void Awake()
+        {
+            foreach(var comp in components.Values)
+            {
+                if(comp.GameObject != this)
+                {
+                    comp.GameObject = this;
+                    SceneManager.ActiveScene.cache.CacheComponent(comp);
+                }
+             
+            }
+
+            foreach (var comp in components.Values)
+            {
+                comp.Awake();
+
+            }
+        }
+
         public GameObject(bool createInScene = true)
         {
             if (createInScene)
             {
-            Engine.SceneManager.ActiveScene.InstantiateEntity(this);
+                SceneManager.ActiveScene.InstantiateEntity(this);
 
             }
         }
@@ -107,7 +138,7 @@ namespace Luminosity3D.EntityComponentSystem
         public GameObject(string name)
         {
             Name = name;
-            Engine.SceneManager.ActiveScene.InstantiateEntity(this);
+            SceneManager.ActiveScene.InstantiateEntity(this);
         }
 
         public bool CompareTag(string tag)
@@ -123,6 +154,15 @@ namespace Luminosity3D.EntityComponentSystem
             }
 
             return null; // Return null if the component is not found.
+        }
+
+        public void Kill()
+        {
+            foreach(var comp in components.Values)
+            {
+                comp.Remove();
+            }
+            SceneManager.ActiveScene.Entities.Remove(this);
         }
 
         public List<T> GetComponents<T>() where T : LuminosityBehaviour
@@ -146,22 +186,34 @@ namespace Luminosity3D.EntityComponentSystem
             return components.ContainsKey(type);
         }
 
-        public T AddComponent<T>(T comp) where T : LuminosityBehaviour, new()
-        {
-            CheckRequiredComponents<T>();
 
+       
+
+
+
+
+        public T AddComponent<T>(T comp) where T : LuminosityBehaviour
+        {
+            comp.GameObject = this;
+            CheckRequiredComponents<T>();
 
             Type type = typeof(T);
             if (!components.ContainsKey(type))
             {
-                comp.GameObject = this;
+                
                 components[type] = comp;
                 comp.Awake();
-                Engine.SceneManager.ActiveScene.cache.CacheComponent(comp);
-                return comp;
+                SceneManager.ActiveScene.cache.CacheComponent(comp);
+                return comp; // Return the newly added component.
             }
-            return null;
+            else
+            {
+                // Component of type T already exists, so return the existing component.
+                return components[type] as T;
+            }
         }
+
+
 
         public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
@@ -177,7 +229,7 @@ namespace Luminosity3D.EntityComponentSystem
                 components[type] = component;
                 component.Awake();
 
-                Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
+                SceneManager.ActiveScene.cache.CacheComponent(component);
                 return component;
             }
             return null;
@@ -212,7 +264,7 @@ namespace Luminosity3D.EntityComponentSystem
                                 components[requiredType] = component;
                                 component.Awake();
 
-                                Engine.SceneManager.ActiveScene.cache.CacheComponent(component);
+                                SceneManager.ActiveScene.cache.CacheComponent(component);
                             }
 
                         }

@@ -1,17 +1,11 @@
 ﻿using Luminosity3D.Builtin;
-using Luminosity3D.Rendering;
 using Luminosity3D.Utils;
-using Luminosity3DRendering;
-using Luminosity3DScening;
-using OpenTK.Graphics.OpenGL4;
-using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
+using System.Net.Sockets;
+using System.Net;
 using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
+using System.Dynamic;
+using Luminosity3DScening;
 
 namespace Luminosity3D.EntityComponentSystem
 {
@@ -27,13 +21,14 @@ namespace Luminosity3D.EntityComponentSystem
     }
 
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class RPCAttribute : Attribute
     {
+        public string MethodName { get; }
 
-        public RPCAttribute()
+        public RPCAttribute(string methodName)
         {
-            
+            MethodName = methodName;
         }
     }
 
@@ -59,22 +54,124 @@ namespace Luminosity3D.EntityComponentSystem
 
     public static class Net
     {
-        private static string ConnectedToIp { get; set; } = string.Empty;
-        private static string ConnectedToPort { get; set; } = string.Empty;
-        private static bool Connected { get; set; } = false;
+        public static bool IsConnected = false;
+        public static bool IsRunning = false;
 
-        public static bool ConnectToServer(string ip, int port)
+        private static UdpClient udpServer;
+        private static IPEndPoint anyIP;
+        private static Thread listenThread;
+
+        private static List<IPEndPoint> connectedClients = new List<IPEndPoint>();
+
+        public static bool StartServer(string ip, int port)
         {
+            try
+            {
+                udpServer = new UdpClient(new IPEndPoint(IPAddress.Parse(ip), port));
+                Logger.LogToFile("UDP game server started on port " + ((IPEndPoint)udpServer.Client.LocalEndPoint).Port, false);
 
+                listenThread = new Thread(new ThreadStart(ListenForData));
+                listenThread.Start();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+                return false;
+            }
+        }
 
+        private static void ListenForData()
+        {
+            try
+            {
+                while (true)
+                {
+                    byte[] data = udpServer.Receive(ref anyIP);
+                    string message = Encoding.ASCII.GetString(data);
+                    Logger.LogToFile("Received: " + message, false);
+
+                    // Add the client to the list of connected clients if not already in the list
+                    if (!connectedClients.Contains(anyIP))
+                    {
+                        connectedClients.Add(anyIP);
+                    }
+
+                    // Process game logic, handle client data here
+
+                    // Send a response back to the client if needed
+                    string response = "Server: Received - " + message;
+                    Logger.Log(response);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+            }
+        }
+
+        public static bool StopServer()
+        {
+            Logger.LogToFile("Server shutting down", false);
+            if(udpServer != null)
+            {
+                udpServer.Close();
+            }
+
+            if (listenThread != null && listenThread.IsAlive)
+            {
+                listenThread.Abort();
+            }
+            Logger.LogToFile("Server shutdown", false);
             return true;
         }
 
-       // public static bool SendToServer()
+        public static bool JoinServer(string serverIp, int serverPort)
+        {
+            try
+            {
+                udpServer = new UdpClient(); // Create a new UDP client for the client-side connection
 
+                // You can specify the server IP and port you want to connect to
+                IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 
+                // Send a message to the server to establish the connection
+                string joinRequest = "Client: Joining Server";
+                byte[] requestData = Encoding.ASCII.GetBytes(joinRequest);
+
+                // Send the join request to the server
+                udpServer.Send(requestData, requestData.Length, serverEndPoint);
+
+                // Start a separate thread to listen for responses from the server
+                listenThread = new Thread(new ThreadStart(ListenForData));
+                listenThread.Start();
+
+                IsConnected = true;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+                return false;
+            }
+        }
+
+        public static void SendMessageToClient(string message, IPEndPoint clientEndpoint)
+        {
+            byte[] data = Encoding.ASCII.GetBytes(message);
+            udpServer.Send(data, data.Length, clientEndpoint);
+        }
+
+        public static void SendMessageToAllClients(string message)
+        {
+            byte[] data = Encoding.ASCII.GetBytes(message);
+            for (int i = connectedClients.Count - 1; i >= 0; i--)
+            {
+                var clientEndpoint = connectedClients[i];
+                udpServer.Send(data, data.Length, clientEndpoint);
+            }
+        }
     }
-
 
 
     public class ComponentCache
@@ -84,6 +181,16 @@ namespace Luminosity3D.EntityComponentSystem
         public float lastRenderTime = 0.0f;
         public float lastPhysicsTime = 0.0f;
         public float lastUpdateTime = 0.0f;
+
+        public void RemoveCachedComponent(LuminosityBehaviour behav)
+        {
+            var type = behav.GetType();
+
+            if (caches.ContainsKey(type))
+            {
+                caches[type].Remove(behav);
+            }
+        }
 
         public List<T> GetComponents<T>() where T : LuminosityBehaviour
         {
@@ -145,7 +252,7 @@ namespace Luminosity3D.EntityComponentSystem
         public void RenderPass()
         {   
 
-            if (Engine.SceneManager.ActiveScene.activeCam == null)
+            if (SceneManager.ActiveScene.activeCam == null)
                 return;
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds
             float deltaTime = currentTime - lastRenderTime; // Calculate time elapsed since the last pass in ms
@@ -160,7 +267,7 @@ namespace Luminosity3D.EntityComponentSystem
 
                 foreach(var batch in sortedBatches)
                 {
-                    var cam = Engine.SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                    var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
 
                     batch.model.RenderFrame(batch.GameObject.Transform, cam);
                     //batch.model.RenderForStencil();
@@ -187,14 +294,16 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
-
     public class LuminosityBehaviour
     {
         public int ExecutionOrder = 0;
        
         public string Name = string.Empty;
 
+        [JsonIgnore]
         public GameObject GameObject { get; set; }
+
+        [JsonIgnore]
         public TransformComponent Transform
         {
             get
@@ -202,12 +311,13 @@ namespace Luminosity3D.EntityComponentSystem
                 return GameObject.Transform;
             }
         }
-        public List<GameObject> Children { get; set; }
 
         public LuminosityBehaviour()
         {
 
         }
+
+
 
         public LuminosityBehaviour(string name)
         {
@@ -234,6 +344,7 @@ namespace Luminosity3D.EntityComponentSystem
             if(GameObject.GetComponent<T>() == null)
             {
                 Logger.Log("Couldnt find " + typeof(T).FullName);
+                return null;
             }
             return GameObject.GetComponent<T>();
         }
@@ -241,6 +352,12 @@ namespace Luminosity3D.EntityComponentSystem
         public T AddComponent<T>() where T : LuminosityBehaviour, new()
         {
             return GameObject.AddComponent<T>();
+        }
+
+        public void Remove()
+        {
+            SceneManager.ActiveScene.cache.RemoveCachedComponent(this);
+            GameObject.components.Remove(this.GetType());
         }
 
         public virtual void OnStart()
@@ -277,5 +394,6 @@ namespace Luminosity3D.EntityComponentSystem
         {
 
         }
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Assimp;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
+using Luminosity3DScening;
 using OpenTK.Mathematics;
 using System;
 using System.Numerics; // Import System.Numerics namespace
@@ -90,7 +91,8 @@ namespace Luminosity3D.Builtin
 
         public void SetActive()
         {
-            Engine.SceneManager.ActiveScene.activeCam = this;
+            Logger.LogToFile("LoadScene set cam active");
+            SceneManager.ActiveScene.activeCam = this;
         }
 
         public void SetPosition(Vector3 position)

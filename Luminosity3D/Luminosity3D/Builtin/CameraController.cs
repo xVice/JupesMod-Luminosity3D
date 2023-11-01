@@ -3,6 +3,7 @@ using Luminosity3D.Utils;
 using System.Numerics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using ImGuiNET;
+using Luminosity3DScening;
 
 namespace Luminosity3D.Builtin
 {
@@ -10,19 +11,14 @@ namespace Luminosity3D.Builtin
     public class CameraController : LuminosityBehaviour, IImguiSerialize
     {
         private Camera camera;
-        private float moveSpeed = 15.0f;
-        private float sensitivity = 0.005f;
+        public float moveSpeed = 15.0f;
+        public float sensitivity = 0.005f;
         public bool lockMovement = true;
         public bool lockPosition = false;
 
         public static LuminosityBehaviour OnEditorCreation()
         {
             return new CameraController();
-        }
-
-        public void LockPosition()
-        {
-
         }
 
         public void EditorUI()
@@ -39,20 +35,6 @@ namespace Luminosity3D.Builtin
         public override void Awake()
         {
             camera = GetComponent<Camera>();
-        }
-
-        public void SetActive()
-        {
-            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Grabbed;
-            camera.SetActive();
-            lockMovement = false;
-        }
-
-        public void LockMovement()
-        {
-            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Normal;
-            lockMovement = true;
-
         }
 
         public override void Update()
@@ -72,9 +54,8 @@ namespace Luminosity3D.Builtin
             if (camera == null)
             {
                 camera = GetComponent<Camera>();
-                Logger.Log("Cam null in cont");
             }
-            if (!lockMovement && camera == Engine.SceneManager.ActiveScene.activeCam)
+            if (!lockMovement && camera == SceneManager.ActiveScene.activeCam)
             {
                 // Handle mouse input
                 float mouseXDelta = InputManager.GetMouseDeltaX();
@@ -115,9 +96,25 @@ namespace Luminosity3D.Builtin
                     // Update the camera's position based on movement input
                     camera.Move(moveDirection, moveSpeed);
                 }
-               
+
             }
         }
+
+        public void SetActive()
+        {
+            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Grabbed;
+            camera.SetActive();
+            lockMovement = false;
+        }
+
+        public void LockMovement()
+        {
+            Engine.Renderer.CursorState = OpenTK.Windowing.Common.CursorState.Normal;
+            lockMovement = true;
+
+        }
+
+     
    
    
     }

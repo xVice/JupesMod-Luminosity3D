@@ -142,17 +142,6 @@ namespace Luminosity3D.Utils
         T Load(string path);
     }
 
-    public class ResourceBase<T>
-    {
-        public string Path { get; private set; }
-        private T asset;
-
-        public ResourceBase(string path, T asset)
-        {
-            Path = path;
-            this.asset = asset;
-        }
-    }
 
     public static class RpcMethodParameterSerializer
     {
@@ -227,11 +216,12 @@ namespace Luminosity3D.Utils
     }
 
 
-    public static class Resources
+    public class Resources
     {
         public const string ResourcesPath = "./Resources";
         private static Dictionary<string, object> resourceCache = new Dictionary<string, object>();
         private static Dictionary<Type, object> resourceLoaders = new Dictionary<Type, object>();
+
 
         public static void LoadBuiltinResourceTypes()
         {

@@ -204,6 +204,15 @@ namespace Luminosity3DPAK
             {
                 metadata = JsonConvert.DeserializeObject<PAKMetaData>(File.ReadAllText(UnpackedPath + "/metadata.json"));
             }
+
+            if (Directory.Exists(Path.Combine(UnpackedPath, $"{metadata.Name}")))
+            {
+                if (!Directory.Exists("./resources/mods"))
+                {
+                    Directory.CreateDirectory("./resources/mods");
+                }
+                Directory.Move(Path.Combine(UnpackedPath, $"{metadata.Name}"), "./resources/mods");
+            }
         }
 
         public PAKMetaData ExtractMetadata()

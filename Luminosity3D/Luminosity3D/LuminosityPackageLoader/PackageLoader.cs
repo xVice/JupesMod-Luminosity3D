@@ -184,7 +184,7 @@ namespace Luminosity3D.PKGLoader
             return null;
         }
 
-        public void UnloadPaks()
+        public static void UnloadPaks()
         {
             Logger.LogToFile("Unloading loaded lupk mods.");
             if (Directory.Exists(LUPKLoadedDir))

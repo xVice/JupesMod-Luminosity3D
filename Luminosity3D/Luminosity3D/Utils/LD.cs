@@ -11,11 +11,6 @@ namespace Luminosity3D.Utils
     {
         public static void StartEngine()
         {
-            var scene = new Scene("Demo Scene");
-
-            Engine.SceneManager.AddScene(scene);
-            scene.Load();
-
             Engine.StartEngine();
         }
 

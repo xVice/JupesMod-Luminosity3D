@@ -35,6 +35,8 @@ namespace Luminosity3D.Utils
 
     public class Logger
     {
+        public static List<Log> logList = new List<Log>();
+
         public static void ClearLogFile()
         {
             File.WriteAllText("./log.txt", string.Empty);
@@ -54,14 +56,14 @@ namespace Luminosity3D.Utils
             if (Engine.Console != null)
             {
                 var log = new Log(type, lable, timestamp, message);
-                Engine.Console.Log(log);
+                logList.Add(log);
 
             }
 
             Console.WriteLine(timestamp + " " + lable + ":" + message);
         }
 
-        public static void LogToFile(string message, LogType type = LogType.Information, bool fileExclusive = true,[CallerMemberName] string callerMemberName = "",
+        public static void LogToFile(string message, bool fileExclusive = true, LogType type = LogType.Information,[CallerMemberName] string callerMemberName = "",
                     [CallerFilePath] string callerFilePath = "",
                     [CallerLineNumber] int callerLineNumber = 0)
         {
@@ -75,10 +77,11 @@ namespace Luminosity3D.Utils
 
             }
 
-            if (Engine.Console != null && fileExclusive == false)
+            if (fileExclusive == false)
             {
                 var log = new Log(type, lable, timestamp, message);
-                Engine.Console.Log(log);
+                logList.Add(log);
+     
 
             }
             Console.WriteLine(msg);

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>icons\jmodicon.ico</ApplicationIcon>
@@ -93,6 +93,8 @@
   <ItemGroup>
     <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
+    <PackageReference Include="Noesis.GUI" Version="3.2.2" />
+    <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.23" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
     <PackageReference Include="Twizzle.ImGuizmo.NET" Version="1.89.4.1" />
   </ItemGroup>
@@ -102,12 +104,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="scenes\Demo Scene">
+    <None Update="scenes\Demo Scene\3DObj-43527150.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scenes\Demo Scene\New Camera-15368010.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="shaders\builtin\colored.frag">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="scenes\" />
   </ItemGroup>
 
 </Project>
