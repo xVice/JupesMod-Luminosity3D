@@ -589,7 +589,7 @@ namespace Luminosity3DRendering
         {
 
             if (!File.Exists(path))
-                throw new Exception($"Não foi possivel encontrar a Textura HDR: {path}");
+                throw new Exception($"Konnte die HDR Textur nicht laden: {path}");
 
 
             handler = new Handler()
@@ -620,7 +620,7 @@ namespace Luminosity3DRendering
 
             shaderRender.Use();
             var activeCam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
-            Logger.LogToFile("Cam in cubemap:" + activeCam.Name);
+           
             shaderRender.SetUniform("projection", activeCam.ProjectionMatrix);
             shaderRender.SetUniform("view", activeCam.ViewMatrix);
 
@@ -2148,6 +2148,7 @@ void main()
             if (SceneManager.ActiveScene.activeCam != null && SceneManager.ActiveScene.activeCam.GetComponent<Camera>() != null)
             {
   
+
                 cubeMap.RenderFrame();
                 SceneManager.ActiveScene.cache.RenderPass();
 
@@ -2174,7 +2175,7 @@ void main()
 
 
             SwapBuffers();
-
+            Net.SendSceneToClients();
         }
 
         protected override void OnTextInput(TextInputEventArgs e)
@@ -2253,10 +2254,18 @@ void main()
             }
         }
 
+        public override void Close()
+        {
+            base.Close();
+            Net.StopServer();
+            Environment.Exit(0);
+        }
+
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+            SceneManager.ActiveScene.cache.NetMerge();
             IMGUIController.Update(this, (float)e.Time);
             // Calculate Delta Time (time between frames).
             float deltaTime = (float)e.Time;

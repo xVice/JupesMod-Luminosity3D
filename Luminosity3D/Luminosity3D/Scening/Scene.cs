@@ -63,10 +63,15 @@ namespace Luminosity3DScening
 
         }
 
-        public GameObject InstantiateEntity(GameObject entity)
+        public GameObject InstantiateEntity(GameObject entity, bool awake = true)
         {
             Entities.Add(entity);
-            entity.Awake();
+            entity.FixNetGo();
+            if (awake)
+            {
+                entity.Awake();
+
+            }
             return entity;
         }
 

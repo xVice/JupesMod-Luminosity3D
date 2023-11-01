@@ -39,6 +39,11 @@ namespace Luminosity3D.Builtin
 
         public override void Update()
         {
+            if (Net.IsRunning)
+            {
+                Net.SendMessageToAllClients(GameObject.GetSerializedString());
+            }
+
             if (InputManager.GetKeyPressed(Keys.F5))
             {
                 if (lockMovement)

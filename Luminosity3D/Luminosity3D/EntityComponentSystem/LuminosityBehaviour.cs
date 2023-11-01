@@ -72,6 +72,8 @@ namespace Luminosity3D.EntityComponentSystem
 
                 listenThread = new Thread(new ThreadStart(ListenForData));
                 listenThread.Start();
+                IsRunning = true;
+                IsConnected = true;
                 return true;
             }
             catch (Exception e)
@@ -81,6 +83,8 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
+        public static Queue<GameObject> GameobjectQueue = new Queue<GameObject>();
+
         private static void ListenForData()
         {
             try
@@ -89,7 +93,6 @@ namespace Luminosity3D.EntityComponentSystem
                 {
                     byte[] data = udpServer.Receive(ref anyIP);
                     string message = Encoding.ASCII.GetString(data);
-                    Logger.LogToFile("Received: " + message, false);
 
                     // Add the client to the list of connected clients if not already in the list
                     if (!connectedClients.Contains(anyIP))
@@ -97,17 +100,48 @@ namespace Luminosity3D.EntityComponentSystem
                         connectedClients.Add(anyIP);
                     }
 
+                    var go = GameObjectSerializer.DeserializeFromString(message);
+                    GameobjectQueue.Enqueue(go);
+
+                    /*
+                    if(go.GetComponent<Camera>() != null)
+                    {
+                        var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                        var netCam = go.GetComponent<Camera>();
+                        cam.Position = netCam.Position;
+                        cam.Rotation = netCam.Rotation;
+                        cam.UpdateProjectionMatrix();
+                        cam.UpdateViewMatrix();
+                        
+                    }
+                    */
+
+                    
+                    
+
+
                     // Process game logic, handle client data here
 
-                    // Send a response back to the client if needed
-                    string response = "Server: Received - " + message;
-                    Logger.Log(response);
                 }
             }
             catch (Exception e)
             {
                 Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
             }
+        }
+
+        public static void SendSceneToClients()
+        {
+            if (IsRunning)
+            {
+                foreach (var go in SceneManager.ActiveScene.Entities)
+                {
+                    SendMessageToAllClients(go.GetSerializedString());
+                }
+            }
+
+
+
         }
 
         public static bool StopServer()
@@ -202,12 +236,31 @@ namespace Luminosity3D.EntityComponentSystem
             return null;
         }
 
+        public void NetMerge()
+        {
+            if (!Net.IsRunning)
+            {
+                caches.Clear();
+                SceneManager.ActiveScene.Entities.Clear();
+                for (int i = 0; i > Net.GameobjectQueue.Count; i++)
+                {
+
+
+                    SceneManager.ActiveScene.InstantiateEntity(Net.GameobjectQueue.Dequeue(), false);
+
+                }
+            }
+            
+        }
+
         
         public void UpdatePass()
         {
             float currentTime = Time.time * 1000.0f; // Convert to milliseconds
             float deltaTime = currentTime - lastUpdateTime; // Calculate time elapsed since the last pass in ms
             lastUpdateTime = currentTime;
+
+           
 
 
             foreach (var cache in caches)
@@ -297,7 +350,9 @@ namespace Luminosity3D.EntityComponentSystem
     public class LuminosityBehaviour
     {
         public int ExecutionOrder = 0;
-       
+
+        public string NetCode = string.Empty;
+
         public string Name = string.Empty;
 
         [JsonIgnore]
@@ -353,6 +408,17 @@ namespace Luminosity3D.EntityComponentSystem
         {
             return GameObject.AddComponent<T>();
         }
+
+        public T AddComponent<T>(T comp) where T : LuminosityBehaviour, new()
+        {
+            return GameObject.AddComponent<T>(comp);
+        }
+
+        public void RemoveComponent<T>() where T : LuminosityBehaviour
+        {
+            GameObject.RemoveComponent<T>();
+        }
+
 
         public void Remove()
         {

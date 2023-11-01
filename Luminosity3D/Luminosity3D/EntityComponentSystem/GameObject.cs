@@ -3,6 +3,7 @@ using Luminosity3D.Utils;
 using Luminosity3DScening;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
 
@@ -100,23 +101,47 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
+        public void MergeFields(GameObject source)
+        {
+            foreach(var comp in components.Values)
+            {
+                SceneManager.ActiveScene.cache.RemoveCachedComponent(comp);
+            }
+            this.components = source.components;
+            foreach (var comp in components.Values)
+            {
+                SceneManager.ActiveScene.cache.CacheComponent(comp);
+            }
+        }
+
+        public string GetSerializedString()
+        {
+            return GameObjectSerializer.SerializeToString(this);
+        }
+
         public GameObject()
         {
             Childs = new List<GameObject>();
             components = new Dictionary<Type, LuminosityBehaviour>();
         }
 
-        public void Awake()
+        public void FixNetGo()
         {
-            foreach(var comp in components.Values)
+            foreach (var comp in components.Values)
             {
-                if(comp.GameObject != this)
+                if (comp.GameObject != this)
                 {
                     comp.GameObject = this;
                     SceneManager.ActiveScene.cache.CacheComponent(comp);
                 }
-             
+
             }
+
+        }
+
+        public void Awake()
+        {
+
 
             foreach (var comp in components.Values)
             {
@@ -213,6 +238,24 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
+
+        public void RemoveComponent<T>() where T : LuminosityBehaviour
+        {
+            Type type = typeof(T);
+            if (components[type] != null)
+            {
+                components[type] = null;
+            }
+        }
+
+        public void RemoveComponent<T>(T comp) where T : LuminosityBehaviour
+        {
+            Type type = comp.GetType();
+            if (components[type] != null)
+            {
+                components[type] = null;
+            }
+        }
 
 
         public T AddComponent<T>() where T : LuminosityBehaviour, new()
