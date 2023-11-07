@@ -76,11 +76,16 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     ImGui.InputText("Path", ref sceneExportPath, 256);
 
-                    if(ImGui.Button("Save to file") && sceneExportPath != string.Empty)
+                    if(ImGui.Button("Save to folder") && sceneExportPath != string.Empty)
                     {
-                        SceneManager.ActiveScene.SerializeToFile(sceneExportPath);
+                        SceneManager.ActiveScene.SerializeToFile("./scenes/" + sceneExportPath);
                     }
-                  
+
+                    if (ImGui.Button("Load from folder") && sceneExportPath != string.Empty)
+                    {
+                        SceneManager.LoadScene(sceneExportPath);
+                    }
+
                 }
                     
             }
@@ -102,7 +107,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 {
                     if (ImGui.BeginMenu("Scene"))
                     {
-                        if (ImGui.MenuItem("Save"))
+                        if (ImGui.MenuItem("Show-"))
                         {
                             showSaveWindow = !showSaveWindow;
                             
@@ -181,9 +186,9 @@ namespace Luminosity3D.Builtin.RenderLayers
                 ImGui.BeginChild("ConsoleText", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()), true, ImGuiWindowFlags.HorizontalScrollbar);
 
                 int logIndex = 0; // Start from the beginning of the list
-                for (int i = Logger.logList.Count - 1; i >= 0; i--)
+                for (int i = Logger.LogList.Count - 1; i >= 0; i--)
                 {
-                    var log = Logger.logList[logIndex];
+                    var log = Logger.LogList[logIndex];
                     ImGui.PushStyleColor(ImGuiCol.Border, GetLogColor(log.Type));
 
                     // Generate a unique identifier for each child window based on logIndex
@@ -227,7 +232,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 ImGui.SameLine();
                 if (ImGui.Button("Clear"))
                 {
-                    Logger.logList.Clear();
+                    Logger.LogList.Clear();
                 }
             }
 
@@ -313,8 +318,10 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         private unsafe void DisplayEntity(GameObject entity)
         {
-            if (ImGui.TreeNode("Name: " + entity.Name + " HashCode: " + entity.GetHashCode()))
+            if (ImGui.TreeNode("Name: " + entity.Name +  " NetCode: " + entity.NetCode + " HashCode: " + entity.GetHashCode()))
             {
+                
+
                 if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Right))
                 {
 
@@ -329,6 +336,11 @@ namespace Luminosity3D.Builtin.RenderLayers
                     ImGui.EndPopup();
                 }
 
+
+                if (ImGui.Button("Save Prefab"))
+                {
+                    entity.SavePrefab(entity.Name);
+                }
 
 
                 foreach (var child in entity.Childs)
@@ -967,7 +979,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         public override void Execute(string[] args)
         {
-            Net.SendMessageToAllClients(args[0]);
+            //Net.SendMessageToAllClients(args[0]);
 
 
         }
@@ -980,6 +992,8 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         public override void Execute(string[] args)
         {
+            SceneManager.ActiveScene.Entities.Clear();
+            SceneManager.ActiveScene.cache.ClearCache();
             Net.JoinServer(args[0], 42069);
 
 
@@ -988,7 +1002,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
     public class MakeServerCommand : DebugCommand
     {
-        public override string Command { get => "createserver"; }
+        public override string Command { get => "host"; }
         public override string Description { get => "Create a server"; }
 
         public override void Execute(string[] args)
@@ -1092,7 +1106,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
                 else
                 {
-                    Logger.Log($"Couldn't find the config/script: {args[0].ToString()}", LogType.Error);
+                    Logger.Log($"Couldn't find the config/script: {args[0].ToString()}", true, LogType.Error);
                 }
 
 
@@ -1124,7 +1138,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
                 else
                 {
-                    Logger.Log($"Couldn't find the lupk: {pakName}.lupk!", LogType.Warning);
+                    Logger.Log($"Couldn't find the lupk: {pakName}.lupk!", true, LogType.Warning);
                 }
             }
             else
@@ -1144,15 +1158,15 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         public override void Execute(string[] args)
         {
-            Logger.Log("Enumerating registered commands..", LogType.Debug);
+            Logger.Log("Enumerating registered commands..", true, LogType.Debug);
             foreach (var command in Engine.Console.CommandManager.Commands)
             {
-                Logger.Log("-------------------------------------------------------------------------------------", LogType.Debug);
-                Logger.Log("Commmand: " + command.Command, LogType.Debug);
-                Logger.Log("Description: " + command.Description, LogType.Debug);
+                Logger.Log("-------------------------------------------------------------------------------------", true, LogType.Debug);
+                Logger.Log("Commmand: " + command.Command, true, LogType.Debug);
+                Logger.Log("Description: " + command.Description, true, LogType.Debug);
             }
-            Logger.Log("-------------------------------------------------------------------------------------", LogType.Debug);
-            Logger.Log($"Jupe mods help, enumerated: {Engine.Console.CommandManager.Commands.Count()} commands!", LogType.Debug);
+            Logger.Log("-------------------------------------------------------------------------------------", true, LogType.Debug);
+            Logger.Log($"Jupe mods help, enumerated: {Engine.Console.CommandManager.Commands.Count()} commands!", true, LogType.Debug);
         }
     }
 

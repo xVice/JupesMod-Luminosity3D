@@ -93,8 +93,10 @@
   <ItemGroup>
     <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
+    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="Noesis.GUI" Version="3.2.2" />
     <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.23" />
+    <PackageReference Include="Salar.Bois" Version="3.4.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
     <PackageReference Include="Twizzle.ImGuizmo.NET" Version="1.89.4.1" />
   </ItemGroup>

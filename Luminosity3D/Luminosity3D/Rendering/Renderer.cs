@@ -255,13 +255,13 @@ namespace Luminosity3DRendering
             {
                 if (ex != null)
                 {
-                    Logger.LogToFile($"OpenGL Error at {location}: {errorCode}");
+                    Logger.Log($"OpenGL Error at {location}: {errorCode}", true, LogType.Error);
                     throw new Exception($"OpenGL Error at {location}: {errorCode}");
                 }
                 else
                 {
-                    Logger.LogToFile($"OpenGL Error at {location}: {errorCode}");
-                    Logger.LogToFile($"OpenGL appended exception: {ex.ToString()}");
+                    Logger.Log($"OpenGL Error at {location}: {errorCode}", true, LogType.Error);
+                    Logger.Log($"OpenGL appended exception: {ex.ToString()}", true, LogType.Error);
                     throw new Exception($"OpenGL Error at {location}: {errorCode}");
                 }
 
@@ -2138,6 +2138,29 @@ void main()
 
         bool isgrabbed = false;
 
+
+
+        protected override void OnUpdateFrame(FrameEventArgs e)
+        {
+            base.OnUpdateFrame(e);
+            SceneManager.ActiveScene.NetMerge();
+            IMGUIController.Update(this, (float)e.Time);
+            // Calculate Delta Time (time between frames).
+            float deltaTime = (float)e.Time;
+            Time.deltaTime = deltaTime;
+            Time.time += deltaTime * Time.timeScale;
+
+            Physics.Step();
+
+            SceneManager.ActiveScene.cache.PhysicsPass();
+
+            SceneManager.ActiveScene.cache.UpdatePass();
+
+
+
+
+        }
+
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -2262,26 +2285,6 @@ void main()
         }
 
 
-        protected override void OnUpdateFrame(FrameEventArgs e)
-        {
-            base.OnUpdateFrame(e);
-            SceneManager.ActiveScene.cache.NetMerge();
-            IMGUIController.Update(this, (float)e.Time);
-            // Calculate Delta Time (time between frames).
-            float deltaTime = (float)e.Time;
-            Time.deltaTime = deltaTime;
-            Time.time += deltaTime * Time.timeScale;
-
-            Physics.Step();
-
-            SceneManager.ActiveScene.cache.PhysicsPass();
-
-            SceneManager.ActiveScene.cache.UpdatePass();
-
-            
-
-
-        }
 
         public void AddLayer(IRenderLayer layer)
         {

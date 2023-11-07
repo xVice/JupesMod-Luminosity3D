@@ -9,11 +9,13 @@ using OpenTK.Mathematics;
 
 namespace Luminosity3D.Builtin
 {
-    public unsafe class TransformComponent : LuminosityBehaviour, IImguiSerialize
+    public unsafe class TransformComponent : LuminosityBehaviour, Networkable, IImguiSerialize
     {
-        [SerializeField] Matrix4x4 transformMatrix = Matrix4x4.Identity;
+
+        public Matrix4x4 transformMatrix = Matrix4x4.Identity;
         [SerializeField] bool drawGizmo = false;
 
+        
         public Vector3 Position
         {
             get { return transformMatrix.Translation; }
@@ -170,6 +172,18 @@ namespace Luminosity3D.Builtin
         public Matrix4x4 GetTransformMatrix()
         {
             return transformMatrix;
+        }
+
+        public void Net(GameObject go)
+        {
+            var transformComp = go.GetComponent<TransformComponent>();
+            if(transformComp != null)
+            {
+
+                Position = transformComp.Position;
+                Rotation = transformComp.Rotation;
+                Scale = transformComp.Scale;
+            }
         }
     }
 }

@@ -6,6 +6,9 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Dynamic;
 using Luminosity3DScening;
+using System.Reflection;
+using System.IO;
+using Newtonsoft.Json.Linq;
 
 namespace Luminosity3D.EntityComponentSystem
 {
@@ -42,6 +45,16 @@ namespace Luminosity3D.EntityComponentSystem
         }
     }
 
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    public class NetAttribute : Attribute
+    {
+
+        public NetAttribute()
+        {
+
+        }
+    }
+
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = true)]
     public class SerializeFieldAttribute : Attribute
     {
@@ -58,17 +71,18 @@ namespace Luminosity3D.EntityComponentSystem
         public static bool IsRunning = false;
 
         private static UdpClient udpServer;
-        private static IPEndPoint anyIP;
         private static Thread listenThread;
 
         private static List<IPEndPoint> connectedClients = new List<IPEndPoint>();
+        public static Queue<GameObject> objectQue = new Queue<GameObject>();
 
         public static bool StartServer(string ip, int port)
         {
             try
             {
                 udpServer = new UdpClient(new IPEndPoint(IPAddress.Parse(ip), port));
-                Logger.LogToFile("UDP game server started on port " + ((IPEndPoint)udpServer.Client.LocalEndPoint).Port, false);
+                Logger.Log("UDP game server started on ip: " + ip + " port: " + ((IPEndPoint)udpServer.Client.LocalEndPoint).Port, true);
+
 
                 listenThread = new Thread(new ThreadStart(ListenForData));
                 listenThread.Start();
@@ -78,12 +92,13 @@ namespace Luminosity3D.EntityComponentSystem
             }
             catch (Exception e)
             {
-                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+                IsRunning = false;
+                IsConnected = false;
+                Logger.Log("NET: Error when starting the server: " + e.ToString(), true, LogType.Error);
                 return false;
             }
         }
 
-        public static Queue<GameObject> GameobjectQueue = new Queue<GameObject>();
 
         private static void ListenForData()
         {
@@ -91,62 +106,115 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 while (true)
                 {
+                    IPEndPoint anyIP = null;
                     byte[] data = udpServer.Receive(ref anyIP);
-                    string message = Encoding.ASCII.GetString(data);
 
-                    // Add the client to the list of connected clients if not already in the list
                     if (!connectedClients.Contains(anyIP))
                     {
                         connectedClients.Add(anyIP);
                     }
 
-                    var go = GameObjectSerializer.DeserializeFromString(message);
-                    GameobjectQueue.Enqueue(go);
+                    string receivedData = Encoding.UTF8.GetString(data);
+                    byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
+                    byte[] framedPacket = data;
 
-                    /*
-                    if(go.GetComponent<Camera>() != null)
+                    foreach (byte[] packetBytes in SplitPackets(framedPacket, delimiter))
                     {
-                        var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
-                        var netCam = go.GetComponent<Camera>();
-                        cam.Position = netCam.Position;
-                        cam.Rotation = netCam.Rotation;
-                        cam.UpdateProjectionMatrix();
-                        cam.UpdateViewMatrix();
-                        
+                        string packet = Encoding.UTF8.GetString(packetBytes);
+                        if (!string.IsNullOrEmpty(packet))
+                        {
+                            
+
+                            if (IsValidJson(packet))
+                            {
+                                var gameObject = GameObjectSerializer.DeserializeFromString(packet);
+                                objectQue.Enqueue(gameObject);
+                                //Logger.Log($"NET: Received data for: {gameObject.NetCode}", true);
+                            }
+                        }
                     }
-                    */
-
-                    
-                    
-
-
-                    // Process game logic, handle client data here
-
                 }
             }
             catch (Exception e)
             {
-                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+                Logger.Log("CLIENT: Error: " + e.ToString(), true, LogType.Error);
+            }
+        }
+
+
+        // Helper function to split framed data into individual packets using a delimiter
+        private static IEnumerable<byte[]> SplitPackets(byte[] framedData, byte[] delimiter)
+        {
+            List<byte> currentPacket = new List<byte>();
+            for (int i = 0; i < framedData.Length; i++)
+            {
+                bool isDelimiter = i + delimiter.Length <= framedData.Length &&
+                                   delimiter.SequenceEqual(framedData.Skip(i).Take(delimiter.Length));
+                if (isDelimiter)
+                {
+                    if (currentPacket.Count > 0)
+                        yield return currentPacket.ToArray();
+                    currentPacket.Clear();
+                    i += delimiter.Length - 1; // Skip delimiter
+                }
+                else
+                {
+                    currentPacket.Add(framedData[i]);
+                }
+            }
+            if (currentPacket.Count > 0)
+                yield return currentPacket.ToArray();
+        }
+
+
+        public static bool IsValidJson(string json)
+        {
+            try 
+            {
+                JToken.Parse(json);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
         public static void SendSceneToClients()
         {
-            if (IsRunning)
+            try
             {
-                foreach (var go in SceneManager.ActiveScene.Entities)
+                if (Net.IsRunning)
                 {
-                    SendMessageToAllClients(go.GetSerializedString());
+                    foreach (var ent in SceneManager.ActiveScene.Entities)
+                    {
+                        if (string.IsNullOrEmpty(ent.NetCode))
+                        {
+                            ent.NetCode = Guid.NewGuid().ToString();
+                        }
+
+                        var packet = GameObjectSerializer.SerializeToString(ent);
+                        byte[] packetBytes = Encoding.UTF8.GetBytes(packet);
+
+                        byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
+                        byte[] framedPacket = delimiter.Concat(packetBytes).Concat(delimiter).ToArray();
+
+                        SendMessageToAllClients(framedPacket);
+                    }
                 }
             }
-
-
+            catch (Exception e)
+            {
+                Logger.Log("NET: Error when sending the scene to clients: " + e.ToString(), true, LogType.Error);
+            }
 
         }
 
+
+
         public static bool StopServer()
         {
-            Logger.LogToFile("Server shutting down", false);
+            Logger.Log("Server shutting down", true);
             if(udpServer != null)
             {
                 udpServer.Close();
@@ -156,7 +224,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 listenThread.Abort();
             }
-            Logger.LogToFile("Server shutdown", false);
+            Logger.Log("Server shutdown", true);
             return true;
         }
 
@@ -169,36 +237,28 @@ namespace Luminosity3D.EntityComponentSystem
                 // You can specify the server IP and port you want to connect to
                 IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 
-                // Send a message to the server to establish the connection
-                string joinRequest = "Client: Joining Server";
-                byte[] requestData = Encoding.ASCII.GetBytes(joinRequest);
-
-                // Send the join request to the server
-                udpServer.Send(requestData, requestData.Length, serverEndPoint);
-
                 // Start a separate thread to listen for responses from the server
                 listenThread = new Thread(new ThreadStart(ListenForData));
                 listenThread.Start();
 
                 IsConnected = true;
+                Logger.Log($"NET: Connected to: {serverIp}:{serverPort}", true, LogType.Information);
                 return true;
             }
             catch (Exception e)
             {
-                Logger.LogToFile("Error: " + e.ToString(), false, LogType.Error);
+                Logger.Log("Error: " + e.ToString(), false, LogType.Error);
                 return false;
             }
         }
 
-        public static void SendMessageToClient(string message, IPEndPoint clientEndpoint)
+        public static void SendMessageToClient(byte[] buffer, IPEndPoint clientEndpoint)
         {
-            byte[] data = Encoding.ASCII.GetBytes(message);
-            udpServer.Send(data, data.Length, clientEndpoint);
+            udpServer.Send(buffer, buffer.Length, clientEndpoint);
         }
 
-        public static void SendMessageToAllClients(string message)
+        public static void SendMessageToAllClients(byte[] data)
         {
-            byte[] data = Encoding.ASCII.GetBytes(message);
             for (int i = connectedClients.Count - 1; i >= 0; i--)
             {
                 var clientEndpoint = connectedClients[i];
@@ -211,10 +271,25 @@ namespace Luminosity3D.EntityComponentSystem
     public class ComponentCache
     {
         // Use a dictionary to map component types to their respective caches
-        private Dictionary<Type, List<LuminosityBehaviour>> caches = new Dictionary<Type, List<LuminosityBehaviour>>();
+        public Dictionary<Type, List<LuminosityBehaviour>> caches = new Dictionary<Type, List<LuminosityBehaviour>>();
         public float lastRenderTime = 0.0f;
         public float lastPhysicsTime = 0.0f;
         public float lastUpdateTime = 0.0f;
+
+        public bool HasCache<T>(T comp) where T : LuminosityBehaviour
+        {
+            if (caches.ContainsKey(comp.GetType()))
+            {
+                return caches[comp.GetType()].Contains(comp);
+
+            }
+            return false;
+        }
+
+        public void ClearCache()
+        {
+            caches.Clear();
+        }
 
         public void RemoveCachedComponent(LuminosityBehaviour behav)
         {
@@ -236,22 +311,7 @@ namespace Luminosity3D.EntityComponentSystem
             return null;
         }
 
-        public void NetMerge()
-        {
-            if (!Net.IsRunning)
-            {
-                caches.Clear();
-                SceneManager.ActiveScene.Entities.Clear();
-                for (int i = 0; i > Net.GameobjectQueue.Count; i++)
-                {
 
-
-                    SceneManager.ActiveScene.InstantiateEntity(Net.GameobjectQueue.Dequeue(), false);
-
-                }
-            }
-            
-        }
 
         
         public void UpdatePass()
@@ -318,12 +378,20 @@ namespace Luminosity3D.EntityComponentSystem
                     .Cast<MeshBatch>()
                     .ToArray();
 
-                foreach(var batch in sortedBatches)
+                if (sortedBatches != null && sortedBatches.Length > 0)
                 {
-                    var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                    foreach (var batch in sortedBatches)
+                    {
+                        var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
+                        if (batch.GameObject != null)
+                        {
+                            batch.model.RenderFrame(batch.GameObject.Transform, cam);
 
-                    batch.model.RenderFrame(batch.GameObject.Transform, cam);
-                    //batch.model.RenderForStencil();
+                        }
+                        //batch.model.RenderForStencil();
+
+                    }
+
                 }
             }
         }
@@ -345,7 +413,14 @@ namespace Luminosity3D.EntityComponentSystem
 
     }
 
-
+    public interface Networkable
+    {
+        /// <summary>
+        /// Will be called from the server with the gameobject it received from the server
+        /// </summary>
+        /// <param name="go"></param>
+        public abstract void Net(GameObject go);
+    }
 
     public class LuminosityBehaviour
     {

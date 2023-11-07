@@ -35,58 +35,39 @@ namespace Luminosity3D.Utils
 
     public class Logger
     {
-        public static List<Log> logList = new List<Log>();
+        public static List<Log> LogList { get; } = new List<Log>();
+        public static string LogPath { get; set; } = "./logs";
+        private static string LogFile = string.Empty;
 
-        public static void ClearLogFile()
+        public static void SetupFolder()
         {
-            File.WriteAllText("./log.txt", string.Empty);
-        }
-
-
-
-
-        public static void Log(string message,LogType type = LogType.Information ,[CallerMemberName] string callerMemberName = "",
-                            [CallerFilePath] string callerFilePath = "",
-                            [CallerLineNumber] int callerLineNumber = 0)
-        {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
-            string lable = $"[{callingClassName}.{callerMemberName}:{callerLineNumber}]";
-
-            if (Engine.Console != null)
+            if (!Directory.Exists(LogPath))
             {
-                var log = new Log(type, lable, timestamp, message);
-                logList.Add(log);
-
+                Directory.CreateDirectory(LogPath);
             }
 
-            Console.WriteLine(timestamp + " " + lable + ":" + message);
+            string logFileName = $"log-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.txt";
+            LogFile = Path.Combine(LogPath, logFileName);
         }
 
-        public static void LogToFile(string message, bool fileExclusive = true, LogType type = LogType.Information,[CallerMemberName] string callerMemberName = "",
-                    [CallerFilePath] string callerFilePath = "",
-                    [CallerLineNumber] int callerLineNumber = 0)
+        public static void Log(string message, bool logToFile = false, LogType type = LogType.Information, [CallerMemberName] string callerMemberName = "",
+                                [CallerFilePath] string callerFilePath = "",
+                                [CallerLineNumber] int callerLineNumber = 0)
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string callingClassName = Path.GetFileNameWithoutExtension(callerFilePath);
-            string lable = $"[{callingClassName}.{callerMemberName}:{callerLineNumber}]";
-            var msg = timestamp + " " + lable + ":" + message;
-            using (StreamWriter sw = File.AppendText("./log.txt"))
-            {
-                sw.WriteLine(msg);
+            string label = $"[{callingClassName}.{callerMemberName}:{callerLineNumber}]";
 
+            var log = new Log(type, label, timestamp, message);
+            LogList.Add(log);
+
+            if (LogFile != string.Empty)
+            {
+                File.AppendAllText(LogFile, $"{timestamp} | {label} - \n(\n{message}\n);\n\n");
             }
 
-            if (fileExclusive == false)
-            {
-                var log = new Log(type, lable, timestamp, message);
-                logList.Add(log);
-     
-
-            }
-            Console.WriteLine(msg);
-
+            Console.WriteLine($"{timestamp} | {label} - {message}");
         }
-
     }
+
 }

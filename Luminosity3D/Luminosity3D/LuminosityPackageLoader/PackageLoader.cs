@@ -72,12 +72,12 @@ namespace Luminosity3D.PKGLoader
                     }
                     else
                     {
-                        Logger.LogToFile($"{pakname} is already loaded..");
+                        Logger.Log($"{pakname} is already loaded..", true, LogType.Warning);
                     }
                 }
                 else
                 {
-                    Logger.LogToFile($"{pakname} was not found in the lupk folder..");
+                    Logger.Log($"{pakname} was not found in the lupk folder..", true, LogType.Error);
                 }
             });
         }
@@ -85,7 +85,7 @@ namespace Luminosity3D.PKGLoader
         public bool PakExist(string name)
         {
             string path = LUPKDir + $"/{name}.lupk";
-            Logger.LogToFile(path);
+            
             return File.Exists(path);
         }
 
@@ -95,22 +95,23 @@ namespace Luminosity3D.PKGLoader
             pak.PackageToPAK(dest);
         }
 
-        public LUPKMod LoadPackage(string name)
+        public async Task<LUPKMod> LoadPackage(string name)
         {
             var timer = new Stopwatch();
             timer.Start();
-            Logger.LogToFile($"Loading: {name}..");
+            Logger.Log($"Loading: {name}..", true, LogType.Information);
 
             try
             {
                 var lupkg = UnpackPKG(name);
 
                 var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
-                Logger.LogToFile($"Found {csFiles.Count()} dll files in {name}, loading assemblies..");
+                var dllFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
+                Logger.Log($"Found {dllFiles.Count()} dll files in {name}, loading assemblies..", true, LogType.Information);
 
                 // Use the RoslynCodeLoader to load and compile C# files
                 var codeLoader = new RoslynCodeLoader();
-                var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, csFiles);
+                var compiledAssembly = await codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, dllFiles, csFiles);
 
                 if (compiledAssembly != null)
                 {
@@ -121,16 +122,16 @@ namespace Luminosity3D.PKGLoader
                         LoadedMods.Add(mod);
                     }
                     timer.Stop();
-                    Logger.LogToFile($"Successfully loaded {name} in {timer.ElapsedMilliseconds}ms!");
+                    Logger.Log($"Successfully loaded {name} in {timer.ElapsedMilliseconds}ms!", true, LogType.Information);
                     return mod;
                 }
 
                 timer.Stop();
-                Logger.LogToFile($"Failed to load {name}.");
+                Logger.Log($"Failed to load {name}.", true, LogType.Error);
             }
             catch (Exception ex)
             {
-                Logger.LogToFile($"Error loading {name}: {ex.Message}");
+                Logger.Log($"Error loading {name}: {ex.Message}", true, LogType.Error);
             }
 
             return null;
@@ -148,37 +149,38 @@ namespace Luminosity3D.PKGLoader
         {
             var timer = new Stopwatch();
             timer.Start();
-            Logger.LogToFile($"Loading: {name}..");
+            Logger.Log($"Loading: {name}..", true, LogType.Information);
 
             try
             {
                 var lupkg = UnpackPKGFromAutoLoad(name);
 
-                var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
-                Logger.LogToFile($"Found {csFiles.Count()} dll files in {name}, loading assemblies..");
+                var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.cs", SearchOption.AllDirectories);
+                var dllFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
+                Logger.Log($"Found {dllFiles.Count()} dll files in {name}, loading assemblies..", true, LogType.Information);
 
                 // Use the RoslynCodeLoader to load and compile C# files
                 var codeLoader = new RoslynCodeLoader();
-                var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, csFiles);
+                var compiledAssembly = codeLoader.LoadAndCompileDlls(lupkg.metadata.Namespace, dllFiles, csFiles);
 
                 if (compiledAssembly != null)
                 {
-                    var mod = new LUPKMod(compiledAssembly, lupkg);
+                    var mod = new LUPKMod(compiledAssembly.Result, lupkg);
                     mod.InvokeOnLoadMethod();
                     lock (lockObject)
                     {
                         LoadedMods.Add(mod);
                     }
-                    Logger.LogToFile($"OnLoad called for {name}!");
+                    Logger.Log($"OnLoad called for {name}!", true, LogType.Information);
                     return mod;
                 }
 
                 timer.Stop();
-                Logger.LogToFile($"Failed to load {name}.");
+                Logger.Log($"Failed to load {name}.", true, LogType.Error);
             }
             catch (Exception ex)
             {
-                Logger.LogToFile($"Error loading {name}: {ex.Message}");
+                Logger.Log($"Error loading {name}: {ex.Message}", true, LogType.Error);
             }
 
             return null;
@@ -186,7 +188,7 @@ namespace Luminosity3D.PKGLoader
 
         public static void UnloadPaks()
         {
-            Logger.LogToFile("Unloading loaded lupk mods.");
+            Logger.Log("Unloading loaded lupk mods.", true, LogType.Information);
             if (Directory.Exists(LUPKLoadedDir))
             {
                 Directory.Delete(LUPKLoadedDir, true);
@@ -196,14 +198,14 @@ namespace Luminosity3D.PKGLoader
 
         private PAK UnpackPKGFromAutoLoad(string name)
         {
-            Logger.LogToFile($"Unpacking {name}..");
+            Logger.Log($"Unpacking {name}..", true, LogType.Information);
             var lupkg = UnpackPKGFromPath(LUPKDir + LUPKAutoLoadDir + $"/{name}.lupk");
             return lupkg;
         }
 
         private PAK UnpackPKG(string name)
         {
-            Logger.LogToFile($"Unpacking {name}..");
+            Logger.Log($"Unpacking {name}..", true, LogType.Information);
             var lupkg = UnpackPKGFromPath(LUPKDir + $"/{name}.lupk");
             return lupkg;
         }

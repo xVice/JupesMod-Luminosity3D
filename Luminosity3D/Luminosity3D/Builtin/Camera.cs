@@ -11,12 +11,12 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace Luminosity3D.Builtin
 {
-    public class Camera : LuminosityBehaviour
+    public class Camera : LuminosityBehaviour, Networkable
     {
         public Quaternion Rotation = Quaternion.Identity; // Store camera's rotation separately
         public Vector3 Position = Vector3.Zero;
-        public Matrix4x4 ViewMatrix { get; private set; }
-        public Matrix4x4 ProjectionMatrix { get; private set; }
+        public Matrix4x4 ViewMatrix = Matrix4x4.Identity;
+        public Matrix4x4 ProjectionMatrix = Matrix4x4.Identity;
         public Vector3 Forward
         {
             get
@@ -64,6 +64,11 @@ namespace Luminosity3D.Builtin
             UpdateViewMatrix();
         }
 
+        public override void Update()
+        {
+            UpdateViewMatrix();
+        }
+
         public void UpdateProjectionMatrix()
         {
             ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
@@ -91,7 +96,6 @@ namespace Luminosity3D.Builtin
 
         public void SetActive()
         {
-            Logger.LogToFile("LoadScene set cam active");
             SceneManager.ActiveScene.activeCam = this;
         }
 
@@ -141,6 +145,17 @@ namespace Luminosity3D.Builtin
             Vector3 direction = Vector3.Normalize(target - Position);
             Rotation = Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateLookAt(Vector3.Zero, direction, Vector3.UnitY));
             UpdateViewMatrix();
+        }
+
+        public void Net(GameObject go)
+        {
+            var cam = go.GetComponent<Camera>();
+            if (cam != null)
+            {
+                Position = cam.Position;
+                Rotation = cam.Rotation;
+                UpdateViewMatrix();
+            }
         }
     }
 }

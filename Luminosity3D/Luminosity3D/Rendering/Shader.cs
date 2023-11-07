@@ -178,7 +178,7 @@ namespace Luminosity3D.Rendering
             if (code != (int)All.True)
             {
                 string log = $"A error occured during shader compilation of \n{CurrentShader} \n{GL.GetShaderInfoLog(shader)}";
-                Logger.LogToFile(log);
+                Logger.Log(log, true, LogType.Error);
                 throw new Exception(log);
             }
 

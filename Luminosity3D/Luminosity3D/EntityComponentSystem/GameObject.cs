@@ -9,6 +9,21 @@ using System.Reflection;
 
 namespace Luminosity3D.EntityComponentSystem
 {
+    public class DataField
+    {
+        public Dictionary<string, object> values = new Dictionary<string, object>();
+
+        public T Get<T>(string name)
+        {
+            return (T)values[name];
+        }
+
+        public void Set(string name, object obj)
+        {
+            values[name] = obj;
+        }
+    }
+
     public static class GameObjectSerializer
     {
 
@@ -17,9 +32,9 @@ namespace Luminosity3D.EntityComponentSystem
             SerializeObj(obj, path);
         }
 
-        public static string SerializeToString(GameObject obj)
+        public static string SerializeToString(GameObject obj, Formatting format = Formatting.None)
         {
-            return JsonConvert.SerializeObject(obj, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+            return JsonConvert.SerializeObject(obj, format, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
         }
 
         private static void SerializeObj(GameObject obj, string path)
@@ -69,8 +84,12 @@ namespace Luminosity3D.EntityComponentSystem
     {
         public string Name { get; set; } = "New GameObject";
         public string Tag { get; set; } = string.Empty;
+
+        public string NetCode = string.Empty;
         public bool ActiveAndEnabled { get; set; } = true;
         public int ExecutionOrder = 0;
+
+        public DataField dataField = new DataField();
 
 
         //[JsonIgnore]
@@ -101,18 +120,7 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
-        public void MergeFields(GameObject source)
-        {
-            foreach(var comp in components.Values)
-            {
-                SceneManager.ActiveScene.cache.RemoveCachedComponent(comp);
-            }
-            this.components = source.components;
-            foreach (var comp in components.Values)
-            {
-                SceneManager.ActiveScene.cache.CacheComponent(comp);
-            }
-        }
+
 
         public string GetSerializedString()
         {
@@ -129,11 +137,8 @@ namespace Luminosity3D.EntityComponentSystem
         {
             foreach (var comp in components.Values)
             {
-                if (comp.GameObject != this)
-                {
-                    comp.GameObject = this;
-                    SceneManager.ActiveScene.cache.CacheComponent(comp);
-                }
+                comp.GameObject = this;
+                
 
             }
 
@@ -165,6 +170,31 @@ namespace Luminosity3D.EntityComponentSystem
             Name = name;
             SceneManager.ActiveScene.InstantiateEntity(this);
         }
+
+        public void SavePrefab(string name)
+        {
+            var path = Resources.ResourcesPath + "/prefabs/" + SceneManager.ActiveScene.Name + "/";
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            File.WriteAllText(path + $"/{name}-prefab.json", GameObjectSerializer.SerializeToString(this));
+        }
+
+        public static GameObject FromPrefab(string path, string name)
+        {
+            var finalpath = Resources.ResourcesPath + "/prefabs/" + SceneManager.ActiveScene.Name + "/";
+
+            if (!Directory.Exists(finalpath))
+            {
+                return null;
+            }
+
+            return GameObjectSerializer.DeserializeFromString(File.ReadAllText(finalpath + $"/{name}-prefab.json"));
+        }
+
 
         public bool CompareTag(string tag)
         {
@@ -219,7 +249,6 @@ namespace Luminosity3D.EntityComponentSystem
 
         public T AddComponent<T>(T comp) where T : LuminosityBehaviour
         {
-            comp.GameObject = this;
             CheckRequiredComponents<T>();
 
             Type type = typeof(T);
@@ -227,6 +256,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 
                 components[type] = comp;
+                comp.GameObject = this;
                 comp.Awake();
                 SceneManager.ActiveScene.cache.CacheComponent(comp);
                 return comp; // Return the newly added component.
@@ -275,7 +305,7 @@ namespace Luminosity3D.EntityComponentSystem
                 SceneManager.ActiveScene.cache.CacheComponent(component);
                 return component;
             }
-            return null;
+            return components[type] as T;
         }
 
         public bool HasComponent(Type type)
@@ -313,7 +343,7 @@ namespace Luminosity3D.EntityComponentSystem
                         }
                         catch (Exception ex)
                         {
-                            Logger.Log($"Error adding {requiredType.Name} component: {ex.Message}", LogType.Error);
+                            Logger.Log($"Error adding {requiredType.Name} component: {ex.Message}",true ,LogType.Error);
                         }
                     }
                 }

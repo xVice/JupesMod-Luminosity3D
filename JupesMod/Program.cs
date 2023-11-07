@@ -30,8 +30,8 @@ namespace JupesMod
         {
             
             Exception ex = (Exception)e.ExceptionObject;
-            Logger.LogToFile("Unhandled Exception:");
-            Logger.LogToFile(ex.ToString());
+            Logger.Log("Unhandled Exception:", true, LogType.Error);
+            Logger.Log(ex.ToString(), true, LogType.Error);
             MessageBox((IntPtr)0,$"Oops!\nJupesMod has crashed!\n\nDont worry though, your progress has been saved and logs were generated.\n\nIn File:{ex.Source}\n\nIn Method:{ex.TargetSite.Name}\n\nException:\n{ex.Message}", "JupesMod Crash Handler", 0);
             
             
@@ -41,17 +41,17 @@ namespace JupesMod
         {
             Exception ex = e.Exception;
             string errorMessage = $"A first chance, unhandled exception occurred:\n\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
-            Logger.LogToFile(errorMessage);
+            Logger.Log(errorMessage, true, LogType.Error);
         }
 
         private static void ApplicationCloseHandler(object sender, EventArgs e)
         {
             Net.StopServer();
             PackageLoader.UnloadPaks();
-            Logger.ClearLogFile();
+            //Logger.ClearLogFile();
             Temp.ClearTemp();
             LD.StopEngine();
-            Logger.LogToFile("JMod is closing now, logs end after here. If the dont, something is really wrong.");
+            Logger.Log("JMod is closing now, logs end after here. If the dont, something is really wrong.", true, LogType.Error);
         }
     }
 }

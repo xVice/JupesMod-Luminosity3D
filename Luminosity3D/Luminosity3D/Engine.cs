@@ -9,7 +9,7 @@ namespace Luminosity3D
 {
     public class JModVersionInfo
     {
-        public const string TitleString = "Jupe's Mod v0.0.5";
+        public const string TitleString = "Jupe's Mod v0.0.6";
     }
 
     public static class Engine
@@ -21,8 +21,7 @@ namespace Luminosity3D
 
         public static void StartEngine()
         {
-
-            Logger.ClearLogFile();
+            Logger.SetupFolder();
 
 
             using (Renderer renderer = new Renderer(1280, 780, JModVersionInfo.TitleString))
