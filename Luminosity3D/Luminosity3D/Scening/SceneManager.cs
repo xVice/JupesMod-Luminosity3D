@@ -46,6 +46,17 @@ namespace Luminosity3DScening
             return scene;
         }
 
+        public static void ClearScenes()
+        {
+            Scenes.Clear();
+        }
+
+        public static Scene[] AddScenes(Scene[] scenes)
+        {
+            Scenes.AddRange(scenes);
+            return Scenes.ToArray();
+        }
+
         public static Scene GetScene(string name)
         {
             return (Scene)Scenes.Where(x => x.Name == name);
@@ -76,7 +87,7 @@ namespace Luminosity3DScening
                 scene.InstantiateEntity(go);
             }
             Engine.Renderer.Title = JModVersionInfo.TitleString;
-
+            AddScene(scene);
 
 
         }

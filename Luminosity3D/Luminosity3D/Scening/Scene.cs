@@ -10,6 +10,7 @@ using Luminosity3D.Builtin;
 using System.Reflection;
 using Salar.Bois;
 using System.Runtime.Serialization.Formatters;
+using Ceras;
 
 namespace Luminosity3DScening
 {
@@ -46,103 +47,82 @@ namespace Luminosity3DScening
             return null;
         }
 
-        public string ToJson(Formatting format = Formatting.None)
+        public void ToByte(ref byte[] seribuffer)
         {
             foreach (var ent in Entities.Where(x => x.NetCode == string.Empty))
             {
                 ent.NetCode = Guid.NewGuid().ToString();
             }
 
-            return JsonConvert.SerializeObject(this, format, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
 
+            // Serialize the Scene object and store it in the seribuffer array
+            Engine.GetSerializer().Serialize<Scene>(this, ref seribuffer);
         }
 
-        public static Scene FromJson(string data)
+        public static Scene FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<Scene>(data, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto});
+            return JsonConvert.DeserializeObject<Scene>(json, new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto
+            });
+        }
+
+        public string ToJson(Formatting format = Formatting.Indented)
+        {
+            return JsonConvert.SerializeObject(this, format, new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto
+            });
+        }
+
+        public static void FromByte(ref Scene scene, byte[] data)
+        {
+            Engine.GetSerializer().Deserialize<Scene>(ref scene, data);
         }
 
         //Should take a scene to keep a smaller ram budget, also lower net freq which might be good for not dropping packets
         public void NetMerge()
         {
-            if (Net.objectQue.Count > 0)
+            if(Net.LocalClient != null)
             {
-                for (int i = 0; i < Net.objectQue.Count; i++)
+                var que = BehavNet.GetSceneQue();
+                var count = que.Count;
+                if (count > 0)
                 {
-                    var netEnt = Net.objectQue.Dequeue();
-
-                    try
+                    for (int i = 0; i < count; i++)
                     {
-                        var targetEntInActiveScene = Entities.FirstOrDefault(x => x.NetCode == netEnt.NetCode);
-                        if (targetEntInActiveScene != null)
-                        {  
-                            foreach(var comp in targetEntInActiveScene.components.Values)
+                        var scene = que.Dequeue();
+
+                        foreach (var ent in scene.Entities)
+                        {
+                            try
                             {
-                                
-                                if(comp is Networkable netComp)
+                                var localEnt = Entities.FirstOrDefault(x => x.NetCode == ent.NetCode);
+                                if (localEnt != null)
                                 {
-                                    netComp.Net(netEnt);
-                                }
-                            }
-
-                            /*
-                            foreach (var netComp in netEnt.components.Values)
-                            {
-                                var targetComp = targetEntInActiveScene.components[netComp.GetType()];
-
-                                if(targetComp != null)
-                                {
-                                    var netProperties = targetComp.GetType()
-                                        .GetProperties();
-
-                                    foreach (var netProperty in netProperties)
+                                    foreach (var netComp in localEnt.components.Values)
                                     {
-                                        if(netProperty.IsDefined(typeof(NetAttribute), false))
+                                        if (netComp is Networkable networkableComp)
                                         {
-                                            Logger.Log($"NET: {netProperty.Name}");
-                                            var targetProp = targetComp.GetType().GetProperty(netProperty.Name);
-                                            if (targetProp != null)
-                                            {
-                                                try
-                                                {
-                                                    var value = netProperty.GetValue(netComp);
-
-                                                    if (targetProp.CanWrite)
-                                                    {
-                                                        targetProp.SetValue(targetEntInActiveScene, value);
-                                                        Logger.Log("NET: Synced an entity!", true);
-                                                    }
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    Logger.Log($"NET: Error syncing entity: {ex.Message}", true);
-                                                }
-                                            }
-                                        }   
-                      
-                                           
-                                        
-                                       
+                                            networkableComp.Net(ent);
+                                        }
                                     }
                                 }
-                            }
-                            */
-                        }
-                        else
-                        {
-                            var newGo = InstantiateEntity(netEnt);
-                            foreach(var comp in newGo.components.Values)
-                            {
-                                if(comp is Networkable netComp)
+                                else
                                 {
-                                    netComp.Net(netEnt);
+                                    InstantiateEntity(ent);
+                                    Logger.Log("NET: Instantiated a new entity in the scene!", true, LogType.Information);
                                 }
+
+
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Log($"NET: Fatal error when trying to sync a game object: {ex.ToString()}", true, LogType.Error);
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"NET: Fatal error when trying to sync a game object: {ex.ToString()}", true, LogType.Error);
+                        //Net.ResetPacketDrop();
                     }
                 }
             }
@@ -165,7 +145,6 @@ namespace Luminosity3DScening
 
         public GameObject InstantiateEntity(GameObject entity, bool awake = true)
         {
-            
             foreach(var comp in entity.components.Values)
             {
                 comp.GameObject = entity;
@@ -177,7 +156,6 @@ namespace Luminosity3DScening
             if (awake)
             {
                 entity.Awake();
-
             }
             Entities.Add(entity);
             return entity;

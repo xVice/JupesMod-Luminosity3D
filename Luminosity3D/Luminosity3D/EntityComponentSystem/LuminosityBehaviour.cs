@@ -65,87 +65,203 @@ namespace Luminosity3D.EntityComponentSystem
         }
     }
 
-    public static class Net
+    public class SVar<T>
     {
-        public static bool IsConnected = false;
-        public static bool IsRunning = false;
+        public bool svcheats = false;
+        public bool HostOnly = true;
 
-        private static UdpClient udpServer;
-        private static Thread listenThread;
+        public string Name = string.Empty;
+        public T Value { get; set; }
 
-        private static List<IPEndPoint> connectedClients = new List<IPEndPoint>();
-        public static Queue<GameObject> objectQue = new Queue<GameObject>();
-
-        public static bool StartServer(string ip, int port)
+        public SVar(T value, string name)
         {
-            try
-            {
-                udpServer = new UdpClient(new IPEndPoint(IPAddress.Parse(ip), port));
-                Logger.Log("UDP game server started on ip: " + ip + " port: " + ((IPEndPoint)udpServer.Client.LocalEndPoint).Port, true);
+            Value = value;
+            Name = name;
+        }
+    }
 
+    public class SVars
+    {
+        public Dictionary<string, object> Svars = null;
 
-                listenThread = new Thread(new ThreadStart(ListenForData));
-                listenThread.Start();
-                IsRunning = true;
-                IsConnected = true;
-                return true;
-            }
-            catch (Exception e)
-            {
-                IsRunning = false;
-                IsConnected = false;
-                Logger.Log("NET: Error when starting the server: " + e.ToString(), true, LogType.Error);
-                return false;
-            }
+        public SVars()
+        {
+            Svars = new Dictionary<string, object>();
         }
 
-
-        private static void ListenForData()
+        public void Set(string name, object value)
         {
+            Svars.Add(name, value);
+        }
+
+        public T Get<T>(string name)
+        {
+            if (Svars.ContainsKey(name))
+            {
+                try
+                {
+                    return (T)Svars[name];
+                }
+                catch
+                {
+                    return default(T);
+                }
+            }
+            return default(T);
+        }
+    }
+
+    public class Client
+    {
+        public IPEndPoint Endpoint;
+
+        public bool IsHost = false;
+
+        public delegate void MessageReceivedEventHandler(byte[] message);
+        public event MessageReceivedEventHandler MessageReceived;
+
+        public SVars SVars = new SVars();
+
+
+        private static Thread listenThread;
+
+        private static TcpClient tcpServer;
+        private static UdpClient udpServer;
+
+        public Client(IPEndPoint endpoint)
+        {
+            Endpoint = endpoint;
+            tcpServer = new TcpClient(endpoint);
+            udpServer = new UdpClient(endpoint);
+        }
+
+        public Client(IPEndPoint endpoint, bool isHost)
+        {
+            Endpoint = endpoint;
+            tcpServer = new TcpClient(endpoint);
+            udpServer = new UdpClient(endpoint);
+            IsHost = isHost;
+        }
+
+        public void Send(byte[] buffer)
+        {
+            GetUDP().Send(buffer, buffer.Length, Endpoint);
+        }
+
+        public TcpClient GetTCP()
+        {
+            return tcpServer;
+        }
+
+        public UdpClient GetUDP()
+        {
+            return udpServer;
+        }
+
+        public SVars GetClientVars()
+        {
+            return SVars;
+        }
+        public void OnMessageReceived(byte[] message)
+        {
+            MessageReceived?.Invoke(message);
+        }
+
+        public void StartListenerThread()
+        {
+            listenThread = new Thread(new ThreadStart(ListenForData));
+            listenThread.Start();
+        }
+
+        public void Disconect()
+        {
+            CloseConnection();
+        }
+
+        public void CloseConnection()
+        {
+            if (udpServer != null)
+            {
+                udpServer.Close();
+            }
+
+            if(tcpServer != null)
+            {
+                tcpServer.Close();
+            }
+
+            if (listenThread != null && listenThread.IsAlive)
+            {
+                listenThread.Abort();
+            }
+            Logger.Log("Server shutdown", true);
+        }
+
+        private void ListenForData()
+        {
+
             try
             {
                 while (true)
                 {
                     IPEndPoint anyIP = null;
-                    byte[] data = udpServer.Receive(ref anyIP);
+                    byte[] data = GetUDP().Receive(ref anyIP);
 
-                    if (!connectedClients.Contains(anyIP))
+                    if (Net.GetClients().FirstOrDefault(x => x.Endpoint == anyIP) != null)
                     {
-                        connectedClients.Add(anyIP);
+                        Net.GetClients().Add(new Client(anyIP));
                     }
 
-                    string receivedData = Encoding.UTF8.GetString(data);
-                    byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
-                    byte[] framedPacket = data;
+                    OnMessageReceived(data);
 
-                    foreach (byte[] packetBytes in SplitPackets(framedPacket, delimiter))
-                    {
-                        string packet = Encoding.UTF8.GetString(packetBytes);
-                        if (!string.IsNullOrEmpty(packet))
-                        {
-                            
 
-                            if (IsValidJson(packet))
-                            {
-                                var gameObject = GameObjectSerializer.DeserializeFromString(packet);
-                                objectQue.Enqueue(gameObject);
-                                //Logger.Log($"NET: Received data for: {gameObject.NetCode}", true);
-                            }
-                        }
-                    }
                 }
             }
             catch (Exception e)
             {
+                //droppedPacketCount++; // Increment the dropped packet count
                 Logger.Log("CLIENT: Error: " + e.ToString(), true, LogType.Error);
             }
         }
 
+    }
 
-        // Helper function to split framed data into individual packets using a delimiter
+    
+    public static class BehavNet
+    {
+        private static Queue<Scene> objectQue = new Queue<Scene>();
+
+        public static Queue<Scene> GetSceneQue()
+        {
+            return objectQue;
+        }
+
+        public static void SetupNetworking()
+        {
+            if(Net.LocalClient != null)
+            {
+                Net.LocalClient.MessageReceived += HandleLumBehavs;
+            }
+
+        }
+
+        private static void HandleLumBehavs(byte[] data)
+        {
+            byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
+            byte[] framedPacket = data;
+
+            foreach (byte[] packetBytes in SplitPackets(framedPacket, delimiter))
+            {
+                var scene = Scene.FromJson(Encoding.UTF8.GetString(packetBytes));
+                objectQue.Enqueue(scene);
+            }
+
+        }
+
         private static IEnumerable<byte[]> SplitPackets(byte[] framedData, byte[] delimiter)
         {
             List<byte> currentPacket = new List<byte>();
+
             for (int i = 0; i < framedData.Length; i++)
             {
                 bool isDelimiter = i + delimiter.Length <= framedData.Length &&
@@ -169,7 +285,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         public static bool IsValidJson(string json)
         {
-            try 
+            try
             {
                 JToken.Parse(json);
                 return true;
@@ -180,6 +296,131 @@ namespace Luminosity3D.EntityComponentSystem
             }
         }
 
+    }
+
+
+    public static class Net
+    {
+        public static bool IsConnected = false;
+        public static bool IsRunning = false;
+
+        public static Client LocalClient = null;
+        private static List<Client> clients = new List<Client>();
+
+        private static byte[] sceneBuf = new byte[32];
+
+
+
+        public static bool StartServer(string ip, int port)
+        {
+            try
+            {
+                LocalClient = new Client(new IPEndPoint(IPAddress.Parse(ip), port), true);
+
+                Logger.Log("UDP game server started on ip: " + ip + " port: " + port, true);
+                LocalClient.StartListenerThread();
+                BehavNet.SetupNetworking();
+                IsRunning = true;
+                IsConnected = true;
+                return true;
+            }
+            catch (Exception e)
+            {
+                IsRunning = false;
+                IsConnected = false;
+                Logger.Log("NET: Error when starting the server: " + e.ToString(), true, LogType.Error);
+                return false;
+            }
+        }
+
+
+        public static void StopServer()
+        {
+            Logger.Log("Server shutting down", true);
+            if (LocalClient.IsHost)
+            {
+                LocalClient.CloseConnection();
+            }
+
+        }
+
+
+        public static bool JoinServer(string serverIp, int serverPort)
+        {
+            try
+            {
+                //var server = new Client(new IPEndPoint(IPAddress.Parse(serverIp), serverPort), true);
+                LocalClient = new Client(new IPEndPoint(IPAddress.Parse(GetLocalIpAddress()), serverPort), false);
+
+                string joinRequest = "Client: Joining Server";
+                byte[] requestData = Encoding.ASCII.GetBytes(joinRequest);
+
+                LocalClient.StartListenerThread();
+                BehavNet.SetupNetworking();
+                // Send the join request to the server
+                LocalClient.Send(requestData);
+                // Start a separate thread to listen for responses from the server
+
+                IsConnected = true;
+                Logger.Log($"NET: Connected to: {serverIp}:{serverPort}", true, LogType.Information);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.Log("NET: Error: when joining a server: " + e.ToString(), false, LogType.Error);
+                return false;
+            }
+        }
+
+        static string GetLocalIpAddress()
+        {
+            string localIp = "";
+
+            try
+            {
+                // Get the local machine's host name
+                string hostName = Dns.GetHostName();
+
+                // Get the IP addresses associated with the host name
+                IPAddress[] localIpAddresses = Dns.GetHostAddresses(hostName);
+
+                // Choose the first IPv4 address (assuming that's what you want)
+                foreach (IPAddress ipAddress in localIpAddresses)
+                {
+                    if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        localIp = ipAddress.ToString();
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error getting local IP address: " + ex.Message);
+            }
+
+            return localIp;
+        }
+
+
+        public static void SendMessageToAllClients(byte[] data)
+        {
+            for (int i = clients.Count - 1; i >= 0; i--)
+            {
+                var client = clients[i];
+                client.Send(data);
+            }
+        }
+
+
+        public static List<Client> GetClients()
+        {
+            return clients;
+        }
+
+        // Helper function to split framed data into individual packets using a delimiter
+       
+
         public static void SendSceneToClients()
         {
             try
@@ -188,16 +429,17 @@ namespace Luminosity3D.EntityComponentSystem
                 {
                     foreach (var ent in SceneManager.ActiveScene.Entities)
                     {
+      
+
                         if (string.IsNullOrEmpty(ent.NetCode))
                         {
                             ent.NetCode = Guid.NewGuid().ToString();
                         }
 
-                        var packet = GameObjectSerializer.SerializeToString(ent);
-                        byte[] packetBytes = Encoding.UTF8.GetBytes(packet);
+                        byte[] packetData = Encoding.UTF8.GetBytes(SceneManager.ActiveScene.ToJson());
 
                         byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
-                        byte[] framedPacket = delimiter.Concat(packetBytes).Concat(delimiter).ToArray();
+                        byte[] framedPacket = delimiter.Concat(packetData).Concat(delimiter).ToArray();
 
                         SendMessageToAllClients(framedPacket);
                     }
@@ -212,59 +454,10 @@ namespace Luminosity3D.EntityComponentSystem
 
 
 
-        public static bool StopServer()
-        {
-            Logger.Log("Server shutting down", true);
-            if(udpServer != null)
-            {
-                udpServer.Close();
-            }
 
-            if (listenThread != null && listenThread.IsAlive)
-            {
-                listenThread.Abort();
-            }
-            Logger.Log("Server shutdown", true);
-            return true;
-        }
 
-        public static bool JoinServer(string serverIp, int serverPort)
-        {
-            try
-            {
-                udpServer = new UdpClient(); // Create a new UDP client for the client-side connection
 
-                // You can specify the server IP and port you want to connect to
-                IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 
-                // Start a separate thread to listen for responses from the server
-                listenThread = new Thread(new ThreadStart(ListenForData));
-                listenThread.Start();
-
-                IsConnected = true;
-                Logger.Log($"NET: Connected to: {serverIp}:{serverPort}", true, LogType.Information);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.Log("Error: " + e.ToString(), false, LogType.Error);
-                return false;
-            }
-        }
-
-        public static void SendMessageToClient(byte[] buffer, IPEndPoint clientEndpoint)
-        {
-            udpServer.Send(buffer, buffer.Length, clientEndpoint);
-        }
-
-        public static void SendMessageToAllClients(byte[] data)
-        {
-            for (int i = connectedClients.Count - 1; i >= 0; i--)
-            {
-                var clientEndpoint = connectedClients[i];
-                udpServer.Send(data, data.Length, clientEndpoint);
-            }
-        }
     }
 
 
@@ -385,7 +578,7 @@ namespace Luminosity3D.EntityComponentSystem
                         var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
                         if (batch.GameObject != null)
                         {
-                            batch.model.RenderFrame(batch.GameObject.Transform, cam);
+                            batch.GetModel().RenderFrame(batch.GameObject.Transform, cam);
 
                         }
                         //batch.model.RenderForStencil();

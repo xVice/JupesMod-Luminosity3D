@@ -21,7 +21,7 @@ namespace JupesMod
             Temp.ClearTemp();
             Resources.LoadBuiltinResourceTypes();
             Resources.CreateResourcesFolder();
-            Net.StartServer("192.168.2.126", 42069);
+            //Net.StartServer("192.168.2.126", 42069);
             LD.StartEngine();
             
         }
@@ -51,7 +51,7 @@ namespace JupesMod
             //Logger.ClearLogFile();
             Temp.ClearTemp();
             LD.StopEngine();
-            Logger.Log("JMod is closing now, logs end after here. If the dont, something is really wrong.", true, LogType.Error);
+            Logger.Log("JMod is closing now, logs end after here. If they dont, something is really wrong.", true, LogType.Error);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Luminosity3D.Builtin;
+using Luminosity3D.PKGLoader;
 using Luminosity3D.Utils;
 using Luminosity3DScening;
 using Newtonsoft.Json;
@@ -78,6 +79,97 @@ namespace Luminosity3D.EntityComponentSystem
 
     }
 
+    
+
+
+    public class LuminosityProject
+    {
+        public string ProjectName = string.Empty;
+        public string ProjectVersion = string.Empty;
+        public string ProjectAuthor = string.Empty;
+        public string ProjectDescription = string.Empty;
+
+        private string ProjectPath = string.Empty;
+        private string ScenesPath = string.Empty;
+        private string ModsPath = string.Empty;
+
+        public LuminosityProject(string projectName, string projectVersion, string projectAuthor, string projectDescription)
+        {
+            ProjectName = projectName;
+            ProjectVersion = projectVersion;
+            ProjectAuthor = projectAuthor;
+            ProjectDescription = projectDescription;
+            
+            ProjectPath = Path.Combine(Engine.Directorys.ProjectsPath, ProjectName);
+            ScenesPath = Path.Combine(ProjectPath, "scenes");
+            ModsPath = Path.Combine(ProjectPath, "mods");
+        }
+        //They are literally the same thing, this is a common theme through the engine to make it easier/harder because unity basically is these two things + some more stupid af shit(static func that returns the constructor)
+        public static LuminosityProject CreateProject(string ProjectName = "New Project", string ProjectVersion = "0.0.1", string ProjectAuthor = "Gabe Newell", string ProjectDescription = "Half Life 3")
+        {
+            return new LuminosityProject(ProjectName, ProjectVersion, ProjectAuthor, ProjectDescription);
+        }
+        public static LuminosityProject Load(string name)
+        {
+            if (!Directory.Exists(Path.Combine(Engine.Directorys.ProjectsPath, name)))
+            {
+                return null;
+            }
+
+            var proj = JsonConvert.DeserializeObject<LuminosityProject>(Path.Combine(Engine.Directorys.ProjectsPath, name, "project.json"));
+            foreach (var mod in Directory.GetFiles(proj.ModsPath, "*.lupk"))
+            {
+                //TODO: add PackageLoader.LoadPackageFromPath() to load mods/logic/gameplay whatever from a projects mods(i am going crazy)
+            }
+
+            return proj;
+        }
+
+        public void Save()
+        {
+            if(Directory.Exists(ProjectPath))
+            {
+                Directory.Delete(ProjectPath, true);
+
+            }
+
+            Directory.CreateDirectory(ProjectPath);
+            Directory.CreateDirectory(ScenesPath);
+
+            File.WriteAllText(Path.Combine(ProjectPath, "project.json"), JsonConvert.SerializeObject(this));
+
+            foreach(var scene in SceneManager.Scenes)
+            {
+                File.WriteAllText(Path.Combine(ScenesPath, $"{scene.Name}.json"), scene.ToJson());
+            }
+
+
+        }
+
+
+        public Scene[] GetScene()
+        {
+            List<Scene> sceneList = new List<Scene>();
+            foreach(var sceneJson in Directory.GetFiles(ScenesPath, "*.json"))
+            {
+                sceneList.Add(Scene.FromJson(sceneJson));
+            }
+            return sceneList.ToArray();
+        }
+
+
+    }
+
+    public class ScriptableObjectCache
+    {
+        public ScriptableObject[] cache = new ScriptableObject[0];
+
+    }
+
+    public class ScriptableObject
+    {
+        
+    }
 
 
     public class GameObject

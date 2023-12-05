@@ -15,22 +15,25 @@ namespace Luminosity3D.Builtin
         public Matrix4x4 transformMatrix = Matrix4x4.Identity;
         [SerializeField] bool drawGizmo = false;
 
-        
+        private Vector3 targetPosition;
+        private Quaternion targetRotation;
+        private Vector3 targetScale;
+
+        // Interpolation speed for position and scale
+        public float positionLerpSpeed = 1.0f;
+        public float scaleLerpSpeed = 1.0f;
+
+        // Interpolation speed for rotation (slerp)
+        public float rotationSlerpSpeed = 1.0f;
+
+
+
         public Vector3 Position
         {
             get { return transformMatrix.Translation; }
             set
             {
                 transformMatrix.Translation = value;
-                /*
-                if (GameObject.Childs.Count > 0)
-                {
-                    foreach (var child in GameObject.Childs)
-                    {
-                        child.Transform.Translate(value);
-                    }
-                }
-                */
             }
         }
 
@@ -45,15 +48,6 @@ namespace Luminosity3D.Builtin
 
                 // Create a new transformation matrix with the new rotation, existing translation, and scale.
                 transformMatrix = Matrix4x4.CreateScale(scale) * Matrix4x4.CreateFromQuaternion(value) * Matrix4x4.CreateTranslation(translation);
-                /*
-                if (GameObject.Childs.Count > 0)
-                {
-                    foreach (var child in GameObject.Childs)
-                    {
-                        child.Transform.Translate(transformMatrix.Translation);
-                    }
-                }
-                */
             }
         }
 
@@ -147,10 +141,14 @@ namespace Luminosity3D.Builtin
             //Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, LMath.ToRadians(-90));
         }
 
-        public override void Update()
+        public void Update()
         {
-            //Net.SendMessageToAllClients($"{GameObject.Name} x:{Position.X} y:{Position.Y} z:{Position.Z}");
+            // Interpolate position and scale
+            Position = Vector3.Lerp(Position, targetPosition, positionLerpSpeed * Time.deltaTime);
+            Scale = Vector3.Lerp(Scale, targetScale, scaleLerpSpeed * Time.deltaTime);
 
+            // Interpolate rotation using slerp
+            Rotation = Quaternion.Slerp(Rotation, targetRotation, rotationSlerpSpeed * Time.deltaTime);
         }
 
 
@@ -177,12 +175,12 @@ namespace Luminosity3D.Builtin
         public void Net(GameObject go)
         {
             var transformComp = go.GetComponent<TransformComponent>();
-            if(transformComp != null)
+            if (transformComp != null)
             {
-
-                Position = transformComp.Position;
-                Rotation = transformComp.Rotation;
-                Scale = transformComp.Scale;
+                // Set the target values
+                targetPosition = transformComp.Position;
+                targetRotation = transformComp.Rotation;
+                targetScale = transformComp.Scale;
             }
         }
     }

@@ -33,6 +33,7 @@ using Marshal = System.Runtime.InteropServices.Marshal;
 using MouseButton = OpenTK.Windowing.GraphicsLibraryFramework.MouseButton;
 using Luminosity3D.PKGLoader;
 using Luminosity3DScening;
+using System.Reflection;
 
 namespace Luminosity3DRendering
 {
@@ -1104,6 +1105,7 @@ namespace Luminosity3DRendering
         public ShaderProgram ShaderPBR;
         private Dictionary<string, TextureProgram> TexturesMap = new Dictionary<string, TextureProgram>();
 
+
         public Model(string modelPath)
         {
             assimpModel = new AssimpModel(modelPath);
@@ -2104,23 +2106,26 @@ void main()
             bloom = new Bloom();
             Physics.MakePlane();
             GL.Enable(EnableCap.DepthTest);
-            GL.DepthFunc(DepthFunction.Less);
-            GL.DepthFunc(DepthFunction.Lequal);
+            //GL.DepthFunc(DepthFunction.Less);
+            //GL.DepthFunc(DepthFunction.Lequal);
 
-            GL.Enable(EnableCap.FramebufferSrgb);
-            GL.Enable(EnableCap.Multisample);
-            GL.Enable(EnableCap.TextureCubeMapSeamless);
+            //GL.Enable(EnableCap.FramebufferSrgb);
+            //GL.Enable(EnableCap.Multisample);
+            //GL.Enable(EnableCap.TextureCubeMapSeamless);
 
-            GL.Enable(EnableCap.ProgramPointSize);
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //GL.Enable(EnableCap.ProgramPointSize);
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             GL.ClearColor(Color4.Black);
 
-            GL.Enable(EnableCap.LineSmooth);
-            GL.Enable(EnableCap.ColorSum);
+            //GL.Enable(EnableCap.LineSmooth);
+            //GL.Enable(EnableCap.ColorSum);
+            //RoslynCodeLoader.RefreshSeriTypes(Assembly.GetExecutingAssembly());
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
-            
+            Logger.Log("Loading Resources");
+            ResourcesManager.RegisterResourceFromPath("game", "./resources/");
+            Logger.Log("Resources loaded!");
             Logger.Log("Loading scene..");
             SceneManager.LoadScene("Demo Scene");
             Logger.Log("Scene loaded!");

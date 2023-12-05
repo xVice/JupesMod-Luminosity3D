@@ -1,4 +1,5 @@
-﻿using Luminosity3D.Builtin.RenderLayers;
+﻿using Ceras;
+using Luminosity3D.Builtin.RenderLayers;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.PKGLoader;
 using Luminosity3D.Utils;
@@ -12,12 +13,34 @@ namespace Luminosity3D
         public const string TitleString = "Jupe's Mod v0.0.6";
     }
 
+    
     public static class Engine
     {
         public static SceneManager SceneManager = new SceneManager();
         public static PackageLoader PackageLoader = new PackageLoader();
         public static Renderer Renderer;
         public static DebugConsole Console { get => GetConsole(); }
+        private static CerasSerializer ceras = new CerasSerializer();
+
+        public static class Directorys
+        {
+            public static string Mods = "./mods";
+            public static string ModsAutoLoad = "/autoload";
+            public static string ModsLoaded = "/loaded";
+            public static string ProjectsPath = "./projects";
+            public static string LogsPath = "./logs";
+            public static string ResourcesPath = "./resources";
+            public static string ScenesPath = "./scenes";
+            public static string TempPath = "./temp";
+            
+        }
+
+        public static CerasSerializer GetSerializer()
+        {
+            ceras.GetConfig().PreserveReferences = true;
+            
+            return ceras;
+        }
 
         public static void StartEngine()
         {

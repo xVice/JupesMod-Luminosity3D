@@ -18,7 +18,7 @@ namespace Luminosity3D.PKGLoader
         private List<LUPKMod> LoadedMods = new List<LUPKMod>();
         private readonly object lockObject = new object();
 
-        public const string LUPKDir = "./lupk";
+        public const string LUPKDir = "./mods";
         public const string LUPKAutoLoadDir = "/autoload";
         public const string LoadedFolder = "/loaded";
         public const string LUPKLoadedDir = LUPKDir + LoadedFolder;
@@ -81,6 +81,7 @@ namespace Luminosity3D.PKGLoader
                 }
             });
         }
+        
 
         public bool PakExist(string name)
         {
@@ -105,7 +106,7 @@ namespace Luminosity3D.PKGLoader
             {
                 var lupkg = UnpackPKG(name);
 
-                var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
+                var csFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.cs", SearchOption.AllDirectories);
                 var dllFiles = Directory.GetFiles(lupkg.UnpackedPath, "*.dll", SearchOption.AllDirectories);
                 Logger.Log($"Found {dllFiles.Count()} dll files in {name}, loading assemblies..", true, LogType.Information);
 

@@ -48,8 +48,7 @@ namespace Luminosity3D.Utils
 
 
     public class RoslynCodeLoader
-    {
-
+    { 
 
         public async Task<Assembly> LoadAndCompileDlls(string mainAssemblyName, string[] dllPaths, string[] csFilePaths)
         {
@@ -99,6 +98,7 @@ namespace Luminosity3D.Utils
 
 
                 // Create a single assembly from accumulated syntax trees
+    
                 string assemblyName = Path.GetRandomFileName();
                 var compilation = CSharpCompilation.Create(
                     assemblyName,
@@ -171,9 +171,12 @@ namespace Luminosity3D.Utils
                         Assembly compiledAssembly = Assembly.Load(ms.ToArray());
                         targetAssembly = compiledAssembly;
                         Logger.Log($"Compiled and loaded assembly.");
+
+
+
                     }
                 }
-
+                RefreshSeriTypes(targetAssembly);
                 return targetAssembly;
             }
             catch (Exception ex)
@@ -185,33 +188,24 @@ namespace Luminosity3D.Utils
             return null;
         }
 
-        BlockSyntax GenerateMethodBodyWithDataFieldCalls(DataField dataField, MethodDeclarationSyntax method)
+        public static void RefreshSeriTypes(Assembly assembly)
         {
-            if (method == null || dataField == null)
+            // Get all types in the assembly
+            Type[] types = assembly.GetTypes();
+
+            // Filter types that derive from LuminosityBehaviour
+            IEnumerable<Type> luminosityBehaviourTypes = types
+                .Where(type => type.IsSubclassOf(typeof(LuminosityBehaviour)));
+
+
+
+            foreach (Type type in luminosityBehaviourTypes)
             {
-                return null;
+                Logger.Log(type.FullName);
+                Engine.GetSerializer().GetConfig().KnownTypes.Add(type);
             }
-
-            var statements = new List<StatementSyntax>();
-
-            // Add statements to retrieve values from dataField
-            foreach (var variable in dataField.values)
-            {
-                var variableName = variable.Key;
-                var variableType = variable.Value.GetType().Name;
-
-                var dataFieldGetCall = SyntaxFactory.ParseStatement(
-                    $"{variableName} = dataField.Get<{variableType}>(\"{variableName}\");"
-                );
-
-                statements.Add(dataFieldGetCall);
-            }
-
-            // Add the original method body
-            statements.AddRange(method.Body.Statements);
-
-            return SyntaxFactory.Block(statements);
         }
+
     }
 
     public class MemberCollector : CSharpSyntaxWalker

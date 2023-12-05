@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Ceras.Formatters;
+using ImGuiNET;
 using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
@@ -27,11 +28,12 @@ namespace Luminosity3D.Builtin
     [RequireComponent(typeof(TransformComponent))]
     public class MeshBatch : LuminosityBehaviour, IImguiSerialize
     {
-        [JsonIgnore]
-        public Model model = null;
+        private Model model = null;
 
         public string filePath = string.Empty;
 
+
+        public Model GetModel() { return model; }
 
         public static MeshBatch FromPath(string path)
         {

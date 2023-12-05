@@ -87,7 +87,28 @@ namespace Luminosity3D.Builtin.RenderLayers
                     }
 
                 }
-                    
+
+                if (ImGui.Begin("Save Project", ImGuiWindowFlags.DockNodeHost))
+                {
+                    ImGui.InputText("Path", ref sceneExportPath, 256);
+
+                    if (ImGui.Button("Save to folder") && sceneExportPath != string.Empty)
+                    {
+                        var proj = LuminosityProject.CreateProject();
+                        proj.Save();
+                    }
+
+                    if (ImGui.Button("Load from folder") && sceneExportPath != string.Empty)
+                    {
+                        var proj = LuminosityProject.Load(sceneExportPath);
+                        var scenes = proj.GetScene();
+                        var scene = scenes[0];
+                        SceneManager.AddScenes(scenes);
+                        scene.Load();
+                    }
+
+                }
+
             }
 
         }

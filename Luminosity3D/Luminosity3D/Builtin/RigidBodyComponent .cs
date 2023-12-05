@@ -27,7 +27,7 @@ namespace Luminosity3D.EntityComponentSystem
             {
                 batch = GetComponent<MeshBatch>();
                 
-                collider = Physics.CreateStaticCollider(batch.model, LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
+                collider = Physics.CreateStaticCollider(batch.GetModel(), LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
             }
             else
             {
@@ -214,7 +214,7 @@ namespace Luminosity3D.EntityComponentSystem
             if (HasComponent<MeshBatch>())
             {
                 var batch = GetComponent<MeshBatch>();
-                RigidBody = Physics.CreateRigidBody(batch.model, mass, LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
+                RigidBody = Physics.CreateRigidBody(batch.GetModel(), mass, LMath.ToMatBs(Transform.GetTransformMatrix()), GameObject);
 
             }
         }
