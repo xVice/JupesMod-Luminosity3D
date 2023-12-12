@@ -4,13 +4,14 @@ using BulletSharp.Math;
 using BulletSharp.SoftBody;
 using ImGuiNET;
 using Luminosity3D.Builtin;
+using Luminosity3D.Rendering;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
 using static BulletSharp.Dbvt;
 
 namespace Luminosity3D.EntityComponentSystem
 {
-    
+    [AddComponentMenu("Physics/3D/Rigid Body")]
     [RequireComponent(typeof(TransformComponent))]
     public class ColliderComponent : LuminosityBehaviour
     {

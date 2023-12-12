@@ -12,6 +12,7 @@ namespace Luminosity3D.Utils
             var ent = new GameObject(entName);
 
             ent.AddComponent(MeshBatch.FromPath(filePath));
+            ent.AddComponent(SoundComponent.LoadSoundFromFile("./oggs/test.ogg", FMOD.MODE._3D).Play());
             return ent;
         }
 
@@ -20,7 +21,14 @@ namespace Luminosity3D.Utils
             var cament = new GameObject(entName); // Create a new entity with the given name.
 
             cament.AddComponent<CameraController>(); // Add a CameraController to the entity.
+            cament.AddComponent<SoundListener>();
+        }
 
+        public static void CreateAudioListener(string entName, Vector3 pos, bool setActive)
+        {
+            var cament = new GameObject(entName); // Create a new entity with the given name.
+
+            var listener = cament.AddComponent<SoundListener>(); // Add a CameraController to the entity.
 
         }
 
@@ -71,6 +79,7 @@ namespace Luminosity3D.Utils
             var ent = new GameObject(entName);
             ent.AddComponent(MeshBatch.FromPath(filePath));
             ent.AddComponent<SineMovement>();
+            ent.AddComponent(SoundComponent.LoadSoundFromFile("./oggs/test.ogg", FMOD.MODE._3D).Play());
 
         }
 

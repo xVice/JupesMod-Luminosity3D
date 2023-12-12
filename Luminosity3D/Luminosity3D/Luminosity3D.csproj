@@ -10,56 +10,92 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Samplers\CartesianPlane\shader.frag" />
-    <None Remove="Samplers\CartesianPlane\shader.vert" />
-    <None Remove="Samplers\Outdoor\shader.frag" />
-    <None Remove="Samplers\Outdoor\shader.vert" />
-    <None Remove="Samplers\Particles\shader.frag" />
-    <None Remove="Samplers\Particles\shader.vert" />
-    <None Remove="Samplers\Sprites\shader.frag" />
-    <None Remove="Samplers\Sprites\shader.vert" />
-    <None Remove="Samplers\Tinted\shader.frag" />
-    <None Remove="Samplers\Tinted\shader.vert" />
-    <None Remove="Samplers\ViewPort\shader.frag" />
-    <None Remove="Samplers\ViewPort\shader.vert" />
+    <None Remove="Rendering\Assimp\PBR\PBR_Shader.frag" />
+    <None Remove="Rendering\Assimp\PBR\PBR_Shader.vert" />
+    <None Remove="Rendering\Bloom\shadersBloom\bloom.vert" />
+    <None Remove="Rendering\Bloom\shadersBloom\bloomFinal.frag" />
+    <None Remove="Rendering\Bloom\shadersBloom\downscale.frag" />
+    <None Remove="Rendering\Bloom\shadersBloom\upscale.frag" />
+    <None Remove="Rendering\Cubemap\shaders\cubemap.vert" />
+    <None Remove="Rendering\Cubemap\shaders\irradiance.frag" />
+    <None Remove="Rendering\Cubemap\shaders\prefilter.frag" />
+    <None Remove="Rendering\Cubemap\shaders\rectangular_to_cubemap.frag" />
+    <None Remove="Rendering\Cubemap\shaders\renderFinal.frag" />
+    <None Remove="Rendering\Cubemap\shaders\renderFinal.vert" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Rendering\Assimp\PBR\PBR_Shader.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Assimp\PBR\PBR_Shader.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Bloom\shadersBloom\bloom.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Bloom\shadersBloom\bloomFinal.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Bloom\shadersBloom\downscale.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Bloom\shadersBloom\upscale.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\cubemap.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\irradiance.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\prefilter.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\rectangular_to_cubemap.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\renderFinal.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Rendering\Cubemap\shaders\renderFinal.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="jmodicon.ico" />
-    <Content Include="Samplers\CartesianPlane\shader.frag">
+    <Content Include="Rendering\Samplers\CartesianPlane\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\CartesianPlane\shader.vert">
+    <Content Include="Rendering\Samplers\CartesianPlane\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Outdoor\shader.frag">
+    <Content Include="Rendering\Samplers\Outdoor\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Outdoor\shader.vert">
+    <Content Include="Rendering\Samplers\Outdoor\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Particles\shader.frag">
+    <Content Include="Rendering\Samplers\Particles\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Particles\shader.vert">
+    <Content Include="Rendering\Samplers\Particles\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Sprites\shader.frag">
+    <Content Include="Rendering\Samplers\Sprites\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Sprites\shader.vert">
+    <Content Include="Rendering\Samplers\Sprites\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Tinted\shader.frag">
+    <Content Include="Rendering\Samplers\Tinted\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\Tinted\shader.vert">
+    <Content Include="Rendering\Samplers\Tinted\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\ViewPort\shader.frag">
+    <Content Include="Rendering\Samplers\ViewPort\shader.frag">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Samplers\ViewPort\shader.vert">
+    <Content Include="Rendering\Samplers\ViewPort\shader.vert">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -69,10 +105,12 @@
     <PackageReference Include="BulletSharp" Version="0.11.1" />
     <PackageReference Include="Ceras" Version="4.1.7" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="Noesis.GUI" Version="3.2.2" />
     <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.23" />
+    <PackageReference Include="NVorbis" Version="0.10.5" />
     <PackageReference Include="OpenTK" Version="4.8.1" />
     <PackageReference Include="Salar.Bois" Version="3.4.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
@@ -83,6 +121,16 @@
 
   <ItemGroup>
     <Folder Include="SettingsSystem\" />
+    <Folder Include="Rendering\shaders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Rendering\shaders\shaderNormal.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Rendering\shaders\shaderNormal.vert">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

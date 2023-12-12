@@ -14,20 +14,6 @@
     <None Remove="lupk\autoload\StartMenu.lupk" />
     <None Remove="lupk\Profilingmod.lupk" />
     <None Remove="lupk\StartMenu.lupk" />
-    <None Remove="shaders\builtin\cubemap.vert" />
-    <None Remove="shaders\builtin\irradiance.frag" />
-    <None Remove="shaders\builtin\pbr.frag" />
-    <None Remove="shaders\builtin\pbr.vert" />
-    <None Remove="shaders\builtin\prefilter.frag" />
-    <None Remove="shaders\builtin\rectangular_to_cubemap.frag" />
-    <None Remove="shaders\builtin\renderFinal.frag" />
-    <None Remove="shaders\builtin\renderFinal.vert" />
-    <None Remove="shaders\builtin\shaderNormal.frag" />
-    <None Remove="shaders\builtin\shaderNormal.vert" />
-    <None Remove="shaders\builtin\shadersBloom\bloom.vert" />
-    <None Remove="shaders\builtin\shadersBloom\bloomFinal.frag" />
-    <None Remove="shaders\builtin\shadersBloom\downscale.frag" />
-    <None Remove="shaders\builtin\shadersBloom\upscale.frag" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,48 +32,6 @@
     <Content Include="lupk\StartMenu.lupk">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="shaders\builtin\cubemap.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\irradiance.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\pbr.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\pbr.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\prefilter.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\rectangular_to_cubemap.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\renderFinal.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\renderFinal.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shaderNormal.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shaderNormal.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shadersBloom\bloom.vert">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shadersBloom\bloomFinal.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shadersBloom\downscale.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="shaders\builtin\shadersBloom\upscale.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -97,6 +41,7 @@
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="Noesis.GUI" Version="3.2.2" />
     <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.23" />
+    <PackageReference Include="NVorbis" Version="0.10.5" />
     <PackageReference Include="Salar.Bois" Version="3.4.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
     <PackageReference Include="Twizzle.ImGuizmo.NET" Version="1.89.4.1" />
@@ -112,9 +57,6 @@
     </None>
     <None Update="scenes\Demo Scene\New Camera-15368010.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="shaders\builtin\colored.frag">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

@@ -9,9 +9,22 @@ using Luminosity3DScening;
 using System.Reflection;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using MyGame;
 
 namespace Luminosity3D.EntityComponentSystem
 {
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class AddComponentMenu : Attribute
+    {
+        public string MenuPath { get; }
+
+        public AddComponentMenu(string menuPath)
+        {
+            MenuPath = menuPath;
+        }
+    }
+
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class RequireComponentAttribute : Attribute
     {
@@ -211,7 +224,7 @@ namespace Luminosity3D.EntityComponentSystem
                     {
                         Net.GetClients().Add(new Client(anyIP));
                     }
-
+  
                     OnMessageReceived(data);
 
 
@@ -252,48 +265,55 @@ namespace Luminosity3D.EntityComponentSystem
 
             foreach (byte[] packetBytes in SplitPackets(framedPacket, delimiter))
             {
+                Logger.Log("Received packet: " + Encoding.UTF8.GetString(packetBytes));
                 var scene = Scene.FromJson(Encoding.UTF8.GetString(packetBytes));
                 objectQue.Enqueue(scene);
             }
-
         }
 
         private static IEnumerable<byte[]> SplitPackets(byte[] framedData, byte[] delimiter)
         {
-            List<byte> currentPacket = new List<byte>();
+            int index = 0;
 
-            for (int i = 0; i < framedData.Length; i++)
+            while (index < framedData.Length)
             {
-                bool isDelimiter = i + delimiter.Length <= framedData.Length &&
-                                   delimiter.SequenceEqual(framedData.Skip(i).Take(delimiter.Length));
-                if (isDelimiter)
+                int packetStart = Array.IndexOf(framedData, delimiter[0], index);
+
+                if (packetStart == -1)
                 {
-                    if (currentPacket.Count > 0)
-                        yield return currentPacket.ToArray();
-                    currentPacket.Clear();
-                    i += delimiter.Length - 1; // Skip delimiter
+                    // No more delimiters found, exit the loop
+                    break;
+                }
+
+                if (IsFullPacketAvailable(framedData, packetStart, delimiter))
+                {
+                    // Full packet is available
+                    int packetEnd = packetStart + delimiter.Length;
+                    byte[] packet = framedData.Skip(index).Take(packetEnd - index).ToArray();
+                    yield return packet;
+
+                    // Move index to the next byte after the current packet
+                    index = packetEnd;
                 }
                 else
                 {
-                    currentPacket.Add(framedData[i]);
+                    // Discard incomplete packet and continue searching for the next delimiter
+                    index = packetStart + 1;
                 }
             }
-            if (currentPacket.Count > 0)
-                yield return currentPacket.ToArray();
         }
 
-
-        public static bool IsValidJson(string json)
+        private static bool IsFullPacketAvailable(byte[] framedData, int packetStart, byte[] delimiter)
         {
-            try
+            int packetEnd = packetStart + delimiter.Length;
+
+            if (packetEnd <= framedData.Length)
             {
-                JToken.Parse(json);
-                return true;
+                // Check if the bytes from packetStart to packetEnd match the delimiter
+                return framedData.Skip(packetStart).Take(delimiter.Length).SequenceEqual(delimiter);
             }
-            catch
-            {
-                return false;
-            }
+
+            return false;
         }
 
     }
@@ -337,7 +357,8 @@ namespace Luminosity3D.EntityComponentSystem
         public static void StopServer()
         {
             Logger.Log("Server shutting down", true);
-            if (LocalClient.IsHost)
+            
+            if (LocalClient != null && LocalClient.IsHost)
             {
                 LocalClient.CloseConnection();
             }
@@ -436,11 +457,12 @@ namespace Luminosity3D.EntityComponentSystem
                             ent.NetCode = Guid.NewGuid().ToString();
                         }
 
-                        byte[] packetData = Encoding.UTF8.GetBytes(SceneManager.ActiveScene.ToJson());
+                        string json = SceneManager.ActiveScene.ToJson(Formatting.None);
+                        Logger.Log(json, true);
+                        byte[] packetData = Encoding.UTF8.GetBytes(json);
 
                         byte[] delimiter = new byte[] { 0x13, 0x37, 0x69, 0x42, 0x0 };
                         byte[] framedPacket = delimiter.Concat(packetData).Concat(delimiter).ToArray();
-
                         SendMessageToAllClients(framedPacket);
                     }
                 }
@@ -555,7 +577,7 @@ namespace Luminosity3D.EntityComponentSystem
 
         }
 
-        public void RenderPass()
+        public void RenderPass(CubeMap map)
         {   
 
             if (SceneManager.ActiveScene.activeCam == null)
@@ -578,7 +600,12 @@ namespace Luminosity3D.EntityComponentSystem
                         var cam = SceneManager.ActiveScene.activeCam.GetComponent<Camera>();
                         if (batch.GameObject != null)
                         {
-                            batch.GetModel().RenderFrame(batch.GameObject.Transform, cam);
+                            var model = batch.GetModel();
+                            if (model != null)
+                            {
+                                model.UseTexCubemap = map.UseTextures;
+                                model.RenderFrame();
+                            }
 
                         }
                         //batch.model.RenderForStencil();

@@ -34,19 +34,6 @@ namespace Luminosity3DScening
             Name = name;
         }
 
-        public Scene LoadSceneFromFile(string filePath)
-        {
-            if(File.Exists(filePath))
-            {
-                var scene = new Scene();
-
-                //unzip and read file data in reverse like below
-
-                return scene;
-            }
-            return null;
-        }
-
         public void ToByte(ref byte[] seribuffer)
         {
             foreach (var ent in Entities.Where(x => x.NetCode == string.Empty))

@@ -27,6 +27,41 @@ namespace Luminosity3D.Builtin
         public float rotationSlerpSpeed = 1.0f;
 
 
+        public Matrix4x4 ModelMatrix
+        {
+            get
+            {
+                // The model matrix is the transformation matrix itself
+                return transformMatrix;
+            }
+        }
+
+        public Matrix4x4? ViewMatrix
+        {
+            get
+            {
+                if(Matrix4x4.Invert(transformMatrix, out Matrix4x4 viewMatrix))
+                {
+                    return viewMatrix;
+                }
+                // The view matrix is the inverse of the transformation matrix
+                return null;
+            }
+        }
+
+        public Matrix4x4 ProjectionMatrix
+        {
+            get
+            {
+                // You need to define how the projection matrix is obtained
+                // This might be a property or field in your class
+                // For example, if you have a field named projectionMatrix:
+                // return projectionMatrix;
+                // Adjust the code according to how you handle the projection matrix.
+                return Matrix4x4.Identity; // Placeholder, replace with actual logic
+            }
+        }
+
 
         public Vector3 Position
         {
@@ -35,6 +70,11 @@ namespace Luminosity3D.Builtin
             {
                 transformMatrix.Translation = value;
             }
+        }
+
+        public Vector3 Velocity
+        {
+            get { return (Position - previousPosition); }
         }
 
         public Quaternion Rotation
@@ -140,9 +180,15 @@ namespace Luminosity3D.Builtin
         {
             //Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, LMath.ToRadians(-90));
         }
-
+        private Vector3 previousPosition;
         public void Update()
         {
+            // Calculate velocity
+            Vector3 currentVelocity = (Position - previousPosition) / Time.deltaTime;
+
+            // Store the current position for the next frame
+            previousPosition = Position;
+
             // Interpolate position and scale
             Position = Vector3.Lerp(Position, targetPosition, positionLerpSpeed * Time.deltaTime);
             Scale = Vector3.Lerp(Scale, targetScale, scaleLerpSpeed * Time.deltaTime);

@@ -19,10 +19,10 @@ namespace Luminosity3D.Builtin
         public override void Update()
         {
             // Calculate the new Y position using the sine wave formula
-            float newY = initialPosition.Y + amplitude * (float)Math.Sin(frequency * Time.time);
+            float newY = initialPosition.X + amplitude * (float)Math.Sin(frequency * Time.time);
 
             // Update the object's position
-            Transform.Position = new Vector3(Transform.Position.X, newY, Transform.Position.Z);
+            Transform.Position = new Vector3(newY, Transform.Position.Y, Transform.Position.Z);
         }
     }
 }

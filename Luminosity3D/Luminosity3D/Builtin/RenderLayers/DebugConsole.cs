@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using ImGuizmoNET;
 using Luminosity3DScening;
+using MyGame;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -43,6 +44,58 @@ namespace Luminosity3D.Builtin.RenderLayers
             IMGUIStyles.SetupVisualStudioImGuiStyle();
         }
 
+        public void RenderValueEditor()
+        {
+            ImGui.Begin("Settings");
+
+            ImGui.Text("General");
+
+            ImGui.ColorEdit4("Light Color", ref Values.lightColor);
+            ImGui.ColorEdit4("FPS Color", ref Values.fpsColor);
+            ImGui.ColorEdit4("Stencil Color", ref Values.StencilColor);
+            ImGui.ColorEdit4("Crosshair Color", ref Values.crosshairColor);
+            ImGui.ColorEdit4("Particles Color", ref Values.ParticlesColor);
+
+            ImGui.SliderFloat("Gamma Background", ref Values.gammaBackground, 0.0f, 2.0f);
+            ImGui.SliderFloat("Interpolated Back", ref Values.interpolatedBack, 0.0f, 1.0f);
+
+            ImGui.SliderFloat("Particles Lum", ref Values.ParticlesLum, 0.0f, 10.0f);
+            ImGui.SliderFloat("Force Light Scene", ref Values.ForceLightScene, 0.0f, 50.0f);
+            ImGui.SliderFloat("Particles Scale", ref Values.ParticlesScale, 0.0f, 1.0f);
+
+            ImGui.SliderFloat("Stencil Size", ref Values.stencilSize, 0.001f, 10.0f);
+
+            ImGui.Text("Objects");
+
+            ImGui.Checkbox("Rotate", ref Values.rotate);
+            ImGui.SliderFloat("Gamma Object", ref Values.gammaObject, 0.0f, 5.0f);
+            ImGui.SliderFloat("Luminous Strength", ref Values.luminousStrength, 0.0f, 2.0f);
+            ImGui.SliderFloat("Specular Strength", ref Values.specularStrength, 0.0f, 1.0f);
+
+            ImGui.SliderFloat("Rotate X", ref Values.RotateX, 0.0f, 360.0f);
+            ImGui.SliderFloat("Rotate Y", ref Values.RotateY, 0.0f, 360.0f);
+            ImGui.SliderFloat("Rotate Z", ref Values.RotateZ, 0.0f, 360.0f);
+
+            ImGui.Text("Bloom");
+
+            ImGui.Checkbox("Enable Bloom", ref Values.Bloom.Enable);
+            ImGui.SliderFloat("Exposure", ref Values.Bloom.Exposure, 0.0f, 1.0f);
+            ImGui.SliderFloat("Strength", ref Values.Bloom.Strength, 0.0f, 1.0f);
+            ImGui.SliderFloat("Gamma", ref Values.Bloom.Gamma, 0.0f, 1.0f);
+            ImGui.SliderFloat("Filter Radius", ref Values.Bloom.FilterRadius, 0.0f, 0.1f);
+            ImGui.SliderFloat("Film Grain", ref Values.Bloom.FilmGrain, -1.0f, 1.0f);
+            ImGui.SliderFloat("Nitidez", ref Values.Bloom.Nitidez, -1.0f, 1.0f);
+            ImGui.SliderInt("Vibrance", ref Values.Bloom.Vibrance, -100, 100);
+            ImGui.Checkbox("Negative", ref Values.Bloom.Negative);
+
+            ImGui.Text("Ghost");
+
+            ImGui.SliderInt("Ghost", ref Values.uGhost, 0, 10);
+            ImGui.SliderFloat("Ghost Dispersal", ref Values.uGhostDispersal, 0.0f, 1.0f);
+
+            ImGui.End();
+        }
+
         public override void Render()
         {
             if (InputManager.GetKeyPressed(Keys.RightShift))
@@ -60,6 +113,7 @@ namespace Luminosity3D.Builtin.RenderLayers
   
                 ShowDebugConsole();
                 ShowEntityViewer();
+                RenderValueEditor();
             }
 
             if (inputacepted)
@@ -313,6 +367,12 @@ namespace Luminosity3D.Builtin.RenderLayers
                         ImGui.EndMenu();
                     }
 
+                    if (ImGui.BeginMenu("Create Sound Listener Entity"))
+                    {
+                        CreateListener();
+                        ImGui.EndMenu();
+                    }
+
                     ImGui.EndPopup();
                 }
 
@@ -326,7 +386,12 @@ namespace Luminosity3D.Builtin.RenderLayers
                 for (int i = ents.Count() - 1; i >= 0; i--)
                 {
                     var entity = ents[i];
+                    var cam2 = SceneManager.ActiveScene.activeCam;
+                    if (cam2 != null && entity.Transform != null)
+                    {
+                        EditTransform(cam2, entity);
 
+                    }
                     DisplayEntity(entity);
                 }
 
@@ -339,6 +404,8 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         private unsafe void DisplayEntity(GameObject entity)
         {
+ 
+
             if (ImGui.TreeNode("Name: " + entity.Name +  " NetCode: " + entity.NetCode + " HashCode: " + entity.GetHashCode()))
             {
                 
@@ -410,6 +477,7 @@ namespace Luminosity3D.Builtin.RenderLayers
 
         private void ShowEntityPopup(GameObject entity)
         {
+
             if (ImGui.MenuItem("Create GameObject"))
             {
                 entity.Childs.Add(new GameObject(false));
@@ -426,27 +494,47 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
             }
 
-            if (ImGui.BeginMenu("Attach Component"))
+            HashSet<string> uniqueFolders = new HashSet<string>();
+
+            if (ImGui.TreeNode("Attach Component"))
             {
-                var componentType = typeof(LuminosityBehaviour);
-                var derivedTypes = AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(s => s.GetTypes())
-                    .Where(p => componentType.IsAssignableFrom(p) && p != componentType);
+                IEnumerable<Type> luminosityBehaviours = GetTypesDerivedFrom<LuminosityBehaviour>();
 
-                foreach (var derivedType in derivedTypes)
+                foreach (var type in luminosityBehaviours)
                 {
-                    if (ImGui.MenuItem(derivedType.Name))
-                    {
-                        entity.AddComponent((LuminosityBehaviour)Activator.CreateInstance(derivedType));
+                    AddComponentMenu attribute = (AddComponentMenu)Attribute.GetCustomAttribute(type, typeof(AddComponentMenu));
+                    string menuPath = attribute != null ? attribute.MenuPath : "Default/" + type.Name;
 
+                    var parts = menuPath.Split('/');
+
+                    // Build the tree structure
+                    for (int i = 0; i < parts.Length - 1; i++)
+                    {
+                        if (uniqueFolders.Add(parts[i]))
+                        {
+                            if (ImGui.TreeNode(parts[i]))
+                            {
+                                // Close the tree node
+                                ImGui.TreePop();
+                            }
+                        }
+                    }
+
+                    // If the last part is clicked, perform your action
+                    if (ImGui.MenuItem(parts[parts.Length - 1]))
+                    {
                         
                     }
                 }
 
-         
-
-                ImGui.EndMenu();
+                // Close the main tree node
+                ImGui.TreePop();
             }
+
+            // Clear the set after the tree view to ensure uniqueness across different frames
+            uniqueFolders.Clear();
+
+
 
             if (ImGui.MenuItem("Delete Entity"))
             {
@@ -802,6 +890,13 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
         }
 
+        private static IEnumerable<Type> GetTypesDerivedFrom<T>()
+        {
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => assembly.GetTypes())
+                .Where(type => typeof(T).IsAssignableFrom(type) && type != typeof(T) && !type.IsAbstract);
+        }
+
         private void CreateCamera()
         {
             // Input field for entering .obj file path
@@ -816,6 +911,24 @@ namespace Luminosity3D.Builtin.RenderLayers
                     // You can use objFilePath to load the .obj file here
                     // Example: LoadObjFile(objFilePath);
                     EntitySummoner.CreateCamera(camName, camPosition, true);
+                }
+            }
+
+        }
+
+        private void CreateListener()
+        {
+            // Input field for entering .obj file path
+            ImGui.InputText("SoundListener Name", ref camName, 256); // Adjust the buffer size as needed
+
+            if (ImGui.Button("Summon"))
+            {
+                // Handle loading .obj file using objFilePath
+                if (!string.IsNullOrWhiteSpace(objFilePath))
+                {
+                    // You can use objFilePath to load the .obj file here
+                    // Example: LoadObjFile(objFilePath);
+                    EntitySummoner.CreateAudioListener(camName, camPosition, true);
                 }
             }
 
@@ -891,7 +1004,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
             }
 
-            if (ImGui.Button("Load .obj File With RigidBody Physics and Sine Mover"))
+            if (ImGui.Button("Load .obj File With Sound and Sine Mover"))
             {
                 // Handle loading .obj file using objFilePath
                 if (!string.IsNullOrWhiteSpace(objFilePath) && File.Exists(objFilePath))
@@ -901,7 +1014,14 @@ namespace Luminosity3D.Builtin.RenderLayers
                 }
             }
         }
-        
+
+        private void EditTransform(Camera cam, GameObject mat)
+        {
+            var matr = mat.Transform.ModelMatrix;
+            ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
+            ImGuizmo.Manipulate(ref cam.ViewMatrix.M11, ref cam.ProjectionMatrix.M11, OPERATION.BOUNDS, MODE.LOCAL, ref matr.M11);
+        }
+
         public void LoadBuiltinCommands()
         {
             CommandManager.RegisterCommand(new HelpCommand());

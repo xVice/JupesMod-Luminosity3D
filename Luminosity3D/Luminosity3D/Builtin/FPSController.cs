@@ -15,6 +15,7 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace Luminosity3D.Builtin
 {
+    [AddComponentMenu("Player/FPS Controller")]
     [RequireComponent(typeof(TransformComponent))]
     [RequireComponent(typeof(RigidBodyComponent))]
     [RequireComponent(typeof(Camera))]

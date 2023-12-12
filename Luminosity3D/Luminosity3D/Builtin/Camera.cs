@@ -17,6 +17,8 @@ namespace Luminosity3D.Builtin
         public Vector3 Position = Vector3.Zero;
         public Matrix4x4 ViewMatrix = Matrix4x4.Identity;
         public Matrix4x4 ProjectionMatrix = Matrix4x4.Identity;
+        public float DistanceOfView = 1000f;
+
         public Vector3 Forward
         {
             get

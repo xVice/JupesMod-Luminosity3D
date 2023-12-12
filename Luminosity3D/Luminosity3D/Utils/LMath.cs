@@ -14,6 +14,15 @@ namespace Luminosity3D.Utils
         }
 
 
+        public static FMOD.VECTOR ToFMODVec(this System.Numerics.Vector3 vec)
+        {
+            FMOD.VECTOR temp;
+            temp.x = vec.X;
+            temp.y = vec.Y;
+            temp.z = vec.Z;
+
+            return temp;
+        }
 
 
         public static System.Numerics.Vector3 ToVec(OpenTK.Mathematics.Vector3 vec)
