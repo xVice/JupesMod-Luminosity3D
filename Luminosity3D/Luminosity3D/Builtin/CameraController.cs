@@ -2,8 +2,8 @@
 using Luminosity3D.Utils;
 using System.Numerics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using ImGuiNET;
 using Luminosity3DScening;
+using ImGuiNET;
 
 namespace Luminosity3D.Builtin
 {

@@ -15,12 +15,46 @@ namespace Luminosity3D.Builtin
         private Sound sound;
         private Bank bank;
 
-        public SoundComponent(string Path, FMOD.MODE mode = FMOD.MODE.DEFAULT)
+        private List<FMODEvent> fmodEvents = new List<FMODEvent>();
+
+        public SoundComponent(string Path, FMOD.MODE mode = FMOD.MODE.DEFAULT, bool isBankFile = false, string sampleFile = "")
         {
-            sound = new Sound(Path, mode);
-            sound.Set3DAttributes(new Vector3(0, 0, 0), new Vector3(0, 0, 0));
-            sound.SetMinMaxDistance(0f, 1500f);
+            if (isBankFile == false)
+            {
+                sound = new Sound(Path, mode);
+                sound.Set3DAttributes(new Vector3(0, 0, 0), new Vector3(0, 0, 0));
+                sound.SetMinMaxDistance(0f, 1500f);
+            }
+            else
+            {
+                
+                if (File.Exists(sampleFile))
+                {
+                    bank = new Bank(Path, sampleFile);
+                }
+                else
+                {
+                    bank = new Bank(Path);
+                }
+
+            }
         }
+
+        public void AttachEvent(FMODEvent fevent)
+        {
+            fmodEvents.Add(fevent);
+        }
+
+        public Bank GetBank()
+        {
+            return bank;
+        }
+
+        public Sound GetSound()
+        {
+            return sound;
+        }
+
 
         public static SoundComponent LoadSoundFromFile(string path, FMOD.MODE mode = FMOD.MODE.DEFAULT)
         {
@@ -35,13 +69,22 @@ namespace Luminosity3D.Builtin
 
         public override void Update()
         {
-            sound.Set3DAttributes(Transform.Position, new Vector3(0,0,0));
+            if(sound != null)
+            {
+
+                sound.Set3DAttributes(Transform.Position, new Vector3(0,0,0));
+            }
+
+            foreach (var eve in fmodEvents)
+            {
+                eve.Set3DAttributes(Transform.Position);
+            }
+
+
+   
         }
 
-        public Sound GetSound()
-        {
-            return sound;
-        }
+   
 
     }
 }

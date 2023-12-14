@@ -3,15 +3,16 @@ using Luminosity3D.EntityComponentSystem;
 using Luminosity3D.Utils;
 using Luminosity3DRendering;
 using ImGuiNET;
-using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using ImGuizmoNET;
 using Luminosity3DScening;
 using MyGame;
+using System.Numerics;
+//using Hexa.NET.ImGuizmo;
+//using Hexa.NET.ImGui;
 
 namespace Luminosity3D.Builtin.RenderLayers
 {
@@ -258,7 +259,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                     }
                     ImGui.EndMenuBar();
                 }
-                ImGui.BeginChild("ConsoleText", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()), true, ImGuiWindowFlags.HorizontalScrollbar);
+                ImGui.BeginChild("ConsoleText", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()));
 
                 int logIndex = 0; // Start from the beginning of the list
                 for (int i = Logger.LogList.Count - 1; i >= 0; i--)
@@ -277,7 +278,7 @@ namespace Luminosity3D.Builtin.RenderLayers
                         // Calculate the height required for the content in childWindowName
                         float contentHeight = ImGui.CalcTextSize(log.Content).Y + ImGui.GetTextLineHeightWithSpacing();
 
-                        ImGui.BeginChild(childWindowName, new System.Numerics.Vector2(0, contentHeight), true);
+                        ImGui.BeginChild(childWindowName, new System.Numerics.Vector2(0, contentHeight));
 
                         ImGui.TextWrapped(log.Content);
 
@@ -291,15 +292,17 @@ namespace Luminosity3D.Builtin.RenderLayers
 
                 ImGui.EndChild();
 
+                //TODO: byte* ficke
                 // Input field for adding new debug messages.
-                if (ImGui.InputText("##Input", inputBuffer, (uint)inputBuffer.Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                
+                if (ImGui.InputText("#testt", inputBuffer, (uint)inputBuffer.Length, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
                     string enteredText = Encoding.UTF8.GetString(inputBuffer);
                     enteredText = enteredText.Trim(); // Trim the input to remove extra spaces
                     if (!string.IsNullOrEmpty(enteredText))
                         CommandManager.RunCommand(enteredText);
                 }
-
+               
                 // Scroll to the end manually.
                 ImGui.SameLine();
 
@@ -390,7 +393,6 @@ namespace Luminosity3D.Builtin.RenderLayers
                     if (cam2 != null && entity.Transform != null)
                     {
                         EditTransform(cam2, entity);
-
                     }
                     DisplayEntity(entity);
                 }
@@ -449,8 +451,8 @@ namespace Luminosity3D.Builtin.RenderLayers
                     var proj = floats[1];
                     var mat = floats[2];
 
-                    ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
-                    ImGuizmo.Enable(true);
+                    //ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
+                    //ImGuizmo.Enable(true);
                     
                     //ImGuizmo.Manipulate(ref view, ref proj, OPERATION.SCALE, MODE.LOCAL, ref mat);
                 }
@@ -1015,11 +1017,23 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
         }
 
-        private void EditTransform(Camera cam, GameObject mat)
+
+        private unsafe void EditTransform(Camera cam, GameObject mat)
         {
-            var matr = mat.Transform.ModelMatrix;
-            ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
-            ImGuizmo.Manipulate(ref cam.ViewMatrix.M11, ref cam.ProjectionMatrix.M11, OPERATION.BOUNDS, MODE.LOCAL, ref matr.M11);
+            //ImGuizmo.SetDrawlist();
+            //ImGuizmo.Enable(true);
+            //ImGuizmo.SetRect(0, 0, Engine.Renderer.Size.X, Engine.Renderer.Size.Y);
+            //ImGuizmo.SetID(0);
+
+            var metr = mat.Transform.ModelMatrix;
+
+            //ImGuizmo.Manipulate(ref cam.ViewMatrix, ref cam.ProjectionMatrix, ImGuizmoOperation.Rotate , ImGuizmoMode.World,ref metr);
+
+
+
+                    
+
+            
         }
 
         public void LoadBuiltinCommands()
@@ -1089,13 +1103,6 @@ namespace Luminosity3D.Builtin.RenderLayers
             }
         }
 
-
-
-
-
-
-
-
         public void RegisterCommand(DebugCommand command)
         {
             Commands.Add(command);
@@ -1108,8 +1115,6 @@ namespace Luminosity3D.Builtin.RenderLayers
         {
             
         }
-
-        
     }
 
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net7.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -38,13 +38,13 @@
     <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
     <PackageReference Include="BulletSharp" Version="0.11.1" />
     <PackageReference Include="Ceras" Version="4.1.7" />
+    <PackageReference Include="ImGui.NET" Version="1.90.0.1" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="Noesis.GUI" Version="3.2.2" />
     <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.23" />
     <PackageReference Include="NVorbis" Version="0.10.5" />
     <PackageReference Include="Salar.Bois" Version="3.4.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.13" />
-    <PackageReference Include="Twizzle.ImGuizmo.NET" Version="1.89.4.1" />
   </ItemGroup>
 
   <ItemGroup>

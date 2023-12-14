@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyGame;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,11 +7,54 @@ using System.Threading.Tasks;
 
 namespace Luminosity3D.Utils
 {
+    public class ModelLoader : ResourceLoader<AssimpModel>
+    {
+        public override AssimpModel OnLoad(string path)
+        {
+            if (HasCache(path))
+            {
+                return Get(path);
+            }
+            return CacheRes(path, new AssimpModel(path));
+        }
+    }
+
+    public interface IResourceLoader
+    {
+
+    }
+
+    public abstract class ResourceLoader<T> : IResourceLoader
+    {
+        public Dictionary<string ,T> Cache = new Dictionary<string, T>();
+
+        internal T CacheRes(string path,T item)
+        {
+            Cache.Add(path, item);
+            return item;
+        }
+
+        internal bool HasCache(string path)
+        {
+            return Cache.ContainsKey(path);
+        }
+
+        internal T Get(string path)
+        {
+            return (T)Cache[path];
+        }
+
+
+        public abstract T OnLoad(string path);
+    }
+
     public class Resource
     {
         public string Name { get; private set; }
         public string PathInMemory { get; private set; }
         public List<Resource> SubDirectories { get; private set; }
+
+
 
         public List<string> Resources { get; private set; }
 
@@ -35,6 +79,34 @@ namespace Luminosity3D.Utils
             Name = name;
             PathInMemory = null;
             SubDirectories = subDirectories;
+        }
+
+        public T Get<T>(string fileName)
+        {
+            if (PathInMemory != null)
+            {
+                try
+                {
+                    // Assuming the content is in-memory (e.g., a byte array)
+                    var loader = ResourcesManager.HasLoader<T>();
+                    if(loader == null)
+                    {
+                        return default(T);
+                    }
+                    return loader.OnLoad(fileName);
+
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Failed to read content for resource '{Name}/{fileName}': {ex.Message}", type: LogType.Error);
+                    return default(T);
+                }
+            }
+            else
+            {
+                Logger.Log($"Resource '{Name}' is a directory, not a file.", type: LogType.Error);
+                return default(T);
+            }
         }
 
         public string Get(string fileName)
@@ -170,6 +242,26 @@ namespace Luminosity3D.Utils
     public static class ResourcesManager
     {
         private static Dictionary<string, Resource> resources = new Dictionary<string, Resource>();
+        private static Dictionary<Type, IResourceLoader> resourceLoaders = new Dictionary<Type, IResourceLoader>();
+
+        public static void Init()
+        {
+            RegisterResourceLoader(new ModelLoader());
+        }
+
+        public static ResourceLoader<T> HasLoader<T>()
+        {
+            if (resourceLoaders.ContainsKey(typeof(T)))
+            {
+                return (ResourceLoader<T>)resourceLoaders[typeof(T)];
+            }
+            return null;
+        }
+
+        public static void RegisterResourceLoader<T>(ResourceLoader<T> loader)
+        {
+            resourceLoaders.Add(typeof(T), loader);
+        }
 
         public static void DumpResource(string name)
         {

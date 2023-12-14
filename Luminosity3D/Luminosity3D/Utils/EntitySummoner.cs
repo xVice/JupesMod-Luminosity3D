@@ -79,8 +79,13 @@ namespace Luminosity3D.Utils
             var ent = new GameObject(entName);
             ent.AddComponent(MeshBatch.FromPath(filePath));
             ent.AddComponent<SineMovement>();
-            ent.AddComponent(SoundComponent.LoadSoundFromFile("./oggs/test.ogg", FMOD.MODE._3D).Play());
+            var soundComp = ent.AddComponent(new SoundComponent("./oggs/Master.bank", FMOD.MODE._3D, true, "./oggs/Master.strings.bank"));
 
+            var bank = soundComp.GetBank();
+            var fmodevent = bank.LoadEvent("event:/testevent").Attach(ent);
+            //fmodevent.Set3DAttributes(Vector3.Zero);
+            fmodevent.Play();
+      
         }
 
 

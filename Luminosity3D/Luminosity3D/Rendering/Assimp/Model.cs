@@ -16,7 +16,31 @@ namespace MyGame
 
         private GameObject go = null;
         private TransformComponent trans = null;
-        
+
+
+        public Model(AssimpModel model)
+        {
+            assimpModel = model;
+            meshes = new List<Meshe>(assimpModel.meshes);
+
+            ShaderPBR = new ShaderProgram("Rendering/Assimp/PBR/PBR_Shader.vert", "Rendering/Assimp/PBR/PBR_Shader.frag");
+
+            foreach (var index in meshes)
+            {
+                LoadTextures(index.DiffusePath, PixelInternalFormat.SrgbAlpha, TextureUnit.Texture4);
+                LoadTextures(index.NormalPath, PixelInternalFormat.Rgba, TextureUnit.Texture5);
+                LoadTextures(index.LightMap, PixelInternalFormat.Rgba, TextureUnit.Texture6);
+                LoadTextures(index.EmissivePath, PixelInternalFormat.SrgbAlpha, TextureUnit.Texture7);
+                LoadTextures(index.SpecularPath, PixelInternalFormat.Rgba, TextureUnit.Texture8);
+                LoadTextures(index.HeightMap, PixelInternalFormat.Rgba, TextureUnit.Texture9);
+                LoadTextures(index.MetallicPath, PixelInternalFormat.Rgba, TextureUnit.Texture10);
+                LoadTextures(index.RoughnnesPath, PixelInternalFormat.Rgba, TextureUnit.Texture11);
+                LoadTextures(index.AmbientOcclusionPath, PixelInternalFormat.Rgba, TextureUnit.Texture12);
+            }
+
+
+
+        }
 
         public Model(string modelPath)
         {

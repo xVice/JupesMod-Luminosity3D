@@ -49,7 +49,7 @@ namespace Luminosity3D.Builtin
         {
             if(model == null)
             {
-                model = new Model(filePath);
+                model = new Model(ResourcesManager.GetResource("game").Get<AssimpModel>(filePath));
                 model.SetGameObject(GameObject);
             }
 

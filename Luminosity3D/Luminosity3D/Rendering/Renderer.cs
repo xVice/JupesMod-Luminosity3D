@@ -8,35 +8,21 @@ using OpenTK.Graphics.OpenGL4;
 using Luminosity3D.Builtin.RenderLayers;
 using ImGuiNET;
 using OpenTK.Windowing.Common.Input;
-using BulletSharp;
-using Assimp;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 using Luminosity3D.Rendering;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 using Camera = Luminosity3D.Builtin.Camera;
-using System.Runtime.InteropServices;
 using StbImageSharp;
 using TextureWrapMode = OpenTK.Graphics.OpenGL4.TextureWrapMode;
-using Face = Assimp.Face;
 using Luminosity3D.Builtin;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Runtime.CompilerServices;
-using BulletSharp.Math;
-using Vector3 = OpenTK.Mathematics.Vector3;
 using Luminosity3D.EntityComponentSystem;
-using ImGuizmoNET;
-using Noesis;
 using Matrix4 = OpenTK.Mathematics.Matrix4;
-using Path = System.IO.Path;
-using Matrix = BulletSharp.Math.Matrix;
-using Marshal = System.Runtime.InteropServices.Marshal;
 using MouseButton = OpenTK.Windowing.GraphicsLibraryFramework.MouseButton;
 using Luminosity3D.PKGLoader;
 using Luminosity3DScening;
-using System.Reflection;
-using Luminosity3D.Rendering.Bloom;
 using MyGame;
-using System.Windows;
 using Luminosity3D.jfmod;
 
 namespace Luminosity3DRendering
@@ -89,25 +75,19 @@ namespace Luminosity3DRendering
             CompatibilityProfile = (GL.GetInteger((GetPName)All.ContextProfileMask) & (int)All.ContextCompatibilityProfileBit) != 0;
 
             IntPtr context = ImGui.CreateContext();
-            //ImGuizmo.SetImGuiContext(context);
-            ImGuizmo.SetImGuiContext(context);
-            
             ImGui.SetCurrentContext(context);
-
             var io = ImGui.GetIO();
             io.Fonts.AddFontDefault();
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+            // Enable Docking
+            io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
             CreateDeviceResources();
-            SetKeyMappings();
 
             SetPerFrameImGuiData(1f / 60f);
 
-            //ImGuizmo.BeginFrame();
             ImGui.NewFrame();
-            //ImGuizmo.BeginFrame();
-            ImGuizmo.BeginFrame();
             _frameBegun = true;
         }
 
@@ -245,9 +225,7 @@ void main()
             {
                 _frameBegun = false;
                 ImGui.Render();
-  
                 RenderImDrawData(ImGui.GetDrawData());
-          
             }
         }
 
@@ -266,8 +244,6 @@ void main()
 
             _frameBegun = true;
             ImGui.NewFrame();
-            
-           
         }
 
         /// <summary>
@@ -309,7 +285,7 @@ void main()
                 {
                     continue;
                 }
-                io.KeysDown[(int)key] = KeyboardState.IsKeyDown(key);
+                io.AddKeyEvent(TranslateKey(key), KeyboardState.IsKeyDown(key));
             }
 
             foreach (var c in PressedChars)
@@ -335,30 +311,6 @@ void main()
 
             io.MouseWheel = offset.Y;
             io.MouseWheelH = offset.X;
-        }
-
-        private static void SetKeyMappings()
-        {
-            ImGuiIOPtr io = ImGui.GetIO();
-            io.KeyMap[(int)ImGuiKey.Tab] = (int)Keys.Tab;
-            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Keys.Left;
-            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Keys.Right;
-            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Keys.Up;
-            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Keys.Down;
-            io.KeyMap[(int)ImGuiKey.PageUp] = (int)Keys.PageUp;
-            io.KeyMap[(int)ImGuiKey.PageDown] = (int)Keys.PageDown;
-            io.KeyMap[(int)ImGuiKey.Home] = (int)Keys.Home;
-            io.KeyMap[(int)ImGuiKey.End] = (int)Keys.End;
-            io.KeyMap[(int)ImGuiKey.Delete] = (int)Keys.Delete;
-            io.KeyMap[(int)ImGuiKey.Backspace] = (int)Keys.Backspace;
-            io.KeyMap[(int)ImGuiKey.Enter] = (int)Keys.Enter;
-            io.KeyMap[(int)ImGuiKey.Escape] = (int)Keys.Escape;
-            io.KeyMap[(int)ImGuiKey.A] = (int)Keys.A;
-            io.KeyMap[(int)ImGuiKey.C] = (int)Keys.C;
-            io.KeyMap[(int)ImGuiKey.V] = (int)Keys.V;
-            io.KeyMap[(int)ImGuiKey.X] = (int)Keys.X;
-            io.KeyMap[(int)ImGuiKey.Y] = (int)Keys.Y;
-            io.KeyMap[(int)ImGuiKey.Z] = (int)Keys.Z;
         }
 
         private void RenderImDrawData(ImDrawDataPtr draw_data)
@@ -418,7 +370,7 @@ void main()
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer);
             for (int i = 0; i < draw_data.CmdListsCount; i++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdListsRange[i];
+                ImDrawListPtr cmd_list = draw_data.CmdLists[i];
 
                 int vertexSize = cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>();
                 if (vertexSize > _vertexBufferSize)
@@ -472,7 +424,7 @@ void main()
             // Render command lists
             for (int n = 0; n < draw_data.CmdListsCount; n++)
             {
-                ImDrawListPtr cmd_list = draw_data.CmdListsRange[n];
+                ImDrawListPtr cmd_list = draw_data.CmdLists[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
                 CheckGLError($"Data Vert {n}");
@@ -627,6 +579,73 @@ void main()
             while ((error = GL.GetError()) != ErrorCode.NoError)
             {
                 Debug.Print($"{title} ({i++}): {error}");
+            }
+        }
+
+        public static ImGuiKey TranslateKey(Keys key)
+        {
+            if (key >= Keys.D0 && key <= Keys.D9)
+                return key - Keys.D0 + ImGuiKey._0;
+
+            if (key >= Keys.A && key <= Keys.Z)
+                return key - Keys.A + ImGuiKey.A;
+
+            if (key >= Keys.KeyPad0 && key <= Keys.KeyPad9)
+                return key - Keys.KeyPad0 + ImGuiKey.Keypad0;
+
+            if (key >= Keys.F1 && key <= Keys.F24)
+                return key - Keys.F1 + ImGuiKey.F24;
+
+            switch (key)
+            {
+                case Keys.Tab: return ImGuiKey.Tab;
+                case Keys.Left: return ImGuiKey.LeftArrow;
+                case Keys.Right: return ImGuiKey.RightArrow;
+                case Keys.Up: return ImGuiKey.UpArrow;
+                case Keys.Down: return ImGuiKey.DownArrow;
+                case Keys.PageUp: return ImGuiKey.PageUp;
+                case Keys.PageDown: return ImGuiKey.PageDown;
+                case Keys.Home: return ImGuiKey.Home;
+                case Keys.End: return ImGuiKey.End;
+                case Keys.Insert: return ImGuiKey.Insert;
+                case Keys.Delete: return ImGuiKey.Delete;
+                case Keys.Backspace: return ImGuiKey.Backspace;
+                case Keys.Space: return ImGuiKey.Space;
+                case Keys.Enter: return ImGuiKey.Enter;
+                case Keys.Escape: return ImGuiKey.Escape;
+                case Keys.Apostrophe: return ImGuiKey.Apostrophe;
+                case Keys.Comma: return ImGuiKey.Comma;
+                case Keys.Minus: return ImGuiKey.Minus;
+                case Keys.Period: return ImGuiKey.Period;
+                case Keys.Slash: return ImGuiKey.Slash;
+                case Keys.Semicolon: return ImGuiKey.Semicolon;
+                case Keys.Equal: return ImGuiKey.Equal;
+                case Keys.LeftBracket: return ImGuiKey.LeftBracket;
+                case Keys.Backslash: return ImGuiKey.Backslash;
+                case Keys.RightBracket: return ImGuiKey.RightBracket;
+                case Keys.GraveAccent: return ImGuiKey.GraveAccent;
+                case Keys.CapsLock: return ImGuiKey.CapsLock;
+                case Keys.ScrollLock: return ImGuiKey.ScrollLock;
+                case Keys.NumLock: return ImGuiKey.NumLock;
+                case Keys.PrintScreen: return ImGuiKey.PrintScreen;
+                case Keys.Pause: return ImGuiKey.Pause;
+                case Keys.KeyPadDecimal: return ImGuiKey.KeypadDecimal;
+                case Keys.KeyPadDivide: return ImGuiKey.KeypadDivide;
+                case Keys.KeyPadMultiply: return ImGuiKey.KeypadMultiply;
+                case Keys.KeyPadSubtract: return ImGuiKey.KeypadSubtract;
+                case Keys.KeyPadAdd: return ImGuiKey.KeypadAdd;
+                case Keys.KeyPadEnter: return ImGuiKey.KeypadEnter;
+                case Keys.KeyPadEqual: return ImGuiKey.KeypadEqual;
+                case Keys.LeftShift: return ImGuiKey.LeftShift;
+                case Keys.LeftControl: return ImGuiKey.LeftCtrl;
+                case Keys.LeftAlt: return ImGuiKey.LeftAlt;
+                case Keys.LeftSuper: return ImGuiKey.LeftSuper;
+                case Keys.RightShift: return ImGuiKey.RightShift;
+                case Keys.RightControl: return ImGuiKey.RightCtrl;
+                case Keys.RightAlt: return ImGuiKey.RightAlt;
+                case Keys.RightSuper: return ImGuiKey.RightSuper;
+                case Keys.Menu: return ImGuiKey.Menu;
+                default: return ImGuiKey.None;
             }
         }
     }
@@ -787,26 +806,23 @@ void main()
             AddLayer(Console);
 
             Logger.Log("Starting Jupe's Mod..");
-            Logger.Log("Deleting loaded lupk files..");
-            PackageLoader.UnloadPaks();
-
-            Logger.Log("Loading lupks..");
-
-            Engine.PackageLoader.LoadPaks();
-            timer.Stop();
 
             crossHair = new ViewPort("./resources/img/crosshair.png");
             cubeMap = new CubeMap("./resources/Cubemap/industrial_sunset_puresky_4k.hdr", CubeMapType.Type0);
             bloom = new Bloom();
-            Physics.MakePlane();
 
+            Physics.MakePlane();
+            PackageLoader.UnloadPaks();
+            Engine.PackageLoader.LoadPaks();
             RuntimeManager.Init();
-            Logger.Log("Loading Resources");
+            ResourcesManager.Init();
             ResourcesManager.RegisterResourceFromPath("game", "./resources/");
-            Logger.Log("Resources loaded!");
+
+            timer.Stop();
+
             //RoslynCodeLoader.RefreshSeriTypes(Assembly.GetExecutingAssembly());
             Logger.Log($"Jupe's Mod Loaded in {timer.ElapsedMilliseconds / 1000}sec, press any key to exit..");
-
+            
             //Logger.Log("Loading scene..");
             //SceneManager.LoadScene("Demo Scene");
             //Logger.Log("Scene loaded!");
